@@ -1,0 +1,12 @@
+# Godot 4 cache (rebuilt automatically)
+.godot/
+/android/
+
+# Builds and exports
+/builds/
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
