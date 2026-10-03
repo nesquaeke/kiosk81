@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/run_tests_scene.gd" id="1_c5gey"]
+
+[node name="RunTests" type="Control" unique_id=433257424]
+layout_mode = 3
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_c5gey")
+
+[node name="Background" type="ColorRect" parent="." unique_id=376333648]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.12156863, 0.101960786, 0.1254902, 1)
+
+[node name="Output" type="RichTextLabel" parent="." unique_id=2126712174]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 32.0
+offset_right = -32.0
+offset_bottom = -32.0
+theme_override_font_sizes/normal_font_size = 20
