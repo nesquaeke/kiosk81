@@ -94,3 +94,14 @@ debug_panel={
 3d_physics/layer_3="Customer"
 3d_physics/layer_4="Slot"
 3d_physics/layer_5="PlayerBody"
+
+[shader_globals]
+
+lofi_affine={
+"type": "float",
+"value": 0.4
+}
+lofi_snap_grid={
+"type": "vec2",
+"value": Vector2(480, 270)
+}

@@ -1,5 +1,5 @@
 extends SceneTree
-## One-off tool (roadmap step 1.3): writes project settings and the boot scene.
+## Tool (roadmap 1.3, extended in 1.6b): writes project settings and the boot scene.
 ## Run: godot --headless --path . --script res://tools/setup_project.gd
 
 
@@ -7,6 +7,7 @@ func _init() -> void:
 	_apply_settings()
 	_add_inputs()
 	_add_autoloads()
+	_add_shader_globals()
 	var err: Error = ProjectSettings.save()
 	print("[setup] project settings saved: ", error_string(err))
 	_build_main_scene()
@@ -70,7 +71,16 @@ func _add_autoloads() -> void:
 	ProjectSettings.set_setting("autoload/Audio", "*res://game/core/audio_manager.gd")
 
 
+func _add_shader_globals() -> void:
+	# Lo-fi look (Gorsel Hedef, section 9); LoFiView changes them at runtime.
+	ProjectSettings.set_setting("shader_globals/lofi_affine", {"type": "float", "value": 0.4})
+	ProjectSettings.set_setting("shader_globals/lofi_snap_grid", {"type": "vec2", "value": Vector2(480, 270)})
+
+
 func _build_main_scene() -> void:
+	if FileAccess.file_exists("res://scenes/main/main.tscn"):
+		print("[setup] main scene exists, left unchanged")
+		return
 	var root: Node3D = Node3D.new()
 	root.name = "Main"
 	root.set_script(load("res://scenes/main/main.gd"))
