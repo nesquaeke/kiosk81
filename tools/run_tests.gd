@@ -1,11 +1,9 @@
 extends SceneTree
-## Command line test run (roadmap step 1.4):
-##   godot --headless --path . --script res://tools/run_tests.gd
-## Exit code 0 when every test passes, 1 otherwise.
+## Replaced (roadmap 1.12): some code now uses autoloads (Game, Settings), and
+## Godot does not load autoloads in --script mode, so tests run as a scene:
+##   godot --headless --path . res://tests/run_tests.tscn -- --ci
 
 
 func _init() -> void:
-	var result: Dictionary = TestRunner.run_all()
-	for line: String in result["lines"]:
-		print(line)
-	quit(0 if int(result["failed"]) == 0 else 1)
+	printerr("Tests now run as a scene: godot --headless --path . res://tests/run_tests.tscn -- --ci")
+	quit(2)

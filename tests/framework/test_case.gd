@@ -12,6 +12,11 @@ func before_each() -> void:
 	pass
 
 
+## Called after every test method. Override to free nodes or delete temp files.
+func after_each() -> void:
+	pass
+
+
 func assert_true(value: bool, message: String = "") -> void:
 	if not value:
 		_fail("expected true. " + message)

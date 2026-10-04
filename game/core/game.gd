@@ -9,9 +9,17 @@ signal effects_rejected(reason: String)
 var state: CampaignState = CampaignState.new()
 
 
-func new_campaign(campaign_seed: int) -> void:
-	state = CampaignState.new()
+## Starts a campaign. `start` may override any state field (a scenario's
+## opening: date, money, stock ...); missing fields keep their defaults.
+func new_campaign(campaign_seed: int, start: Dictionary = {}) -> void:
+	state = CampaignState.from_dict(start) if not start.is_empty() else CampaignState.new()
 	state.rng_seed = campaign_seed
+	state_changed.emit(state)
+
+
+## Replaces the state with a loaded one (SaveManager result).
+func load_state(loaded: CampaignState) -> void:
+	state = loaded
 	state_changed.emit(state)
 
 

@@ -8,6 +8,26 @@ extends RefCounted
 ## condition sees the state as left by the effects before it in the list.
 
 
+## Required fields per op (name -> Variant type). Shared by apply() and validate_effects().
+## Fields with a fixed set of values are checked against CampaignState lists too.
+const OP_FIELDS: Dictionary = {
+	"money_add": {"account": TYPE_STRING, "amount": TYPE_INT},
+	"stock_add": {"location": TYPE_STRING, "item": TYPE_STRING, "qty": TYPE_INT},
+	"stock_move": {"from": TYPE_STRING, "to": TYPE_STRING, "item": TYPE_STRING, "qty": TYPE_INT},
+	"register_append": {"entry": TYPE_DICTIONARY},
+	"flag_set": {"key": TYPE_STRING, "value": TYPE_NIL},  # TYPE_NIL = any type
+	"flag_add": {"key": TYPE_STRING, "amount": TYPE_INT},  # counter; a missing flag counts as 0
+	"clock_advance": {"minutes": TYPE_INT},
+	"phase_set": {"phase": TYPE_STRING},
+	"relation_add": {"character": TYPE_STRING, "dimension": TYPE_STRING, "amount": TYPE_INT},
+	"memory_add": {"character": TYPE_STRING, "memory": TYPE_DICTIONARY},
+	"decision_log": {"entry": TYPE_DICTIONARY},
+	"day_advance": {},  # next morning: day + 1, date + 1, 07:30, phase "morning"
+	"when": {"if": TYPE_NIL, "then": TYPE_ARRAY},
+}
+const OPTIONAL_FIELDS: Dictionary = {"when": ["else"]}
+
+
 class Result:
 	extends RefCounted
 	var ok: bool = false
@@ -59,7 +79,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 	var op: String = str(effect.get("op", ""))
 	match op:
 		"money_add":
-			var need: String = _require(effect, {"account": TYPE_STRING, "amount": TYPE_INT})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var account: String = effect["account"]
@@ -67,7 +87,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 				return "unknown account '%s'" % account
 			s.money[account] = s.money.get(account, 0) + int(effect["amount"])
 		"stock_add":
-			var need: String = _require(effect, {"location": TYPE_STRING, "item": TYPE_STRING, "qty": TYPE_INT})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var location: String = effect["location"]
@@ -77,7 +97,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			var item_id: String = effect["item"]
 			items[item_id] = int(items.get(item_id, 0)) + int(effect["qty"])
 		"stock_move":
-			var need: String = _require(effect, {"from": TYPE_STRING, "to": TYPE_STRING, "item": TYPE_STRING, "qty": TYPE_INT})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var qty: int = effect["qty"]
@@ -93,7 +113,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			s.stock[from_loc][item] = s.stock_count(from_loc, item) - qty
 			s.stock[to_loc][item] = s.stock_count(to_loc, item) + qty
 		"register_append":
-			var need: String = _require(effect, {"entry": TYPE_DICTIONARY})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var entry: Dictionary = (effect["entry"] as Dictionary).duplicate(true)
@@ -101,26 +121,39 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			entry["minute"] = s.minute_of_day
 			s.register.append(entry)
 		"flag_set":
-			var need: String = _require(effect, {"key": TYPE_STRING})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
-			if not effect.has("value"):
-				return "missing field 'value'"
 			s.flags[effect["key"]] = effect["value"]
+		"flag_add":
+			var need: String = _require(effect, OP_FIELDS[op])
+			if need != "":
+				return need
+			var current: Variant = s.flags.get(effect["key"], 0)
+			if typeof(current) != TYPE_INT:
+				return "flag '%s' is not a counter" % effect["key"]
+			s.flags[effect["key"]] = int(current) + int(effect["amount"])
+		"day_advance":
+			s.day += 1
+			s.calendar_date = next_date(s.calendar_date)
+			s.minute_of_day = CampaignState.DAY_START_MINUTE
+			s.phase = "morning"
 		"clock_advance":
-			var need: String = _require(effect, {"minutes": TYPE_INT})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			if int(effect["minutes"]) <= 0:
 				return "minutes must be positive"
 			s.minute_of_day += int(effect["minutes"])
 		"phase_set":
-			var need: String = _require(effect, {"phase": TYPE_STRING})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
+			if not effect["phase"] in CampaignState.PHASES:
+				return "unknown phase '%s'" % effect["phase"]
 			s.phase = effect["phase"]
 		"relation_add":
-			var need: String = _require(effect, {"character": TYPE_STRING, "dimension": TYPE_STRING, "amount": TYPE_INT})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var dimension: String = effect["dimension"]
@@ -130,7 +163,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			var relations: Dictionary = character["relations"]
 			relations[dimension] = int(relations.get(dimension, 0)) + int(effect["amount"])
 		"memory_add":
-			var need: String = _require(effect, {"character": TYPE_STRING, "memory": TYPE_DICTIONARY})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var memory: Dictionary = (effect["memory"] as Dictionary).duplicate(true)
@@ -138,7 +171,7 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			var who: Dictionary = s.ensure_character(effect["character"])
 			(who["memories"] as Array).append(memory)
 		"decision_log":
-			var need: String = _require(effect, {"entry": TYPE_DICTIONARY})
+			var need: String = _require(effect, OP_FIELDS[op])
 			if need != "":
 				return need
 			var decision: Dictionary = (effect["entry"] as Dictionary).duplicate(true)
@@ -178,11 +211,89 @@ static func _apply_when(s: CampaignState, effect: Dictionary) -> String:
 	return ""
 
 
+## "1981-12-31" -> "1982-01-01".
+static func next_date(iso_date: String) -> String:
+	var unix: int = Time.get_unix_time_from_datetime_string(iso_date + "T12:00:00")
+	return Time.get_date_string_from_unix_time(unix + 86400)
+
+
 ## Checks that every required field exists with the right type.
 static func _require(effect: Dictionary, fields: Dictionary) -> String:
 	for field: String in fields:
 		if not effect.has(field):
 			return "missing field '%s'" % field
-		if typeof(effect[field]) != int(fields[field]):
+		if int(fields[field]) != TYPE_NIL and typeof(effect[field]) != int(fields[field]):
 			return "field '%s' has the wrong type" % field
+	return ""
+
+
+## Static shape check for content files (no state needed): op names, required
+## fields and types, unknown fields, fixed value lists, nested "when" branches.
+## Returns every problem, each prefixed with its path, e.g. "[2].then[0]: ...".
+static func validate_effects(effects: Variant, path: String = "") -> PackedStringArray:
+	var errors: PackedStringArray = []
+	if typeof(effects) != TYPE_ARRAY:
+		errors.append("%s: effects must be a list" % (path if path != "" else "effects"))
+		return errors
+	var list: Array = effects
+	for i: int in list.size():
+		var here: String = "%s[%d]" % [path, i]
+		if typeof(list[i]) != TYPE_DICTIONARY:
+			errors.append("%s: an effect must be an object" % here)
+			continue
+		var effect: Dictionary = list[i]
+		var op: String = str(effect.get("op", ""))
+		if not OP_FIELDS.has(op):
+			errors.append("%s: %s" % [here, "missing 'op'" if op == "" else "unknown op '%s'" % op])
+			continue
+		var fields: Dictionary = OP_FIELDS[op]
+		var problem: String = _require(effect, fields)
+		if problem == "":
+			problem = _check_known_fields(op, effect)
+		if problem == "":
+			problem = _check_values(op, effect)
+		if problem != "":
+			errors.append("%s (%s): %s" % [here, op, problem])
+			continue
+		if op == "when":
+			for problem_text: String in Conditions.validate(effect["if"], here + ".if"):
+				errors.append(problem_text)
+			errors.append_array(validate_effects(effect["then"], here + ".then"))
+			if effect.has("else"):
+				errors.append_array(validate_effects(effect["else"], here + ".else"))
+	return errors
+
+
+static func _check_known_fields(op: String, effect: Dictionary) -> String:
+	var allowed: Array = (OP_FIELDS[op] as Dictionary).keys()
+	allowed.append("op")
+	allowed.append_array(OPTIONAL_FIELDS.get(op, []))
+	for field: Variant in effect:
+		if not field in allowed:
+			return "unknown field '%s'" % str(field)
+	return ""
+
+
+static func _check_values(op: String, effect: Dictionary) -> String:
+	match op:
+		"money_add":
+			if not effect["account"] in CampaignState.ACCOUNTS:
+				return "unknown account '%s'" % effect["account"]
+		"stock_add":
+			if not effect["location"] in CampaignState.STOCK_LOCATIONS:
+				return "unknown stock location '%s'" % effect["location"]
+		"stock_move":
+			if not effect["from"] in CampaignState.STOCK_LOCATIONS or not effect["to"] in CampaignState.STOCK_LOCATIONS:
+				return "unknown stock location"
+			if int(effect["qty"]) <= 0:
+				return "qty must be positive"
+		"clock_advance":
+			if int(effect["minutes"]) <= 0:
+				return "minutes must be positive"
+		"phase_set":
+			if not effect["phase"] in CampaignState.PHASES:
+				return "unknown phase '%s'" % effect["phase"]
+		"relation_add":
+			if not effect["dimension"] in CampaignState.RELATIONS:
+				return "unknown relation '%s'" % effect["dimension"]
 	return ""

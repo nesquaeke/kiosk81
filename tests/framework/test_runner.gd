@@ -28,6 +28,7 @@ static func run_all() -> Dictionary:
 			case.current_test = "%s::%s" % [path.get_file(), method_name]
 			case.before_each()
 			case.call(method_name)
+			case.after_each()
 			if case.failures.is_empty():
 				passed += 1
 				lines.append("PASS %s" % case.current_test)

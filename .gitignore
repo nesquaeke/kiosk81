@@ -10,3 +10,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Files the Claude app drops into this folder (screenshots etc.)
+/Claude outputs/

@@ -18,7 +18,8 @@ func _apply_settings() -> void:
 	ProjectSettings.set_setting("application/config/name", "KIOSK '81")
 	ProjectSettings.set_setting("application/config/description", "First-person narrative kiosk simulation, Warsaw 1981-1989.")
 	ProjectSettings.set_setting("application/config/features", PackedStringArray(["4.7", "Forward Plus"]))
-	ProjectSettings.set_setting("application/run/main_scene", "res://scenes/main/main.tscn")
+	# F5 plays the prototype day (Faz 2); the old boot check stays in scenes/main.
+	ProjectSettings.set_setting("application/run/main_scene", "res://scenes/kiosk/prototype.tscn")
 	ProjectSettings.set_setting("display/window/size/viewport_width", 1920)
 	ProjectSettings.set_setting("display/window/size/viewport_height", 1080)
 	ProjectSettings.set_setting("display/window/stretch/mode", "canvas_items")
@@ -69,6 +70,7 @@ func _add_autoloads() -> void:
 	ProjectSettings.set_setting("autoload/Game", "*res://game/core/game.gd")
 	ProjectSettings.set_setting("autoload/SaveManager", "*res://game/save/save_manager.gd")
 	ProjectSettings.set_setting("autoload/Audio", "*res://game/core/audio_manager.gd")
+	ProjectSettings.set_setting("autoload/DevPanel", "*res://game/debug/dev_panel.gd")
 
 
 func _add_shader_globals() -> void:

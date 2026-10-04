@@ -180,3 +180,47 @@ func test_when_branch_errors_name_the_step() -> void:
 	assert_false(r.ok, "negative till breaks the invariant")
 	var bad: EffectPipeline.Result = _apply([{"op": "when", "if": true, "then": [{"op": "teleport"}]}])
 	assert_true(bad.error.contains("then[0] (teleport)"), bad.error)
+
+
+# ---------------------------------------------------------------- static validation (roadmap 1.8)
+
+func test_validate_effects_accepts_good_lists() -> void:
+	assert_eq(EffectPipeline.validate_effects([_when_low_stock(), {"op": "flag_set", "key": "k", "value": [1, 2]}]).size(), 0)
+
+
+func test_validate_effects_finds_every_problem() -> void:
+	var errors: PackedStringArray = EffectPipeline.validate_effects([
+		{"op": "money_add", "account": "wallet", "amount": 5},
+		{"op": "stock_move", "from": "shelf", "to": "shelf", "item": "x", "qty": 0},
+		{"op": "teleport"},
+		{"op": "flag_set", "key": "k", "value": 1, "colour": "red"},
+		{"op": "when", "if": {"if": "day"}, "then": [{"op": "phase_set", "phase": "lunch"}]},
+	])
+	assert_eq(errors.size(), 6, "%s" % [errors])
+	assert_true(errors[0].begins_with("[0] (money_add)"), errors[0])
+	assert_true(errors[5].begins_with("[4].then[0] (phase_set)"), errors[5])
+
+
+# ---------------------------------------------------------------- counters and days (prototype)
+
+func test_flag_add_counts_from_zero() -> void:
+	var r: EffectPipeline.Result = _apply([
+		{"op": "flag_add", "key": "bad_cards", "amount": 1},
+		{"op": "flag_add", "key": "bad_cards", "amount": 2},
+	])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.flags["bad_cards"], 3)
+	var bad: EffectPipeline.Result = _apply([{"op": "flag_set", "key": "x", "value": "text"}, {"op": "flag_add", "key": "x", "amount": 1}])
+	assert_false(bad.ok, "a text flag is not a counter")
+
+
+func test_day_advance_rolls_the_calendar() -> void:
+	state.calendar_date = "1981-12-31"
+	state.day = 19
+	var r: EffectPipeline.Result = _apply([{"op": "day_advance"}])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.day, 20)
+	assert_eq(r.state.calendar_date, "1982-01-01")
+	assert_eq(r.state.minute_of_day, CampaignState.DAY_START_MINUTE)
+	assert_eq(r.state.phase, "morning")
+	assert_eq(EffectPipeline.next_date("1984-02-28"), "1984-02-29", "1984 is a leap year")

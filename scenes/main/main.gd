@@ -2,7 +2,7 @@ extends Node3D
 ## Boot scene. For now it only proves that the project starts
 ## and that every autoload is present.
 
-const AUTOLOADS: PackedStringArray = ["Settings", "ContentDB", "Game", "SaveManager", "Audio"]
+const AUTOLOADS: PackedStringArray = ["Settings", "ContentDB", "Game", "SaveManager", "Audio", "DevPanel"]
 
 
 func _ready() -> void:

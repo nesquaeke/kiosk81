@@ -12,4 +12,7 @@ Belgeler şimdilik Claude Docs'ta tutuluyor; tek kaynak onlardır.
 
 Kodla birlikte değişen belgeler burada, depoda durur.
 
+- [Teknik mimari](TECHNICAL_ARCHITECTURE.md): katmanlar, bir eylemin yolu, kayıt, dil, görüntü, testler.
 - [Koşul ve efekt dili](CONDITION_LANGUAGE.md): içerik dosyalarında "ne zaman olur" ve "olunca ne değişir" nasıl yazılır.
+- [ADR-001 Diyalog biçimi](adr/ADR-001-dialogue-format.md): diyaloglar neden JSON düğümleri.
+- [Varlık hattı](ASSET_PIPELINE.md): Blender'dan Godot'a dışa aktarma kuralları ve kontrol listesi.
