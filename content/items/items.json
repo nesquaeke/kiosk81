@@ -1,0 +1,46 @@
+{
+	"type": "item",
+	"records": [
+		{
+			"id": "itm_trybuna_ludu",
+			"name": "Trybuna Ludu",
+			"category": "newspaper",
+			"price": 100,
+			"legal": true,
+			"notes": "Party daily. Price is a placeholder (GECICI) until checked."
+		},
+		{
+			"id": "itm_zolnierz_wolnosci",
+			"name": "Żołnierz Wolności",
+			"category": "newspaper",
+			"price": 100,
+			"legal": true,
+			"notes": "Army daily. Price is a placeholder (GECICI)."
+		},
+		{
+			"id": "itm_cigarettes_popularne",
+			"name": "Popularne cigarettes",
+			"category": "tobacco",
+			"price": 1800,
+			"legal": true,
+			"rationed": true,
+			"notes": "Price and ration start date to be checked (TARIH ?)."
+		},
+		{
+			"id": "itm_matches",
+			"name": "Matches",
+			"category": "matches",
+			"price": 50,
+			"legal": true,
+			"notes": "Price is a placeholder (GECICI)."
+		},
+		{
+			"id": "itm_tygodnik_mazowsze",
+			"name": "Tygodnik Mazowsze",
+			"category": "underground",
+			"price": 0,
+			"legal": false,
+			"notes": "Underground weekly; sold or passed on hidden. First issue date to be checked (TARIH ?)."
+		}
+	]
+}

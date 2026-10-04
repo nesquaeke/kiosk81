@@ -1,0 +1,144 @@
+{
+	"type": "scenario",
+	"records": [
+		{
+			"id": "scn_prototype",
+			"name": "Prototype day",
+			"notes": "Playable test day (roadmap Faz 2). Not canon: invented customers, simplified ration card, placeholder prices.",
+			"start": {
+				"day": 1,
+				"calendar_date": "1982-02-15",
+				"minute_of_day": 450,
+				"phase": "morning",
+				"money": {
+					"till": 2000,
+					"commission": 0,
+					"pocket": 0
+				},
+				"stock": {
+					"shelf": {
+						"itm_trybuna_ludu": 3,
+						"itm_zolnierz_wolnosci": 2,
+						"itm_cigarettes_popularne": 2,
+						"itm_matches": 4
+					},
+					"backroom": {
+						"itm_trybuna_ludu": 10,
+						"itm_zolnierz_wolnosci": 6,
+						"itm_cigarettes_popularne": 8,
+						"itm_matches": 20
+					},
+					"hidden": {
+						"itm_tygodnik_mazowsze": 3
+					}
+				}
+			},
+			"visits": [
+				{
+					"customer": "Old man",
+					"dialogue": "dlg_proto_trybuna",
+					"arrive_minutes": 10,
+					"look": {
+						"coat": "#3b2619",
+						"height_cm": 168,
+						"hat": true
+					}
+				},
+				{
+					"customer": "Woman in a grey coat",
+					"dialogue": "dlg_proto_cigarettes",
+					"arrive_minutes": 14,
+					"look": {
+						"coat": "#4a4a52",
+						"height_cm": 163,
+						"hat": false
+					},
+					"document": {
+						"kind": "ration_card",
+						"holder": "Zofia Nowak",
+						"month": "1982-02",
+						"stamped": true,
+						"coupons_left": 2,
+						"category": "tobacco"
+					}
+				},
+				{
+					"customer": "Mrs. Kowalczyk",
+					"dialogue": "dlg_proto_neighbour",
+					"arrive_minutes": 18,
+					"look": {
+						"coat": "#533b2d",
+						"height_cm": 158,
+						"hat": true
+					}
+				},
+				{
+					"customer": "Young man",
+					"dialogue": "dlg_proto_cigarettes",
+					"arrive_minutes": 12,
+					"look": {
+						"coat": "#2c3a55",
+						"height_cm": 182,
+						"hat": false
+					},
+					"document": {
+						"kind": "ration_card",
+						"holder": "Piotr Zieliński",
+						"month": "1982-01",
+						"stamped": true,
+						"coupons_left": 1,
+						"category": "tobacco"
+					}
+				},
+				{
+					"customer": "Man with a cough",
+					"dialogue": "dlg_proto_matches",
+					"arrive_minutes": 20,
+					"look": {
+						"coat": "#3a3632",
+						"height_cm": 176,
+						"hat": true
+					}
+				},
+				{
+					"customer": "Old woman",
+					"dialogue": "dlg_proto_cigarettes",
+					"arrive_minutes": 25,
+					"look": {
+						"coat": "#2f2c39",
+						"height_cm": 155,
+						"hat": true
+					},
+					"document": {
+						"kind": "ration_card",
+						"holder": "Helena Wójcik",
+						"month": "1982-02",
+						"stamped": false,
+						"coupons_left": 3,
+						"category": "tobacco"
+					}
+				},
+				{
+					"customer": "Militia officer",
+					"dialogue": "dlg_proto_militia",
+					"arrive_minutes": 30,
+					"look": {
+						"coat": "#4a5240",
+						"height_cm": 180,
+						"hat": true
+					}
+				},
+				{
+					"customer": "Marek",
+					"dialogue": "dlg_proto_marek",
+					"arrive_minutes": 40,
+					"look": {
+						"coat": "#2c1f15",
+						"height_cm": 181,
+						"hat": false
+					}
+				}
+			]
+		}
+	]
+}

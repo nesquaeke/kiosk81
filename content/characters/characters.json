@@ -1,0 +1,8 @@
+{
+	"type": "character",
+	"records": [
+		{"id": "chr_tadeusz", "name": "Tadeusz Wolski", "role": "protagonist", "notes": "52, former typesetter, Ruch kiosk vendor."},
+		{"id": "chr_halina", "name": "Halina Wolska", "role": "family", "notes": "Wife, nurse, interned on the night of 13 December 1981."},
+		{"id": "chr_marek", "name": "Marek Wolski", "role": "family", "notes": "Son, 20, engineering student. Reacts against pressure."}
+	]
+}

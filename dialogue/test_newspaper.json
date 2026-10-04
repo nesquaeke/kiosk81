@@ -1,0 +1,58 @@
+{
+	"type": "dialogue",
+	"records": [
+		{
+			"id": "dlg_test_newspaper",
+			"notes": "Format test scene (ADR-001). Not story content.",
+			"speakers": ["customer", "player"],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{"speaker": "customer", "text": "Trybuna Ludu, please."},
+						{"speaker": "customer", "text": "And don't tell me it's gone again.", "if": {"if": "flag", "key": "trybuna_sold_out_before"}}
+					],
+					"choices": [
+						{
+							"text": "Here you are. One zloty.",
+							"if": {"if": "stock", "location": "shelf", "item": "itm_trybuna_ludu", "cmp": ">=", "value": 1},
+							"effects": [
+								{"op": "stock_add", "location": "shelf", "item": "itm_trybuna_ludu", "qty": -1},
+								{"op": "money_add", "account": "till", "amount": 100},
+								{"op": "register_append", "entry": {"item": "itm_trybuna_ludu", "qty": 1, "price": 100}},
+								{"op": "clock_advance", "minutes": 2}
+							],
+							"goto": "thanks"
+						},
+						{
+							"text": "Sold out, sorry.",
+							"effects": [{"op": "flag_set", "key": "trybuna_sold_out_before", "value": true}],
+							"goto": "sold_out"
+						},
+						{
+							"text": "(Quietly) Not that one. I have something else under the counter.",
+							"if": {"if": "stock", "location": "hidden", "item": "itm_tygodnik_mazowsze", "cmp": ">=", "value": 1},
+							"effects": [{"op": "flag_set", "key": "offered_underground_once", "value": true}],
+							"goto": "risky"
+						}
+					]
+				},
+				"thanks": {
+					"lines": [{"speaker": "customer", "text": "Thank you."}],
+					"end": true
+				},
+				"sold_out": {
+					"lines": [{"speaker": "customer", "text": "Of course it is."}],
+					"end": true
+				},
+				"risky": {
+					"lines": [
+						{"speaker": "customer", "text": "I didn't hear that."},
+						{"speaker": "player", "text": "Hear what?"}
+					],
+					"end": true
+				}
+			}
+		}
+	]
+}

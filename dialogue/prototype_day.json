@@ -1,0 +1,1025 @@
+{
+	"type": "dialogue",
+	"records": [
+		{
+			"id": "dlg_proto_trybuna",
+			"notes": "Prototype day, not canon.",
+			"speakers": [
+				"customer",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Trybuna. Same as every morning."
+						}
+					],
+					"choices": [
+						{
+							"text": "[Sell, into the book] Here you are. One złoty.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_trybuna_ludu",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_trybuna_ludu",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 100
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_trybuna_ludu",
+										"qty": 1,
+										"price": 100
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "paid"
+						},
+						{
+							"text": "[Sell, keep the coin] Here you are.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_trybuna_ludu",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_trybuna_ludu",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "pocket",
+									"amount": 100
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_sales",
+									"amount": 1
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "paid"
+						},
+						{
+							"text": "None left today.",
+							"effects": [
+								{
+									"op": "clock_advance",
+									"minutes": 1
+								}
+							],
+							"goto": "none"
+						}
+					]
+				},
+				"paid": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Same news as yesterday, I suppose."
+						},
+						{
+							"speaker": "player",
+							"text": "Same paper, at least."
+						}
+					],
+					"end": true
+				},
+				"none": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Then what are you selling, the snow?"
+						}
+					],
+					"end": true
+				}
+			}
+		},
+		{
+			"id": "dlg_proto_cigarettes",
+			"notes": "Prototype day; used by every ration-card visit.",
+			"speakers": [
+				"customer",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Popularne, one pack. Here's my card."
+						},
+						{
+							"speaker": "customer",
+							"text": "And there's twenty złoty extra in it, if you don't squint at the date.",
+							"if": {
+								"if": "flag",
+								"key": "doc_problem",
+								"cmp": "==",
+								"value": "wrong_month"
+							}
+						}
+					],
+					"choices": [
+						{
+							"text": "[Cut a coupon, sell, into the book] Here you are.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_cigarettes_popularne",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 1800
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_cigarettes_popularne",
+										"qty": 1,
+										"price": 1800
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								},
+								{
+									"op": "when",
+									"if": {
+										"not": {
+											"if": "flag",
+											"key": "doc_ok"
+										}
+									},
+									"then": [
+										{
+											"op": "flag_add",
+											"key": "bad_cards_accepted",
+											"amount": 1
+										}
+									]
+								}
+							],
+							"goto": "sold"
+						},
+						{
+							"text": "[Cut a coupon, sell, keep the money] Here you are.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_cigarettes_popularne",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "pocket",
+									"amount": 1800
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_sales",
+									"amount": 1
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								},
+								{
+									"op": "when",
+									"if": {
+										"not": {
+											"if": "flag",
+											"key": "doc_ok"
+										}
+									},
+									"then": [
+										{
+											"op": "flag_add",
+											"key": "bad_cards_accepted",
+											"amount": 1
+										}
+									]
+								}
+							],
+							"goto": "sold"
+						},
+						{
+							"text": "[Take the twenty, sell] Fine. I didn't see the date.",
+							"if": [
+								{
+									"if": "stock",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"cmp": ">=",
+									"value": 1
+								},
+								{
+									"if": "flag",
+									"key": "doc_problem",
+									"cmp": "==",
+									"value": "wrong_month"
+								}
+							],
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 1800
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_cigarettes_popularne",
+										"qty": 1,
+										"price": 1800
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								},
+								{
+									"op": "when",
+									"if": {
+										"not": {
+											"if": "flag",
+											"key": "doc_ok"
+										}
+									},
+									"then": [
+										{
+											"op": "flag_add",
+											"key": "bad_cards_accepted",
+											"amount": 1
+										}
+									]
+								},
+								{
+									"op": "money_add",
+									"account": "pocket",
+									"amount": 2000
+								},
+								{
+									"op": "decision_log",
+									"entry": {
+										"id": "took_bribe_for_card"
+									}
+								}
+							],
+							"goto": "sold"
+						},
+						{
+							"text": "[Refuse] This card is no good.",
+							"effects": [
+								{
+									"op": "when",
+									"if": {
+										"if": "flag",
+										"key": "doc_ok"
+									},
+									"then": [
+										{
+											"op": "flag_add",
+											"key": "good_cards_refused",
+											"amount": 1
+										}
+									]
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 1
+								}
+							],
+							"goto": "refused"
+						},
+						{
+							"text": "No cigarettes left, sorry.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_cigarettes_popularne",
+								"cmp": "<",
+								"value": 1
+							},
+							"goto": "none"
+						}
+					]
+				},
+				"sold": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Thank you.",
+							"if": {
+								"if": "flag",
+								"key": "doc_ok"
+							}
+						},
+						{
+							"speaker": "customer",
+							"text": "...Thank you. Really.",
+							"if": {
+								"not": {
+									"if": "flag",
+									"key": "doc_ok"
+								}
+							}
+						}
+					],
+					"end": true
+				},
+				"refused": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "What? It's this month's card. Look at it again!",
+							"if": {
+								"if": "flag",
+								"key": "doc_ok"
+							}
+						},
+						{
+							"speaker": "customer",
+							"text": "It's only a few days old. Who checks that?",
+							"if": {
+								"if": "flag",
+								"key": "doc_problem",
+								"cmp": "==",
+								"value": "wrong_month"
+							}
+						},
+						{
+							"speaker": "customer",
+							"text": "The office forgot the stamp. Is that my fault?",
+							"if": {
+								"if": "flag",
+								"key": "doc_problem",
+								"cmp": "==",
+								"value": "no_stamp"
+							}
+						},
+						{
+							"speaker": "customer",
+							"text": "There's still a coupon left somewhere, surely?",
+							"if": {
+								"if": "flag",
+								"key": "doc_problem",
+								"cmp": "==",
+								"value": "no_coupons"
+							}
+						}
+					],
+					"choices": [
+						{
+							"text": "[Give in, sell after all] All right. Just this once.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_cigarettes_popularne",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 1800
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_cigarettes_popularne",
+										"qty": 1,
+										"price": 1800
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								},
+								{
+									"op": "when",
+									"if": {
+										"not": {
+											"if": "flag",
+											"key": "doc_ok"
+										}
+									},
+									"then": [
+										{
+											"op": "flag_add",
+											"key": "bad_cards_accepted",
+											"amount": 1
+										}
+									]
+								}
+							],
+							"goto": "sold"
+						},
+						{
+							"text": "Next, please.",
+							"goto": "leaves"
+						}
+					]
+				},
+				"leaves": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Thank you for nothing."
+						}
+					],
+					"end": true
+				},
+				"none": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "No cigarettes. Of course."
+						}
+					],
+					"end": true
+				}
+			}
+		},
+		{
+			"id": "dlg_proto_neighbour",
+			"notes": "Prototype day, not canon.",
+			"speakers": [
+				"customer",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Good morning, Mr. Wolski. Is there... anything to read today? Not the Trybuna."
+						}
+					],
+					"effects": [
+						{
+							"op": "flag_set",
+							"key": "neighbour_asked",
+							"value": true
+						}
+					],
+					"choices": [
+						{
+							"text": "[Slip her a Tygodnik Mazowsze from the hiding place]",
+							"if": {
+								"if": "stock",
+								"location": "hidden",
+								"item": "itm_tygodnik_mazowsze",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "hidden",
+									"item": "itm_tygodnik_mazowsze",
+									"qty": -1
+								},
+								{
+									"op": "flag_set",
+									"key": "gave_underground",
+									"value": true
+								},
+								{
+									"op": "decision_log",
+									"entry": {
+										"id": "gave_underground_paper"
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "gave"
+						},
+						{
+							"text": "Only what's on the shelf, Mrs. Kowalczyk.",
+							"goto": "denied"
+						},
+						{
+							"text": "Be careful who you ask that.",
+							"effects": [
+								{
+									"op": "flag_set",
+									"key": "warned_neighbour",
+									"value": true
+								}
+							],
+							"goto": "warned"
+						}
+					]
+				},
+				"gave": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "God bless you. I didn't get it here."
+						}
+					],
+					"end": true
+				},
+				"denied": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Of course. Of course. Forgive me."
+						}
+					],
+					"end": true
+				},
+				"warned": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "I know who I'm asking."
+						}
+					],
+					"end": true
+				}
+			}
+		},
+		{
+			"id": "dlg_proto_matches",
+			"notes": "Prototype day, not canon.",
+			"speakers": [
+				"customer",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "(Coughs) Matches. Two boxes."
+						}
+					],
+					"choices": [
+						{
+							"text": "[Sell two, into the book] One złoty.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_matches",
+								"cmp": ">=",
+								"value": 2
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_matches",
+									"qty": -2
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 100
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_matches",
+										"qty": 2,
+										"price": 50
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "paper"
+						},
+						{
+							"text": "[Sell two, keep the coins] One złoty.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_matches",
+								"cmp": ">=",
+								"value": 2
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_matches",
+									"qty": -2
+								},
+								{
+									"op": "money_add",
+									"account": "pocket",
+									"amount": 100
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_sales",
+									"amount": 1
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "paper"
+						},
+						{
+							"text": "No matches left.",
+							"goto": "paper"
+						}
+					]
+				},
+				"paper": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "And the army paper, if you still have it."
+						}
+					],
+					"choices": [
+						{
+							"text": "[Sell, into the book] Here.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_zolnierz_wolnosci",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_zolnierz_wolnosci",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "till",
+									"amount": 100
+								},
+								{
+									"op": "register_append",
+									"entry": {
+										"item": "itm_zolnierz_wolnosci",
+										"qty": 1,
+										"price": 100
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "bye"
+						},
+						{
+							"text": "[Sell, keep the coin] Here.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_zolnierz_wolnosci",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_zolnierz_wolnosci",
+									"qty": -1
+								},
+								{
+									"op": "money_add",
+									"account": "pocket",
+									"amount": 100
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_sales",
+									"amount": 1
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 2
+								}
+							],
+							"goto": "bye"
+						},
+						{
+							"text": "Sold out.",
+							"goto": "bye"
+						}
+					]
+				},
+				"bye": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Warm in there, at least?"
+						},
+						{
+							"speaker": "player",
+							"text": "Warmer than out there."
+						}
+					],
+					"end": true
+				}
+			}
+		},
+		{
+			"id": "dlg_proto_militia",
+			"notes": "Prototype day, not canon. Invented officer.",
+			"speakers": [
+				"customer",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Good afternoon, citizen. Quiet today?"
+						},
+						{
+							"speaker": "customer",
+							"text": "People say paper travels under counters these days.",
+							"if": {
+								"if": "flag",
+								"key": "gave_underground"
+							}
+						}
+					],
+					"choices": [
+						{
+							"text": "Quiet. Snow and newspapers.",
+							"effects": [
+								{
+									"op": "clock_advance",
+									"minutes": 1
+								}
+							],
+							"goto": "quiet"
+						},
+						{
+							"text": "[Inform] A woman asked me for... other reading. Mrs. Kowalczyk, from number twelve.",
+							"if": {
+								"if": "flag",
+								"key": "neighbour_asked"
+							},
+							"effects": [
+								{
+									"op": "decision_log",
+									"entry": {
+										"id": "informed_on_neighbour"
+									}
+								},
+								{
+									"op": "flag_set",
+									"key": "informed_on_neighbour",
+									"value": true
+								},
+								{
+									"op": "flag_set",
+									"key": "neighbour_taken",
+									"value": true
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 3
+								}
+							],
+							"goto": "informed"
+						},
+						{
+							"text": "[Hand over a pack of Popularne] For the cold, officer.",
+							"if": {
+								"if": "stock",
+								"location": "shelf",
+								"item": "itm_cigarettes_popularne",
+								"cmp": ">=",
+								"value": 1
+							},
+							"effects": [
+								{
+									"op": "stock_add",
+									"location": "shelf",
+									"item": "itm_cigarettes_popularne",
+									"qty": -1
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_sales",
+									"amount": 1
+								},
+								{
+									"op": "decision_log",
+									"entry": {
+										"id": "gave_cigarettes_to_militia"
+									}
+								},
+								{
+									"op": "clock_advance",
+									"minutes": 1
+								}
+							],
+							"goto": "gift"
+						}
+					]
+				},
+				"quiet": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Keep it that way."
+						}
+					],
+					"end": true
+				},
+				"informed": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "Kowalczyk. Number twelve. That was correct of you, citizen."
+						}
+					],
+					"end": true
+				},
+				"gift": {
+					"lines": [
+						{
+							"speaker": "customer",
+							"text": "...Very kind. Keep it quiet, then."
+						}
+					],
+					"end": true
+				}
+			}
+		},
+		{
+			"id": "dlg_proto_marek",
+			"notes": "Prototype day, not canon.",
+			"speakers": [
+				"chr_marek",
+				"player"
+			],
+			"start": "ask",
+			"nodes": {
+				"ask": {
+					"lines": [
+						{
+							"speaker": "chr_marek",
+							"text": "Dad. I'll be late tonight. Don't wait up."
+						},
+						{
+							"speaker": "chr_marek",
+							"text": "They took Mrs. Kowalczyk in this afternoon. Someone talked.",
+							"if": {
+								"if": "flag",
+								"key": "neighbour_taken"
+							}
+						}
+					],
+					"choices": [
+						{
+							"text": "Where are you going?",
+							"effects": [
+								{
+									"op": "flag_add",
+									"key": "pressure_on_marek",
+									"amount": 1
+								}
+							],
+							"goto": "pressed"
+						},
+						{
+							"text": "Be careful. The curfew.",
+							"effects": [
+								{
+									"op": "relation_add",
+									"character": "chr_marek",
+									"dimension": "trust",
+									"amount": 1
+								}
+							],
+							"goto": "careful"
+						},
+						{
+							"text": "(Say nothing.)",
+							"if": {
+								"if": "flag",
+								"key": "neighbour_taken"
+							},
+							"effects": [
+								{
+									"op": "decision_log",
+									"entry": {
+										"id": "kept_informing_from_marek"
+									}
+								}
+							],
+							"goto": "silent"
+						}
+					]
+				},
+				"pressed": {
+					"lines": [
+						{
+							"speaker": "chr_marek",
+							"text": "Out. Friends. Do I need a pass from you now, too?"
+						}
+					],
+					"end": true
+				},
+				"careful": {
+					"lines": [
+						{
+							"speaker": "chr_marek",
+							"text": "I know, Dad. I'm not stupid."
+						}
+					],
+					"end": true
+				},
+				"silent": {
+					"lines": [
+						{
+							"speaker": "chr_marek",
+							"text": "You're very quiet today."
+						}
+					],
+					"end": true
+				}
+			}
+		}
+	]
+}
