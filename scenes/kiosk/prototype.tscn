@@ -1,0 +1,56 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/kiosk/prototype.gd" id="1_5fib4"]
+[ext_resource type="Script" path="res://scenes/fx/lofi_view.gd" id="2_eq83l"]
+[ext_resource type="PackedScene" path="res://scenes/kiosk/kiosk_world.tscn" id="3_l80dv"]
+[ext_resource type="Script" path="res://scenes/customer/customer_placeholder.gd" id="4_eayvy"]
+[ext_resource type="Script" path="res://scenes/ui/decree_note.gd" id="5_ocomj"]
+[ext_resource type="Script" path="res://scenes/ui/dialogue_panel.gd" id="6_jfqsn"]
+[ext_resource type="Script" path="res://scenes/ui/document_view.gd" id="7_wj2ic"]
+[ext_resource type="Script" path="res://scenes/ui/watch_overlay.gd" id="8_k1bqd"]
+[ext_resource type="Script" path="res://scenes/ui/day_end_panel.gd" id="9_irnft"]
+
+[node name="Prototype" type="Node" unique_id=199400697]
+script = ExtResource("1_5fib4")
+
+[node name="LoFiView" type="SubViewportContainer" parent="." unique_id=1067677767]
+stretch = true
+script = ExtResource("2_eq83l")
+
+[node name="SubViewport" type="SubViewport" parent="LoFiView" unique_id=1494759986]
+audio_listener_enable_3d = true
+
+[node name="World" type="Node3D" parent="LoFiView/SubViewport" unique_id=1619446211 instance=ExtResource("3_l80dv")]
+
+[node name="Customer" type="Node3D" parent="LoFiView/SubViewport" unique_id=336104232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0, -1.3)
+script = ExtResource("4_eayvy")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=631179562]
+layer = 10
+
+[node name="Hints" type="Label" parent="UI" unique_id=2146133714]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 24.0
+offset_bottom = 18.0
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.83137256, 0.85490197, 0.84705883, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+
+[node name="Decree" type="PanelContainer" parent="UI" unique_id=1303577364]
+script = ExtResource("5_ocomj")
+
+[node name="Dialogue" type="PanelContainer" parent="UI" unique_id=1752566319]
+script = ExtResource("6_jfqsn")
+
+[node name="Document" type="PanelContainer" parent="UI" unique_id=172050324]
+script = ExtResource("7_wj2ic")
+
+[node name="Watch" type="PanelContainer" parent="UI" unique_id=1127717116]
+script = ExtResource("8_k1bqd")
+
+[node name="DayEnd" type="PanelContainer" parent="UI" unique_id=1799993261]
+script = ExtResource("9_irnft")
