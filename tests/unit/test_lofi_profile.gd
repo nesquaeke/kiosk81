@@ -4,8 +4,10 @@ extends TestCase
 const FULL_HD: Vector2i = Vector2i(1920, 1080)
 
 
-func test_default_is_medium() -> void:
-	assert_eq(LoFiProfile.DEFAULT_LEVEL, LoFiProfile.Level.MEDIUM)
+func test_default_is_light() -> void:
+	# Changed from Orta to Hafif after the visual sketch (director's decision).
+	assert_eq(LoFiProfile.DEFAULT_LEVEL, LoFiProfile.Level.LIGHT)
+	assert_eq(LoFiProfile.for_level(LoFiProfile.DEFAULT_LEVEL).internal_size(FULL_HD), Vector2i(960, 540))
 
 
 func test_medium_matches_visual_target() -> void:

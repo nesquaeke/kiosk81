@@ -6,10 +6,11 @@ extends RefCounted
 
 enum Level { OFF, LIGHT, MEDIUM, STRONG }
 
-const DEFAULT_LEVEL: Level = Level.MEDIUM
+const DEFAULT_LEVEL: Level = Level.LIGHT  # director's pick after the visual sketch (4 Oct 2026)
 const LEVEL_NAMES_TR: PackedStringArray = ["Kapalı", "Hafif", "Orta", "Güçlü"]
 
-var level: Level = DEFAULT_LEVEL
+## Field defaults below are the MEDIUM preset; use for_level() to get any preset.
+var level: Level = Level.MEDIUM
 ## The 3D world is drawn at window size / shrink (2 -> 960x540 at 1080p).
 var shrink: int = 2
 ## Colour steps per channel; 256 means no visible reduction.

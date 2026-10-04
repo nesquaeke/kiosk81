@@ -4,6 +4,8 @@ extends RefCounted
 ## Either every effect applies and every invariant holds, or nothing
 ## changes and the caller gets the reason. Effects are plain dictionaries
 ## like {"op": "money_add", "account": "till", "amount": 290}.
+## The "when" op branches on a condition (docs/CONDITION_LANGUAGE.md); the
+## condition sees the state as left by the effects before it in the list.
 
 
 class Result:
@@ -143,10 +145,36 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			decision["day"] = s.day
 			decision["minute"] = s.minute_of_day
 			s.decision_log.append(decision)
+		"when":
+			return _apply_when(s, effect)
 		"":
 			return "missing 'op'"
 		_:
 			return "unknown op '%s'" % op
+	return ""
+
+
+## {"op": "when", "if": <condition>, "then": [effects], "else": [effects]}; "else" is optional.
+static func _apply_when(s: CampaignState, effect: Dictionary) -> String:
+	if not effect.has("if"):
+		return "missing field 'if'"
+	if not effect.has("then"):
+		return "missing field 'then'"
+	var check: Conditions.Result = Conditions.evaluate(s, effect["if"])
+	if not check.ok:
+		return "condition: " + check.error
+	var branch_name: String = "then" if check.value else "else"
+	var branch: Variant = effect.get(branch_name, [])
+	if typeof(branch) != TYPE_ARRAY:
+		return "field '%s' must be a list of effects" % branch_name
+	var steps: Array = branch
+	for j: int in steps.size():
+		if typeof(steps[j]) != TYPE_DICTIONARY:
+			return "%s[%d] is not an effect" % [branch_name, j]
+		var step: Dictionary = steps[j]
+		var error: String = _apply_one(s, step)
+		if error != "":
+			return "%s[%d] (%s): %s" % [branch_name, j, str(step.get("op", "?")), error]
 	return ""
 
 

@@ -7,3 +7,9 @@ Belgeler şimdilik Claude Docs'ta tutuluyor; tek kaynak onlardır.
 - Karakterler: https://claude.ai/code/artifact/d5dd8619-3158-498e-9155-2128a182a89a
 - Görsel Hedef: https://claude.ai/code/artifact/9033d065-85a0-4eed-a0df-ec0b7d5546b6
 - Aşama 0, GDD Denetimi: https://claude.ai/code/artifact/de709279-8522-4751-8bce-292d88520918
+
+## Bu klasördeki teknik belgeler
+
+Kodla birlikte değişen belgeler burada, depoda durur.
+
+- [Koşul ve efekt dili](CONDITION_LANGUAGE.md): içerik dosyalarında "ne zaman olur" ve "olunca ne değişir" nasıl yazılır.

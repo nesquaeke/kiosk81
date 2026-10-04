@@ -127,3 +127,56 @@ func test_unknown_relation_is_rejected() -> void:
 func test_unknown_phase_is_rejected() -> void:
 	var r: EffectPipeline.Result = _apply([{"op": "phase_set", "phase": "lunch"}])
 	assert_false(r.ok)
+
+
+# ---------------------------------------------------------------- "when" (roadmap 1.7)
+
+func _when_low_stock() -> Dictionary:
+	return {
+		"op": "when",
+		"if": {"if": "stock", "location": "shelf", "item": "itm_cigarettes", "cmp": "<", "value": 3},
+		"then": [{"op": "stock_move", "from": "backroom", "to": "shelf", "item": "itm_cigarettes", "qty": 5}],
+		"else": [{"op": "flag_set", "key": "shelf_ok", "value": true}],
+	}
+
+
+func test_when_takes_else_branch() -> void:
+	var r: EffectPipeline.Result = _apply([_when_low_stock()])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.flags.get("shelf_ok"), true)
+	assert_eq(r.state.stock_count("shelf", "itm_cigarettes"), 5)
+
+
+func test_when_sees_earlier_effects_in_the_list() -> void:
+	# Selling 3 leaves 2 on the shelf, so the restock branch runs.
+	var r: EffectPipeline.Result = _apply([
+		{"op": "stock_add", "location": "shelf", "item": "itm_cigarettes", "qty": -3},
+		_when_low_stock(),
+	])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.stock_count("shelf", "itm_cigarettes"), 7)
+	assert_eq(r.state.stock_count("backroom", "itm_cigarettes"), 5)
+	assert_false(r.state.flags.has("shelf_ok"))
+
+
+func test_when_without_else_does_nothing_when_false() -> void:
+	var r: EffectPipeline.Result = _apply([{"op": "when", "if": false, "then": [{"op": "money_add", "account": "till", "amount": 5}]}])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.money["till"], 0)
+
+
+func test_when_with_broken_condition_rejects_everything() -> void:
+	var r: EffectPipeline.Result = _apply([
+		{"op": "money_add", "account": "till", "amount": 100},
+		{"op": "when", "if": {"if": "day", "cmp": ">="}, "then": []},
+	])
+	assert_false(r.ok)
+	assert_true(r.error.contains("condition"), r.error)
+	assert_eq(state.money["till"], 0, "original untouched")
+
+
+func test_when_branch_errors_name_the_step() -> void:
+	var r: EffectPipeline.Result = _apply([{"op": "when", "if": true, "then": [{"op": "money_add", "account": "till", "amount": -1}]}])
+	assert_false(r.ok, "negative till breaks the invariant")
+	var bad: EffectPipeline.Result = _apply([{"op": "when", "if": true, "then": [{"op": "teleport"}]}])
+	assert_true(bad.error.contains("then[0] (teleport)"), bad.error)

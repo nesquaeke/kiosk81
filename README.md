@@ -4,7 +4,7 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 
 - **Motor:** Godot 4.7.2 (standart sürüm, GDScript)
 - **Açmak için:** Godot'u başlat → Import → bu klasördeki `project.godot` dosyasını seç.
-- **Durum:** Çekirdek durum ve efekt hattı hazır (Yol Planı 1.4–1.6). Görsel deneme sahnesi var (1.6b); oynanış henüz yok.
+- **Durum:** Çekirdek durum, efekt hattı ve koşul dili hazır (Yol Planı 1.4–1.7). Görsel deneme sahnesi var (1.6b); oynanış henüz yok.
 
 ## Klasörler
 

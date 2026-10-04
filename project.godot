@@ -99,9 +99,9 @@ debug_panel={
 
 lofi_affine={
 "type": "float",
-"value": 0.4
+"value": 0.2
 }
 lofi_snap_grid={
 "type": "vec2",
-"value": Vector2(480, 270)
+"value": Vector2(960, 540)
 }

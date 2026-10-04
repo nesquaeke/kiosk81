@@ -73,8 +73,9 @@ func _add_autoloads() -> void:
 
 func _add_shader_globals() -> void:
 	# Lo-fi look (Gorsel Hedef, section 9); LoFiView changes them at runtime.
-	ProjectSettings.set_setting("shader_globals/lofi_affine", {"type": "float", "value": 0.4})
-	ProjectSettings.set_setting("shader_globals/lofi_snap_grid", {"type": "vec2", "value": Vector2(480, 270)})
+	# Start values match the default retro level (Hafif).
+	ProjectSettings.set_setting("shader_globals/lofi_affine", {"type": "float", "value": 0.2})
+	ProjectSettings.set_setting("shader_globals/lofi_snap_grid", {"type": "vec2", "value": Vector2(960, 540)})
 
 
 func _build_main_scene() -> void:
