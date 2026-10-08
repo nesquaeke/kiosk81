@@ -3,14 +3,27 @@ extends RefCounted
 ## The whole campaign in one object: the single source of truth.
 ## Holds plain data only (int, String, Array, Dictionary) so it can be
 ## copied, compared and saved as JSON. Money is stored in grosze
-## (1 zloty = 100 grosze) to avoid rounding errors.
+## (1 zloty = 100 grosze) to avoid rounding errors; dollars in cents.
 
 const SCHEMA_VERSION: int = 1
-const ACCOUNTS: PackedStringArray = ["till", "commission", "pocket"]
+## till: the kiosk's cash (goes to Ruch every evening) · commission: earned, paid on
+## Saturday · pocket: off-the-book cash · household: the family budget · usd: dollar
+## stash in CENTS (demo plan: money flow).
+const ACCOUNTS: PackedStringArray = ["till", "commission", "pocket", "household", "usd"]
 const STOCK_LOCATIONS: PackedStringArray = ["shelf", "backroom", "hidden"]
 const PHASES: PackedStringArray = ["morning", "shift", "closing", "evening", "night"]
 const RELATIONS: PackedStringArray = ["trust", "suspicion", "debt", "leverage", "affinity"]
 const DAY_START_MINUTE: int = 450  # 07:30
+## Meter -> [min, max, start]. Demo plan, "Taraflar ve aile" and "Risk".
+const METERS: Dictionary = {
+	"suspicion": [0, 100, 5],      # how closely the state watches Tadeusz (S)
+	"solidarity": [0, 100, 10],    # trust of the Solidarity network (D)
+	"cooperation": [0, 100, 0],    # cooperation with the state (K)
+	"family": [0, 100, 60],        # family bond (A)
+	"belief": [-100, 100, -10],    # -100 opposition ... +100 convinced socialist
+	"marek_lean": [-100, 100, 20], # -100 state ... +100 Solidarity; +20 is Marek's own view
+	"halina": [0, 100, 60],        # Halina's wellbeing in internment (H)
+}
 
 var day: int = 1
 var phase: String = "morning"
@@ -18,7 +31,9 @@ var minute_of_day: int = DAY_START_MINUTE
 var calendar_date: String = "1981-12-13"
 var rng_seed: int = 0
 ## Account name -> amount in grosze.
-var money: Dictionary[String, int] = {"till": 0, "commission": 0, "pocket": 0}
+var money: Dictionary[String, int] = {"till": 0, "commission": 0, "pocket": 0, "household": 0, "usd": 0}
+## Meter -> value, always inside its METERS range.
+var meters: Dictionary[String, int] = CampaignState.default_meters()
 ## Location -> {item_id: count}.
 var stock: Dictionary[String, Dictionary] = {"shelf": {}, "backroom": {}, "hidden": {}}
 ## Entries written in the kiosk register book.
@@ -34,6 +49,13 @@ var decision_log: Array[Dictionary] = []
 func stock_count(location: String, item_id: String) -> int:
 	var items: Dictionary = stock.get(location, {})
 	return int(items.get(item_id, 0))
+
+
+static func default_meters() -> Dictionary[String, int]:
+	var out: Dictionary[String, int] = {}
+	for meter: String in METERS:
+		out[meter] = int((METERS[meter] as Array)[2])
+	return out
 
 
 ## Returns the character entry, creating a neutral one if needed.
@@ -57,6 +79,7 @@ func to_dict() -> Dictionary:
 		"money": money.duplicate(true),
 		"stock": stock.duplicate(true),
 		"register": register.duplicate(true),
+		"meters": meters.duplicate(true),
 		"characters": characters.duplicate(true),
 		"flags": flags.duplicate(true),
 		"decision_log": decision_log.duplicate(true),
@@ -76,6 +99,9 @@ static func from_dict(source: Dictionary) -> CampaignState:
 	var money_in: Dictionary = data.get("money", {})
 	for account: String in money_in:
 		s.money[account] = int(money_in[account])
+	var meters_in: Dictionary = data.get("meters", {})
+	for meter: String in meters_in:
+		s.meters[meter] = int(meters_in[meter])
 	var stock_in: Dictionary = data.get("stock", {})
 	for location: String in stock_in:
 		s.stock[location] = (stock_in[location] as Dictionary).duplicate(true)

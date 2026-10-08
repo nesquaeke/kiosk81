@@ -23,6 +23,7 @@ const OP_FIELDS: Dictionary = {
 	"memory_add": {"character": TYPE_STRING, "memory": TYPE_DICTIONARY},
 	"decision_log": {"entry": TYPE_DICTIONARY},
 	"day_advance": {},  # next morning: day + 1, date + 1, 07:30, phase "morning"
+	"meter_add": {"meter": TYPE_STRING, "amount": TYPE_INT},  # clamped to the meter's range
 	"when": {"if": TYPE_NIL, "then": TYPE_ARRAY},
 }
 const OPTIONAL_FIELDS: Dictionary = {"when": ["else"]}
@@ -68,6 +69,12 @@ static func check_invariants(s: CampaignState) -> String:
 		for item_id: String in items:
 			if int(items[item_id]) < 0:
 				return "stock %s/%s is negative" % [location, item_id]
+	for meter: String in s.meters:
+		if not CampaignState.METERS.has(meter):
+			return "unknown meter '%s'" % meter
+		var bounds: Array = CampaignState.METERS[meter]
+		if s.meters[meter] < int(bounds[0]) or s.meters[meter] > int(bounds[1]):
+			return "meter '%s' out of range (%d)" % [meter, s.meters[meter]]
 	if not s.phase in CampaignState.PHASES:
 		return "unknown phase '%s'" % s.phase
 	if s.minute_of_day < 0 or s.minute_of_day >= 24 * 60:
@@ -133,6 +140,15 @@ static func _apply_one(s: CampaignState, effect: Dictionary) -> String:
 			if typeof(current) != TYPE_INT:
 				return "flag '%s' is not a counter" % effect["key"]
 			s.flags[effect["key"]] = int(current) + int(effect["amount"])
+		"meter_add":
+			var need: String = _require(effect, OP_FIELDS[op])
+			if need != "":
+				return need
+			var meter: String = effect["meter"]
+			if not CampaignState.METERS.has(meter):
+				return "unknown meter '%s'" % meter
+			var bounds: Array = CampaignState.METERS[meter]
+			s.meters[meter] = clampi(int(s.meters.get(meter, bounds[2])) + int(effect["amount"]), bounds[0], bounds[1])
 		"day_advance":
 			s.day += 1
 			s.calendar_date = next_date(s.calendar_date)
@@ -296,4 +312,7 @@ static func _check_values(op: String, effect: Dictionary) -> String:
 		"relation_add":
 			if not effect["dimension"] in CampaignState.RELATIONS:
 				return "unknown relation '%s'" % effect["dimension"]
+		"meter_add":
+			if not CampaignState.METERS.has(effect["meter"]):
+				return "unknown meter '%s'" % effect["meter"]
 	return ""

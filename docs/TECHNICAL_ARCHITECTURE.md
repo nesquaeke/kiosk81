@@ -10,10 +10,10 @@ Oyunun bütün durumu tek bir veri nesnesindedir (`CampaignState`). İçerik JSO
 
 | Katman | Nerede | Görevi | Neyi bilir |
 | --- | --- | --- | --- |
-| Veri | `game/core/campaign_state.gd` | Gün, saat, para (grosz), stok, defter, karakterler, bayraklar, karar günlüğü | Hiçbir sahneyi |
+| Veri | `game/core/campaign_state.gd` | Gün, saat, para (grosz; kasa, prim, cep, ev, dolar), göstergeler (şüphe, taraflar, aile), stok, defter, karakterler, bayraklar, karar günlüğü | Hiçbir sahneyi |
 | Kurallar | `game/core/effect_pipeline.gd`, `conditions.gd` | Efektleri kopya üzerinde uygular, değişmezleri denetler; koşulları okur | Yalnız veriyi |
 | İçerik | `game/content/` + `content/`, `dialogue/` | JSON kayıtlarını yükler ve doğrular | Şemaları, kuralları |
-| Sistemler | `game/dialogue/`, ileride `game/systems/` | Diyalog, belge, ticaret, olaylar: efekt üretir, durumu kendisi değiştirmez | Veri, kurallar, içerik |
+| Sistemler | `game/dialogue/`, `game/systems/` | Diyalog, belge, vardiya, para (`Economy`), risk (`Risk`), görünmeyen gün (`DaySimulator`): efekt üretir, durumu kendisi değiştirmez | Veri, kurallar, içerik |
 | Sahneler | `scenes/` | Kiosk, oyuncu, müşteri, arayüz; girdiyi sisteme iletir, sonucu gösterir | Hepsini; durumu yalnız `Game` üzerinden değiştirir |
 
 ## Autoload sırası
@@ -28,6 +28,15 @@ Sonradakiler öncekilere güvenebilir. `Settings` dil tablolarını ilk o yükle
 2. İlgili sistem bir **efekt listesi** üretir. Örnek: stoktan 1 düş, kasaya 1,00 zł ekle, deftere yaz, saati 2 dakika ilerlet.
 3. `Game.apply_effects(liste)` listeyi durumun kopyasına uygular. Bir adım bile hata verirse ya da sonunda bir kural bozulursa hiçbir şey değişmez ve `effects_rejected` sinyali gelir.
 4. Başarılıysa yeni durum yerleşir ve `state_changed` sinyali gelir. Sahneler kendini bu sinyalle günceller.
+
+## Oyunun matematiği
+
+- Bütün ayar sayıları tek dosyadadır: `content/balance/balance.json` (`Balance` okur ve doğrular). Para grosz, dolar sent, olasılıklar binde ya da yüzde olarak tutulur.
+- `Economy`: teslimat, rutin satış, tezgâh altı satış, kapanış (prim, iade, kasanın Ruch'a teslimi), cumartesi hesaplaşması (manko), ev gideri, dolar.
+- `Risk`: şüpheye göre sabah denetimi, kupon farkı, ceza, zula, ihlal ve ruhsat kaybı.
+- `Dice`: şans her zaman kampanya tohumu + gün + amaçtan üretilir; aynı kayıt aynı sonucu verir.
+- `DaySimulator`: günün görünmeyen yarısı (sabah, kapanış, akşam, gece). Deneme günü sahnesi görünen müşterileri arada oynatır; `tools/simulate.gd` aynı kuralları ekransız oynatıp `docs/BALANCE_REPORT.md` raporunu yazar:
+  `godot --headless --path . --script res://tools/simulate.gd -- --runs=200 --days=28`
 
 ## Kayıt
 

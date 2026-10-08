@@ -41,6 +41,22 @@
 			"price": 0,
 			"legal": false,
 			"notes": "Underground weekly; sold or passed on hidden. First issue date to be checked (TARIH ?)."
+		},
+		{
+			"id": "itm_bus_ticket",
+			"name": "Bus and tram ticket",
+			"category": "other",
+			"price": 200,
+			"legal": true,
+			"notes": "City transport tickets were sold at kiosks. Price is a placeholder (GECICI)."
+		},
+		{
+			"id": "itm_sundries",
+			"name": "Sundries",
+			"category": "household",
+			"price": 1500,
+			"legal": true,
+			"notes": "Envelopes, soap, shoelaces, razor blades... one line for the routine trade. Average price is a placeholder (GECICI)."
 		}
 	]
 }

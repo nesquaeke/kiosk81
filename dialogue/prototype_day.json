@@ -81,6 +81,16 @@
 									"amount": 1
 								},
 								{
+									"op": "flag_add",
+									"key": "unregistered_value",
+									"amount": 100
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 2
+								},
+								{
 									"op": "clock_advance",
 									"minutes": 2
 								}
@@ -196,6 +206,16 @@
 											"op": "flag_add",
 											"key": "bad_cards_accepted",
 											"amount": 1
+										},
+										{
+											"op": "flag_add",
+											"key": "coupon_shortfall",
+											"amount": 1
+										},
+										{
+											"op": "meter_add",
+											"meter": "suspicion",
+											"amount": 3
 										}
 									]
 								}
@@ -229,6 +249,16 @@
 									"amount": 1
 								},
 								{
+									"op": "flag_add",
+									"key": "unregistered_value",
+									"amount": 1800
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 2
+								},
+								{
 									"op": "clock_advance",
 									"minutes": 2
 								},
@@ -245,6 +275,16 @@
 											"op": "flag_add",
 											"key": "bad_cards_accepted",
 											"amount": 1
+										},
+										{
+											"op": "flag_add",
+											"key": "coupon_shortfall",
+											"amount": 1
+										},
+										{
+											"op": "meter_add",
+											"meter": "suspicion",
+											"amount": 3
 										}
 									]
 								}
@@ -305,6 +345,16 @@
 											"op": "flag_add",
 											"key": "bad_cards_accepted",
 											"amount": 1
+										},
+										{
+											"op": "flag_add",
+											"key": "coupon_shortfall",
+											"amount": 1
+										},
+										{
+											"op": "meter_add",
+											"meter": "suspicion",
+											"amount": 3
 										}
 									]
 								},
@@ -318,6 +368,11 @@
 									"entry": {
 										"id": "took_bribe_for_card"
 									}
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 2
 								}
 							],
 							"goto": "sold"
@@ -470,6 +525,16 @@
 											"op": "flag_add",
 											"key": "bad_cards_accepted",
 											"amount": 1
+										},
+										{
+											"op": "flag_add",
+											"key": "coupon_shortfall",
+											"amount": 1
+										},
+										{
+											"op": "meter_add",
+											"meter": "suspicion",
+											"amount": 3
 										}
 									]
 								}
@@ -554,6 +619,16 @@
 									}
 								},
 								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 6
+								},
+								{
+									"op": "meter_add",
+									"meter": "solidarity",
+									"amount": 5
+								},
+								{
 									"op": "clock_advance",
 									"minutes": 2
 								}
@@ -571,6 +646,11 @@
 									"op": "flag_set",
 									"key": "warned_neighbour",
 									"value": true
+								},
+								{
+									"op": "meter_add",
+									"meter": "solidarity",
+									"amount": 2
 								}
 							],
 							"goto": "warned"
@@ -686,6 +766,16 @@
 									"amount": 1
 								},
 								{
+									"op": "flag_add",
+									"key": "unregistered_value",
+									"amount": 100
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 2
+								},
+								{
 									"op": "clock_advance",
 									"minutes": 2
 								}
@@ -767,6 +857,16 @@
 									"op": "flag_add",
 									"key": "unregistered_sales",
 									"amount": 1
+								},
+								{
+									"op": "flag_add",
+									"key": "unregistered_value",
+									"amount": 100
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": 2
 								},
 								{
 									"op": "clock_advance",
@@ -855,6 +955,21 @@
 									"value": true
 								},
 								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": -5
+								},
+								{
+									"op": "meter_add",
+									"meter": "solidarity",
+									"amount": -15
+								},
+								{
+									"op": "meter_add",
+									"meter": "cooperation",
+									"amount": 15
+								},
+								{
 									"op": "clock_advance",
 									"minutes": 3
 								}
@@ -883,10 +998,25 @@
 									"amount": 1
 								},
 								{
+									"op": "flag_add",
+									"key": "unregistered_value",
+									"amount": 1800
+								},
+								{
 									"op": "decision_log",
 									"entry": {
 										"id": "gave_cigarettes_to_militia"
 									}
+								},
+								{
+									"op": "meter_add",
+									"meter": "suspicion",
+									"amount": -2
+								},
+								{
+									"op": "meter_add",
+									"meter": "cooperation",
+									"amount": 5
 								},
 								{
 									"op": "clock_advance",
@@ -958,6 +1088,16 @@
 									"op": "flag_add",
 									"key": "pressure_on_marek",
 									"amount": 1
+								},
+								{
+									"op": "meter_add",
+									"meter": "family",
+									"amount": -2
+								},
+								{
+									"op": "meter_add",
+									"meter": "marek_lean",
+									"amount": 10
 								}
 							],
 							"goto": "pressed"
@@ -969,6 +1109,11 @@
 									"op": "relation_add",
 									"character": "chr_marek",
 									"dimension": "trust",
+									"amount": 1
+								},
+								{
+									"op": "meter_add",
+									"meter": "family",
 									"amount": 1
 								}
 							],
@@ -986,6 +1131,11 @@
 									"entry": {
 										"id": "kept_informing_from_marek"
 									}
+								},
+								{
+									"op": "meter_add",
+									"meter": "family",
+									"amount": -1
 								}
 							],
 							"goto": "silent"

@@ -1,0 +1,88 @@
+{
+	"type": "balance",
+	"records": [
+		{
+			"id": "bal_default",
+			"notes": "Demo economy and risk numbers. Placeholders (GECICI) until tuned with tools/simulate.gd; see Demo Yol Haritasi.",
+			"economy": {
+				"till_float": 2000,
+				"commission_pct": 10,
+				"household_cost_per_day": 30000,
+				"usd_rate": 40000,
+				"payday_weekday": 6,
+				"work_weekdays": [
+					1,
+					2,
+					3,
+					4,
+					5,
+					6
+				],
+				"demand_jitter_pct": 20,
+				"saturday_demand_pct": 70,
+				"routine": [
+					{
+						"item": "itm_trybuna_ludu",
+						"per_day": 140
+					},
+					{
+						"item": "itm_zolnierz_wolnosci",
+						"per_day": 60
+					},
+					{
+						"item": "itm_cigarettes_popularne",
+						"per_day": 70
+					},
+					{
+						"item": "itm_matches",
+						"per_day": 120
+					},
+					{
+						"item": "itm_bus_ticket",
+						"per_day": 400
+					},
+					{
+						"item": "itm_sundries",
+						"per_day": 60
+					}
+				],
+				"daily_delivery": {
+					"itm_trybuna_ludu": 150,
+					"itm_zolnierz_wolnosci": 70
+				},
+				"weekly_delivery": {
+					"itm_cigarettes_popularne": 480,
+					"itm_matches": 720,
+					"itm_bus_ticket": 2400,
+					"itm_sundries": 360
+				},
+				"weekly_delivery_weekday": 1,
+				"shortage_max_pct": 15,
+				"under_counter_item": "itm_cigarettes_popularne",
+				"under_counter_premium_pct": 50,
+				"under_counter_demand": 30
+			},
+			"risk": {
+				"inspection_base_permille": 15,
+				"inspection_per_point_permille": 5,
+				"inspection_max_permille": 500,
+				"daily_decay": 1,
+				"coupon_tolerance": 10,
+				"coupon_detect_base_pct": 30,
+				"coupon_detect_per_10": 3,
+				"strike_min_coupons": 50,
+				"fine_per_coupon": 1800,
+				"fine_suspicion": 6,
+				"clean_relief": 5,
+				"strikes_to_lose_license": 3,
+				"under_counter_suspicion_per_10": 1,
+				"settlement_suspicion_per_10": 1,
+				"manko_suspicion": 3,
+				"usd_buy_suspicion": 3,
+				"hidden_find_pct": 30,
+				"hidden_found_suspicion": 25,
+				"family_shortfall_penalty": 3
+			}
+		}
+	]
+}

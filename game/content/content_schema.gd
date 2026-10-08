@@ -53,6 +53,15 @@ const TYPES: Dictionary = {
 			"notes": "string?",
 		},
 	},
+	"balance": {
+		"prefix": "bal_",
+		"fields": {
+			"id": "id",
+			"economy": "dict",
+			"risk": "dict",
+			"notes": "string?",
+		},
+	},
 	"dialogue": {
 		"prefix": "dlg_",
 		"fields": {
@@ -95,6 +104,8 @@ static func check_record(type_name: String, record: Variant, path: String, refs:
 	for field: Variant in rec:
 		if not fields.has(str(field)) and not fields.has(str(field) + "?"):
 			errors.append("%s: unknown field '%s'" % [path, str(field)])
+	if type_name == "balance":
+		errors.append_array(Balance.validate(rec, path))
 	return errors
 
 
@@ -137,6 +148,9 @@ static func _check_field(kind: String, value: Variant, path: String, spec: Dicti
 			errors.append_array(_check_speakers(value, path, refs))
 		"nodes":
 			errors.append_array(_check_nodes(value, path, rec, refs))
+		"dict":
+			if typeof(value) != TYPE_DICTIONARY:
+				errors.append("%s: must be an object" % path)
 		"state":
 			errors.append_array(_check_state(value, path))
 		"visits":

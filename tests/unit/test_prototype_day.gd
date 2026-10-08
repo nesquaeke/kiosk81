@@ -134,3 +134,54 @@ func test_day_ends_early_when_time_runs_out() -> void:
 	state.minute_of_day = ShiftPlan.CLOSING_MINUTE - 5
 	var plan: ShiftPlan = ShiftPlan.new(scenario)
 	assert_true(plan.next_visit(state).is_empty())
+
+
+func test_window_choices_move_the_meters() -> void:
+	_play_day([])  # first choice everywhere
+	# +3 for the January card, +6 for the underground paper given to Mrs. Kowalczyk
+	assert_eq(state.meters["suspicion"], 5 + 3 + 6)
+	assert_eq(state.meters["solidarity"], 10 + 5)
+	assert_eq(state.flags["coupon_shortfall"], 1, "the bad card's coupon does not count")
+	# "Where are you going?" pushes Marek off the street: dM = -y * b * 10 = +10
+	assert_eq(state.meters["marek_lean"], 30)
+	assert_eq(state.meters["family"], 58)
+
+
+func test_off_book_sales_come_back_as_manko() -> void:
+	_play_day(["dlg_proto_trybuna.ask.c1", "dlg_proto_matches.ask.c1"])
+	assert_eq(state.flags["unregistered_value"], 200, "Ruch will miss one paper and two boxes of matches")
+	assert_eq(state.meters["suspicion"], 5 + 3 + 6 + 2 + 2)
+
+
+func test_informing_trades_trust_for_safety() -> void:
+	_play_day(["dlg_proto_neighbour.ask.c1", "dlg_proto_militia.ask.c1"])
+	assert_eq(state.meters["solidarity"], 0, "10 - 15, clamped")
+	assert_eq(state.meters["cooperation"], 15)
+	assert_eq(state.meters["suspicion"], 5 + 3 - 5)
+
+
+## The unseen half of the day around the visible one, as the prototype scene runs it.
+func test_background_day_closes_the_book() -> void:
+	var balance: Balance = Balance.from_record(db.get_record("balance", Balance.RECORD_ID))
+	var sim: DaySimulator = DaySimulator.new(state, balance, db.all_of("item"))
+	var report: Dictionary = sim.morning()
+	assert_false(report["inspection"], "never on the first day")
+	assert_true(int(report["delivered"].get("itm_cigarettes_popularne", 0)) > 0, "15 Feb 1982 is a Monday: the week's goods arrive")
+	state = sim.state
+	_play_day([])
+	var window: Dictionary = ShiftPlan.ledger(state)
+	sim.state = state
+	report = sim.evening(sim.close(report))
+	assert_true(sim.errors.is_empty(), "%s" % [sim.errors])
+	var day: Dictionary = DaySimulator.day_summary(report, sim.state, 5)
+	assert_true(day["routine_units"] > 0)
+	assert_eq(sim.state.money["till"], balance.e("till_float"), "the till goes to Ruch, the float stays")
+	var booked: int = int(window["registered_total"]) + int(day["routine_revenue"])
+	assert_eq(day["commission_today"], booked * balance.e("commission_pct") / 100)
+	assert_eq(day["household"], 2000000 - balance.e("household_cost_per_day"))
+	assert_eq(sim.state.stock_count("shelf", "itm_trybuna_ludu") + sim.state.stock_count("backroom", "itm_trybuna_ludu"), 0, "unsold papers go back")
+	assert_eq(day["suspicion_to"], 14)
+	sim.night({})
+	assert_eq(sim.state.day, 2)
+	assert_eq(sim.state.calendar_date, "1982-02-16")
+	assert_eq(sim.state.meters["suspicion"], 13, "the night takes one point")

@@ -28,7 +28,8 @@ Koşullar durumu yalnızca **okur**. Durumu yalnızca efektler değiştirir; efe
 | --- | --- | --- |
 | `flag` | `key`; isteğe bağlı `cmp` + `value` | Hikâye bayrağı. `cmp` yoksa: bayrak var ve "boş değil" mi (false, 0, "" ve yokluk yanlış sayılır) |
 | `relation` | `character`, `dimension`, `cmp`, `value` (tam sayı) | İlişki: `trust`, `suspicion`, `debt`, `leverage`, `affinity` |
-| `money` | `account`, `cmp`, `value` (grosz) | Hesap: `till` (kasa), `commission`, `pocket` (cep). 1 zł = 100 grosz |
+| `money` | `account`, `cmp`, `value` (grosz) | Hesap: `till` (kasa), `commission` (prim), `pocket` (cep), `household` (ev bütçesi), `usd` (dolar, sent). 1 zł = 100 grosz |
+| `meter` | `meter`, `cmp`, `value` (tam sayı) | Gösterge: `suspicion` (şüphe, 0–100), `solidarity`, `cooperation`, `family`, `halina` (0–100), `belief`, `marek_lean` (−100…100) |
 | `stock` | `location`, `item`, `cmp`, `value` | Yer: `shelf`, `backroom`, `hidden` ya da hepsinin toplamı için `total` |
 | `day` | `cmp`, `value` | Kampanyanın kaçıncı günü |
 | `date` | `cmp`, `value` ("1982-03-15") | Takvim tarihi |
@@ -65,6 +66,9 @@ Her efekt bir `op` alanı taşır. Bir listedeki efektler sırayla, durumun bir 
 | `stock_move` | `from`, `to`, `item`, `qty` (> 0) | Stoku bir yerden diğerine taşır; yeterli yoksa hata |
 | `register_append` | `entry` (nesne) | Satış defterine satır yazar; gün ve dakika eklenir |
 | `flag_set` | `key`, `value` | Bayrak koyar |
+| `flag_add` | `key`, `amount` (tam sayı) | Sayaç bayrağına ekler; olmayan bayrak 0 sayılır, sayı olmayan bayrakta hata |
+| `meter_add` | `meter`, `amount` | Göstergeyi değiştirir; değer göstergenin aralığında tutulur (kırpılır) |
+| `day_advance` | (alan yok) | Ertesi sabah: gün + 1, tarih + 1, saat 07:30, evre `morning` |
 | `clock_advance` | `minutes` (> 0) | Saati ilerletir |
 | `phase_set` | `phase` | Evreyi değiştirir |
 | `relation_add` | `character`, `dimension`, `amount` | İlişkiyi değiştirir |

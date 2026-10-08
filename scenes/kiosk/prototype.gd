@@ -2,7 +2,9 @@ extends Node
 ## Playable prototype: one working day at the window (roadmap Faz 2, first slice).
 ## Not canon: invented customers, a simplified ration card, placeholder prices.
 ## Every change to the campaign goes through Game.apply_effects; this script only
-## plays the visits, shows the panels and turns clicks into effects.
+## plays the visits, shows the panels and turns clicks into effects. The unseen
+## half of the day (deliveries, everyday sales, the till to Ruch, family costs)
+## is DaySimulator's, the same rules tools/simulate.gd measures.
 ## Controls: mouse to the screen edges = look · click cartons = refill shelves ·
 ## right click = inspect the document · hold Q = watch · F2 = language · F3 = dev panel.
 ## Cloud check: godot --path . res://scenes/kiosk/prototype.tscn -- --autoplay --fast --capture=<dir>
@@ -33,6 +35,9 @@ const EDGE_UP: float = -0.86
 
 var scenario: Dictionary = {}
 var plan: ShiftPlan
+var background: DaySimulator
+var morning_report: Dictionary = {}
+var suspicion_at_opening: int = 0
 var runner: DialogueRunner
 var visit: Dictionary = {}
 var visit_index: int = -1
@@ -78,6 +83,13 @@ func _ready() -> void:
 	day_end.quit_requested.connect(func() -> void: get_tree().quit())
 	Game.new_campaign(1981, scenario["start"])
 	plan = ShiftPlan.new(scenario)
+	var balance_record: Dictionary = ContentDB.get_record("balance", Balance.RECORD_ID)
+	if balance_record.is_empty():
+		push_error("[prototype] balance %s missing; content errors: %s" % [Balance.RECORD_ID, ContentDB.errors])
+		return
+	background = DaySimulator.new(Game.state, Balance.from_record(balance_record), ContentDB.all_of("item"))
+	suspicion_at_opening = int(Game.state.meters.get("suspicion", 0))
+	morning_report = _background(func() -> Dictionary: return background.morning())
 	_apply(plan.opening_effects(Game.state))
 	decree.refresh(Game.state.calendar_date)
 	hints.text = Loc.ui("ui.hint.controls")
@@ -162,18 +174,22 @@ func _speaker_names() -> Dictionary:
 
 func _close_day() -> void:
 	_apply(plan.closing_effects(Game.state))
+	var window: Dictionary = ShiftPlan.ledger(Game.state)
+	var report: Dictionary = _background(func() -> Dictionary: return background.evening(background.close(morning_report.duplicate())))
+	var summary: Dictionary = DaySimulator.day_summary(report, Game.state, suspicion_at_opening)
 	var today: PackedStringArray = []
 	for entry: Dictionary in Game.state.decision_log:
 		if int(entry.get("day", 0)) == Game.state.day:
 			today.append(str(entry.get("id", "")))
-	day_end.show_ledger(ShiftPlan.ledger(Game.state), today, Game.state.calendar_date)
+	day_end.show_ledger(window, summary, today, Game.state.calendar_date)
+	print("[prototype] day closed: %s" % summary)
 	_capture("90_day_end", 2)
 	if _autoplay:
 		get_tree().create_timer(0.5).timeout.connect(_on_save)
 
 
 func _on_save() -> void:
-	_apply([{"op": "phase_set", "phase": "evening"}, {"op": "day_advance"}])
+	_background(func() -> Dictionary: return background.night({}))
 	var err: Error = SaveManager.save_campaign(Game.state)
 	var message: String = Loc.ui("ui.ledger.saved") % DecreeNote.format_date(Game.state.calendar_date) if err == OK else "%s (%s)" % [Loc.ui("ui.ledger.save_failed"), error_string(err)]
 	day_end.show_saved(message)
@@ -307,6 +323,18 @@ func _on_language_changed(_language: String) -> void:
 	if runner != null and step != null and dialogue.visible and not step.finished:
 		step = runner.refresh(Game.state)
 		dialogue.show_step(step, _speaker_names())
+
+
+## Runs one step of the unseen day on the current state and hands the result back
+## to Game (one state, one owner). Errors are reported, never hidden.
+func _background(job: Callable) -> Dictionary:
+	background.state = Game.state
+	var report: Dictionary = job.call()
+	for error: String in background.errors:
+		push_error("[prototype] background day: " + error)
+	background.errors.clear()
+	Game.load_state(background.state)
+	return report
 
 
 func _apply(effects: Array[Dictionary]) -> bool:

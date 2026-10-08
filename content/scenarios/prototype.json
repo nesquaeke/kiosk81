@@ -13,7 +13,9 @@
 				"money": {
 					"till": 2000,
 					"commission": 0,
-					"pocket": 0
+					"pocket": 0,
+					"household": 2000000,
+					"usd": 0
 				},
 				"stock": {
 					"shelf": {

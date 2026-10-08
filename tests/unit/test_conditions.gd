@@ -235,3 +235,10 @@ func test_numbers_compare_by_value() -> void:
 func test_is_true_shortcut() -> void:
 	assert_true(Conditions.is_true(s, _rel("trust", ">=", 3)))
 	assert_false(Conditions.is_true(s, _rel("trust", ">=", 5)))
+
+
+func test_meter_condition() -> void:
+	s.meters["suspicion"] = 40
+	_yes({"if": "meter", "meter": "suspicion", "cmp": ">=", "value": 40})
+	_no({"if": "meter", "meter": "marek_lean", "cmp": "<", "value": 0})
+	_invalid({"if": "meter", "meter": "fear", "cmp": ">", "value": 1}, "unknown meter 'fear'")

@@ -224,3 +224,22 @@ func test_day_advance_rolls_the_calendar() -> void:
 	assert_eq(r.state.minute_of_day, CampaignState.DAY_START_MINUTE)
 	assert_eq(r.state.phase, "morning")
 	assert_eq(EffectPipeline.next_date("1984-02-28"), "1984-02-29", "1984 is a leap year")
+
+
+# ---------------------------------------------------------------- meters (demo step 1-2)
+
+func test_meter_add_is_clamped() -> void:
+	var r: EffectPipeline.Result = _apply([
+		{"op": "meter_add", "meter": "suspicion", "amount": 500},
+		{"op": "meter_add", "meter": "marek_lean", "amount": -500},
+	])
+	assert_true(r.ok, r.error)
+	assert_eq(r.state.meters["suspicion"], 100)
+	assert_eq(r.state.meters["marek_lean"], -100)
+	assert_false(_apply([{"op": "meter_add", "meter": "fear", "amount": 1}]).ok, "unknown meter")
+
+
+func test_meters_start_at_their_defaults() -> void:
+	assert_eq(state.meters["suspicion"], 5)
+	assert_eq(state.meters["marek_lean"], 20, "Marek's own view")
+	assert_eq(state.meters["halina"], 60)

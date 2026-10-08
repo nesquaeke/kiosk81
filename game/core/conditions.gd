@@ -18,6 +18,7 @@ const LEAVES: Dictionary = {
 	"flag": {"key": "string", "cmp?": "cmp", "value?": "any"},
 	"relation": {"character": "string", "dimension": "relation", "cmp": "cmp", "value": "int"},
 	"money": {"account": "account", "cmp": "cmp", "value": "int"},
+	"meter": {"meter": "meter", "cmp": "cmp", "value": "int"},
 	"stock": {"location": "stock_location", "item": "string", "cmp": "cmp", "value": "int"},
 	"day": {"cmp": "cmp", "value": "int"},
 	"date": {"cmp": "cmp", "value": "date"},
@@ -145,6 +146,9 @@ static func _check_value(expected: String, field: String, value: Variant) -> Str
 		"relation":
 			if typeof(value) != TYPE_STRING or not str(value) in CampaignState.RELATIONS:
 				return "unknown relation '%s'" % str(value)
+		"meter":
+			if typeof(value) != TYPE_STRING or not CampaignState.METERS.has(str(value)):
+				return "unknown meter '%s'" % str(value)
 		"account":
 			if typeof(value) != TYPE_STRING or not str(value) in CampaignState.ACCOUNTS:
 				return "unknown account '%s'" % str(value)
@@ -209,6 +213,8 @@ static func _eval_leaf(s: CampaignState, c: Dictionary) -> bool:
 			return compare(int(relations.get(c["dimension"], 0)), c["cmp"], c["value"])
 		"money":
 			return compare(int(s.money.get(c["account"], 0)), c["cmp"], c["value"])
+		"meter":
+			return compare(int(s.meters.get(c["meter"], 0)), c["cmp"], c["value"])
 		"stock":
 			var count: int = 0
 			if c["location"] == STOCK_TOTAL:
