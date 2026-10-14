@@ -23,7 +23,7 @@ func _init(records: Array) -> void:
 
 func opening() -> Dictionary:
 	return {"calendar_date": "1982-02-15", "phase": "shift", "money": {"till": 2000}, "flags": {
-		KEY: {"index": 0, "location": "intake", "stamp": "", "marks": [], "cuts": [], "parcel": {}, "done": false,
+		KEY: {"index": 0, "location": "intake", "placement": "customer", "stamp": "", "marks": [], "cuts": [], "parcel": {}, "done": false,
 			"official": {"meat": 750, "sugar": 3000, "soap": 4}, "hidden": {"meat": 500, "sugar": 0, "soap": 0}, "results": []}}}
 
 
@@ -47,13 +47,26 @@ func take(state: CampaignState) -> Dictionary:
 	if work.get("location") != "intake":
 		return _reject("Kart zaten masada.")
 	work["location"] = "desk"
+	work["placement"] = "hand"
 	return _commit(work)
 
 
-func stamp(state: CampaignState, kind: String, position: Vector2) -> Dictionary:
+func move_card(state: CampaignState, placement: String) -> Dictionary:
 	var work: Dictionary = desk(state).duplicate(true)
+	if not _active(work) or not placement in ["hand", "table"]:
+		return _reject("Aktif kart elde veya masada olmalı.")
+	work["placement"] = placement
+	return _commit(work)
+
+
+func stamp(state: CampaignState, kind: String, position: Vector2, physical: bool = false) -> Dictionary:
+	var work: Dictionary = desk(state).duplicate(true)
+	if physical and work.get("placement") != "table":
+		return _reject("Damga basmak için kartı masaya bırak.")
 	if not _active(work) or not kind in ["approve", "reject", "seize"]:
 		return _reject("Kartı masaya al ve bir karar damgası seç.")
+	if (work.get("parcel", {}) as Dictionary).get("delivered", false) and kind != "approve":
+		return _reject("Ürün teslim edildi; satışı kartı iade ederek tamamla.")
 	if position.x < 460 or position.x > 620 or position.y < 135 or position.y > 225:
 		return _reject("Damgayı ön yüzdeki KARAR alanına bas.")
 	work["stamp"] = kind
@@ -61,22 +74,51 @@ func stamp(state: CampaignState, kind: String, position: Vector2) -> Dictionary:
 	return _commit(work)
 
 
-func prepare(state: CampaignState, source: String) -> Dictionary:
+func prepare(state: CampaignState, source: String, item: String = "") -> Dictionary:
 	var work: Dictionary = desk(state).duplicate(true)
 	if not _active(work) or work.get("stamp") != "approve":
 		return _reject("Ürün hazırlamak için SATIŞ damgasını bas.")
 	if not source in ["official", "hidden"]:
 		return _reject("Geçersiz tedarik kaynağı.")
 	var request: Dictionary = current(state)["request"]
+	if item != "" and item != request["item"]:
+		return _reject("Müşteri bu ürünü istemedi.")
+	if (work.get("parcel", {}) as Dictionary).get("delivered", false):
+		return _reject("Ürün zaten teslim edildi; kart işlemini tamamla.")
 	var stock: Dictionary = work[source]
 	if int(stock.get(request["item"], 0)) < int(request["amount"]):
 		return _reject("Bu kaynakta istenen miktar yok; kuponu kesme.")
-	work["parcel"] = {"item": request["item"], "amount": request["amount"], "source": source}
+	work["parcel"] = {"item": request["item"], "amount": request["amount"], "source": source, "placement": "shelf", "delivered": false}
 	return _commit(work)
 
 
-func cut(state: CampaignState, item: String) -> Dictionary:
+func move_parcel(state: CampaignState, placement: String) -> Dictionary:
 	var work: Dictionary = desk(state).duplicate(true)
+	var parcel: Dictionary = work.get("parcel", {})
+	if not _active(work) or parcel.is_empty() or parcel.get("delivered", false) or not placement in ["hand", "table"]:
+		return _reject("Taşınabilecek hazırlanmış ürün yok.")
+	parcel["placement"] = placement
+	return _commit(work)
+
+
+func deliver_parcel(state: CampaignState) -> Dictionary:
+	var work: Dictionary = desk(state).duplicate(true)
+	var parcel: Dictionary = work.get("parcel", {})
+	if not _active(work) or parcel.is_empty() or parcel.get("placement") != "hand" or parcel.get("delivered", false):
+		return _reject("Teslim edilecek ürün elinde olmalı.")
+	if work.get("stamp") != "approve" or not parcel["item"] in work["cuts"]:
+		return _reject("Önce satış damgası ve uygun kupon kesimi gerekli.")
+	if int(work[parcel["source"]].get(parcel["item"], 0)) < int(parcel["amount"]):
+		return _reject("Teslimat için stok yeterli değil.")
+	parcel["placement"] = "customer"
+	parcel["delivered"] = true
+	return _commit(work)
+
+
+func cut(state: CampaignState, item: String, physical: bool = false) -> Dictionary:
+	var work: Dictionary = desk(state).duplicate(true)
+	if physical and work.get("placement") != "table":
+		return _reject("Kesmek için kartı masaya bırak.")
 	if not _active(work) or work.get("stamp") != "approve":
 		return _reject("Kesmeden önce SATIŞ damgası gerekli.")
 	var parcel: Dictionary = work.get("parcel", {})
@@ -91,11 +133,15 @@ func cut(state: CampaignState, item: String) -> Dictionary:
 	return _commit(work)
 
 
-func finish(state: CampaignState, destination: String) -> Dictionary:
+func finish(state: CampaignState, destination: String, physical: bool = false) -> Dictionary:
 	var work: Dictionary = desk(state).duplicate(true)
 	if not _active(work):
 		return _reject("Aktif kart işlemi yok.")
+	if physical and work.get("placement") != "hand":
+		return _reject("Teslim edeceğin kart elinde olmalı.")
 	var kind: String = work.get("stamp", "")
+	if (work.get("parcel", {}) as Dictionary).get("delivered", false) and kind != "approve":
+		return _reject("Teslim edilen ürünün satışı tamamlanmalı.")
 	if kind == "" or not destination in ["return", "seize"]:
 		return _reject("Önce karar damgasını bas.")
 	if (destination == "seize") != (kind == "seize"):
@@ -114,6 +160,8 @@ func finish(state: CampaignState, destination: String) -> Dictionary:
 		var parcel: Dictionary = work.get("parcel", {})
 		if parcel.is_empty() or not request["item"] in work["cuts"]:
 			return _reject("Ürünü hazırla ve uygun kuponu tamamen kes.")
+		if physical and not parcel.get("delivered", false):
+			return _reject("Önce hazırlanan ürünü müşteriye uzat.")
 		source = parcel["source"]
 		var stock: Dictionary = work[source]
 		if int(stock.get(request["item"], 0)) < int(request["amount"]):
@@ -138,6 +186,7 @@ func finish(state: CampaignState, destination: String) -> Dictionary:
 	(work["results"] as Array).append(result)
 	work["done"] = true
 	work["location"] = destination
+	work["placement"] = "customer" if destination == "return" else "drawer"
 	work["parcel"] = {}
 	extra.append({"op": "decision_log", "entry": result})
 	extra.append({"op": "clock_advance", "minutes": 2})
@@ -150,6 +199,7 @@ func next(state: CampaignState) -> Dictionary:
 		return _reject("Önce mevcut müşteriyi tamamla.")
 	work["index"] = int(work["index"]) + 1
 	work["location"] = "intake"
+	work["placement"] = "customer"
 	work["stamp"] = ""
 	work["marks"] = []
 	work["cuts"] = []

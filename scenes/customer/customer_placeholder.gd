@@ -18,6 +18,7 @@ const OFFSTAGE_X: float = 2.6
 var stand_x: float = 0.0
 var time_scale: float = 1.0
 var _body: Node3D
+var _motion: Tween
 
 
 func _ready() -> void:
@@ -67,20 +68,30 @@ func rebuild() -> void:
 
 ## Walks in from the left and stops at the window.
 func arrive() -> void:
+	cancel_motion()
 	visible = true
 	position.x = stand_x - OFFSTAGE_X
 	var tween: Tween = create_tween()
+	_motion = tween
 	tween.tween_property(self, "position:x", stand_x, WALK_SECONDS * time_scale).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.finished.connect(func() -> void: arrived.emit())
 
 
 ## Walks off to the right.
 func leave() -> void:
+	cancel_motion()
 	var tween: Tween = create_tween()
+	_motion = tween
 	tween.tween_property(self, "position:x", stand_x + OFFSTAGE_X, WALK_SECONDS * time_scale).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tween.finished.connect(func() -> void:
 		visible = false
 		left.emit())
+
+
+func cancel_motion() -> void:
+	if _motion != null and _motion.is_valid():
+		_motion.kill()
+	_motion = null
 
 
 func _add_mesh(mesh: Mesh, pos: Vector3, scale_by: Vector3) -> void:

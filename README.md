@@ -4,7 +4,7 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 
 - **Motor:** Godot 4.7.2 (standart sürüm, GDScript)
 - **Açmak için:** Godot'u başlat → Import → bu klasördeki `project.godot` dosyasını seç.
-- **Durum:** **F5: Karne masası** — kart inceleme, damga, kupon kesme ve satış kararları. **Ürün tezgâhı** düğmesi kiosk simülatörünü, oradaki **Anlatı prototipi** düğmesi eski deneme gününü açar. Meslek kartları, miktarlar ve kurumlar bilerek kurmaca; fiyatlar geçici.
+- **Durum:** **F5: FPS karne sistemi** — yürüyerek cama gitme, müşteriden kart alma, elde/masada inceleme, fiziksel damga ve makas, ürün ve kart teslimi. Kurmaca kart kuralları, basit 3D modeller.
 
 ## Klasörler
 
@@ -31,26 +31,35 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 - **Godot'ta:** `tests/run_tests.tscn` sahnesini aç ve **F6**'ya bas. Yazılar yeşilse bütün testler geçmiştir, kırmızıysa en az biri kırılmıştır.
 - **Komut satırında:** `godot --headless --path . res://tests/run_tests.tscn -- --ci` (bütün testler geçerse çıkış kodu 0).
 
-## Karne masası (F5)
+## FPS karne sistemi (F5)
 
-Oyunun ana mekaniği için kalıcı tasarım ve sonraki görevler: [RATION_DESK_DESIGN.md](docs/RATION_DESK_DESIGN.md).
+Ana tasarım: [RATION_DESK_DESIGN.md](docs/RATION_DESK_DESIGN.md).
+Bu oyun birinci şahıs 3D'dir. Karne incelemesi için başka bir ekrana geçilmez.
 
-- `scenes/kiosk/ration_desk.tscn`: üç meslek sınıfı, sekiz müşteri, ön/arka yüz incelemesi, kurum mührü ve miktar karşılaştırması. Kural defteri masada açık; belge gerçekliği önceden açıklanmaz.
-- Müşterinin uzattığı karta tıkla. **F / sağ tık:** çevir. **Tekerlek:** büyüt/küçült. **Q/E:** eğ. **EL / TAŞI:** kartı sürükle.
-- SATIŞ, RET veya ALIKOY aracını seç; ön yüzdeki **KARAR** alanına kısa süre basılı tutup kaldır. Mühür ve işlem izi kalır.
-- Satışta resmî veya gizli stoktan ürün hazırla. **MAKAS** ile uygun kuponun sol üstündeki kesik çizgiyi sağa doğru, sol tuş basılıyken izle ve bırak. Kısa veya çizgiden çıkan kesim kuponu tüketmez.
-- **EL / TAŞI** ile kartı **MÜŞTERİYE İADE** veya **ALIKONULAN BELGELER** bölmesine sürükle. Sonraki müşteriyi çağır. Yanlış onay/alıkoyma mümkün; kararlar gün sonunda değerlendirilir.
-- Et/şeker gram, sabun adet olarak hesaplanır. Kayıt dışı satış ayrı stoktan düşer, cebe gelir ve denetim riskini artırır.
-- Kâğıt, makas, kupon düşüşü ve damga basış/kaldırma için sekiz özgün prosedürel ses vardır. Ses seviyesi ve hareket azaltma kontrolleri masadadır. Sesler prototiptir; gerçek foley kayıtları sonraki kalite adımıdır.
-- Gerçek sahne kontrolü: `godot --headless --path . res://scenes/kiosk/ration_desk.tscn -- --selftest`. Pencereli/ses sürücülü kontrol için `--headless` olmadan çalıştır. `-- --selftest --capture=/tmp/ration-shots` seçeneği ekran görüntülerini de kaydeder.
-- Sesleri tekrar üret: `python3 tools/generate_ration_audio.py`, ardından Godot import. WAV varlıkları Git LFS'dedir; yeni checkout'ta `git lfs pull` gerekir.
-- Bütün testler: `godot --headless --path . res://tests/run_tests.tscn -- --ci` — bu teslimde **163 geçti, 0 başarısız**.
+- Sahne: `scenes/kiosk/fps_kiosk.tscn`. Odada **WASD** ile yürü, fareyle bak, **Shift** ile hızlı yürü. Duvar ve tezgâh çarpışmaları vardır.
+- Cama yaklaş; müşterinin uzattığı karta bakıp **E** ile eline al.
+- **Sağ tuş basılı + fare:** eldeki kartı eğ. **F:** ön/arka yüz çevir. **Tekerlek:** yaklaştır/uzaklaştır. Kamera karakterin gözünde kalır.
+- Masaya bakıp **G** ile kartı bırak. Sağ elinde başka nesne varsa G önce onu bırakır; çalışma alanına **E** ile de kartı bırakabilirsin.
+- Masadaki SATIŞ/RET/ALIKOY damgasına bakıp **E** ile al. Kartın KARAR alanına yönelip sol tuşa kısa süre basılı tut ve bırak; fiziksel temasla mürekkep izi oluşur.
+- Damgayı **G** ile yüzeye bırak. Sağdaki koliden istenen ürünü **E** ile al, masaya G ile koy.
+- Makası **E** ile al. Kuponun sol üst kesik çizgisine bak; sol tuş basılıyken bakışını çizgi boyunca sağa götür, tuşu bırak. Kısa veya çizgi dışı kesim kupon tüketmez. Kâğıtta gerçek boşluk kalır.
+- Makası bırak; ürünü alıp müşteriye bakarak **E** ile uzat. Kalan karneyi alıp müşteriye E ile ver veya alıkoyma bölmesine koy.
+- Masadaki zile E ile basarak sonraki müşteriyi çağır. Sıra bitince soldaki yan masada bulunan gün sonu defterini eline alıp oku.
+- Üç meslek sınıfı, sekiz müşteri, sınıf/kurum/miktar denetimi ve resmî/gizli stok vardır. Kart kuralları bilerek kurmaca; fiyatlar geçicidir. Yanlış karar mümkündür, gün sonunda değerlendirilir.
+- **Esc:** duraklatma ve ses ayarı. Sesler kâğıt/makas/damga için özgün prosedürel prototiplerdir.
+- Kural/işlem testleri: `godot --headless --path . res://tests/run_tests.tscn -- --ci` — **170 geçti, 0 başarısız**.
+- FPS fiziksel etkileşim kontrolü: `godot --headless --path . res://scenes/kiosk/fps_kiosk.tscn -- --selftest`.
+- Pencereli kontrol: aynı komutu `--headless` olmadan çalıştır. `-- --selftest --capture=/tmp/fps-shots` görüntü kaydeder.
+- Sesleri yeniden üret: `python3 tools/generate_ration_audio.py`, sonra Godot import. WAV/PNG varlıkları Git LFS'dedir; yeni checkout'ta `git lfs pull` gerekir.
 
-Henüz: ek belge diyalogu, çok ürünlü sipariş, serbest tartım ve günler arası ilişki devamlılığı yok. Üç demo sahnesi kendi gününü başlatır; birbirlerinin kampanya devamı değildir.
+El/müşteri modelleri basittir; tam IK, büyük yarı açık dünya, terazi, para üstü,
+çok ürünlü sipariş ve kampanya devamlılığı sonraki aşamalardır.
+Eski `ration_desk.tscn` 2D denemesi yalnızca geliştirme referansıdır.
+Ürün simülatörü ve anlatı prototipi ayrı sahneler olarak F6 ile açılabilir.
 
 ## Kiosk Simulator
 
-- Sahne: `scenes/kiosk/simulator.tscn`, karne masasındaki **Ürün tezgâhı** düğmesinden açılır. Master prompt: [KIOSK_SIMULATOR_MASTER_PROMPT.md](docs/KIOSK_SIMULATOR_MASTER_PROMPT.md).
+- Eski ürün prototipi: `scenes/kiosk/simulator.tscn` sahnesini açıp **F6**. Master prompt: [KIOSK_SIMULATOR_MASTER_PROMPT.md](docs/KIOSK_SIMULATOR_MASTER_PROMPT.md).
 - 12 basit ürün modeli: iki gazete, dergi, kibrit, ulaşım bileti, zarf, sabun, ayakkabı bağı, jilet, kalem, defter ve ambalajlı şeker. Fiyat, ambalaj ve günlük bulunabilirlik geçici; özellikle gıda tedarik/karne kuralları tarihsel doğrulama bekliyor. Sigara bu sahnede yok.
 - **Sol tık:** tezgâhtan/depo kutusundan bir ürün al; boş tezgâh yerine veya satış tablasına bırak. Satış tablasındaki ürünü tekrar alabilirsin. Eldekini kendi depo kutusuna da bırakabilirsin.
 - **Sağ tık / Esc:** eldeki ürünü geldiği yere geri bırak. Bir defada bir ürün tutulur; dolu yerlere bırakılamaz.

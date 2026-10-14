@@ -1,176 +1,178 @@
-# Karne masası — ana mekanik ve ortak geliştirme belgesi
+# FPS karne etkileşimi — ana mekanik ve ortak geliştirme belgesi
 
-## Tasarım kararı ve yetki
+## Değişmez temel
 
-14 Ekim 2026: Kullanıcı, belge inceleme + dükkân işletme + zor kararlar fikrini
-oyunun en önemli mekaniği olarak seçti. Tarihsel atmosfer korunacak; meslek
-kartları, gramajlar, mühürler ve alıkoyma kuralları oyun için tasarlanabilir.
-Bu belge Codex, Claude ve ekip arkadaşının ortak referansıdır. Tarihsel bir
-mevzuat kaynağı değildir; önceki prototipteki basitleştirilmiş karne de gerçek
-1982 belgesi sayılmaz. Bu kapsamda gıda, kurmaca tedarik tezgâhının parçasıdır;
-gerçek Ruch kiosklarının et sattığı iddia edilmez.
+KIOSK '81 üç boyutlu, birinci şahıs, ileride yarı açık dünya olacak bir oyundur.
+Oyuncu karakter olarak yürür; bütün işlemler karakterin gözünden görülür.
+Karne, araçlar, ürünler ve defterler dünyadaki fiziksel nesnelerdir.
 
-Kullanıcı özellikle karttan bir bölge kesmenin, damga basmanın ve kâğıtla
-çalışmanın ASMR gibi hissedilmesini istedi. Bu ayrıntılar ana oyun döngüsüdür;
-sonradan eklenecek görsel süs değildir.
+Kullanıcı önceki 2D masa arayüzünü açıkça reddetti. Karne için ayrı bir ekrana
+geçmek, sabit masa ekranı açmak veya düğmelerle araç seçmek doğru temel
+değildir. Bu belge eski 2D tasarımın yerine geçer. Eski sahne yalnızca arşiv
+referansıdır; giriş sahnesi ve oyuncu akışı FPS'tir.
 
-## Temel oyuncu soruları
+Tarihsel atmosfer korunur; meslek kartları, miktarlar, kurumlar ve alıkoyma
+kuralları oyun için tasarlanmıştır. Bunlar gerçek 1982 mevzuatı değildir.
+Kurmaca tedarik noktasındaki et satışı gerçek Ruch kioskları için bir iddia
+değildir. Meslek kişinin dürüstlüğünü belirlemez.
 
-1. Bu belge gerçek mi?
-2. Bu müşteri ne satın alabilir?
-3. Ben ne vereceğim, hangi sonuçları göze alacağım?
+## Temel sorular
 
-Satış hakkı, belge gerçekliği, ürünün tedarik yolu ayrı değerlendirilir.
-Karne bedava mal veren bir ödeme aracı değildir. Kupon ve para gerekir;
-geçerli kart stok garantisi değildir. Meslek kişinin ahlakını belirlemez.
+Bu belge gerçek mi? Müşteri ne alabilir? Hangi ürünü hangi stoktan vereceğim?
+Kartı iade mi edeceğim, alıkoyacak mıyım?
 
-## Ana döngü
+Belge gerçekliği, hak miktarı, tedarik ve ödeme ayrı konulardır. Karne
+ücretsiz mal veren ödeme aracı veya stok garantisi değildir.
 
-Müşteri kartını uzatır → kartı al → yaklaştır/eğ/çevir → ön ve arka yüzü
-kitapçıkla karşılaştır → gerekiyorsa açıklama/ek belge iste → karar damgası
-bas → ürünü hazırla → uygun kuponu kes → kalan kartla ürünü teslim et veya
-kartı alıkoy → sıradaki müşteri → gün sonunda hesap ve karar denetimi.
+## Fiziksel döngü
 
-Görsel kart, müşteri ve tezgâh işlemleri aynı durumdan beslenir. Kartın ön
-yüzü işlem sırasında hiçbir zaman başka müşterinin kartına dönüşmez.
-Satış stok, para, kupon, günlük kayıt ve müşteri sırasını birlikte günceller.
+Odada yürüyerek cama gel → müşteri karneyi uzatır → kendi elinle al →
+elinde yaklaştır/eğ/çevir → masaya bırak → kural defterini eline alıp
+karşılaştır → masadaki damgayı alıp kâğıda bastır → doğru koliden ürünü al
+ve masaya bırak → makası al, uygun kuponu kes → makası bırak → ürünü tekrar
+alıp müşteriye uzat → kalan karneyi eline alıp iade et veya alıkoyma
+bölmesine koy → zille sonraki müşteriyi çağır.
 
-## İlk oynanabilir dilim
+Kamera hiçbir aşamada karakterin gözünden ayrılmaz. Masaya yaklaşmak UI
+açmaz. Yazılar 3D kâğıdın yüzeyindedir. Elde incelemede fare nesneyi döndürür;
+karakterin bakış yönü korunur. Elde nesneyle odada yürünebilir.
 
-- Tarih: 15 Şubat 1982; kural seti bilerek kurmaca.
-- Üç sınıf: işçi, öğretmen, emekli.
-- Ön yüzde ad, sınıf, seri, ay ve hak miktarı; arka yüzde kurum kodu,
-  onay mührü ve kurcalama izleri.
-- Üç ürün hakkı: et, şeker, sabun. Et gram, şeker gram, sabun adet olarak
-  hesaplanır. Gramajın stok hesabında kaybolmasına izin verilmez.
-- Referans: işçi et hakkı 750 g / kurum F14; öğretmen 500 g / S03;
-  emekli 250 g / E02. Her birinde şeker 1000 g ve sabun 1 adet.
-- İşlem damgaları: SATIŞ, RET, ALIKOY. Kurum mührü ile satıcının işlem
-  damgası farklı görsel ve işlev taşır.
-- Kartı sürükleme, büyütme, eğme, ön/arka yüz çevirme.
-- Kesme: uygun kuponun üst çizgisi boyunca makası sürükle; kısa veya
-  yanlış çizgi kesimi tamamlamaz. Tamamlanan kupon karttan ayrılır.
-- Damga: uygun karar alanına basılı tutup bırak; basış/sökülüş hareketi,
-  mürekkep izi ve ayrı sesler oluşur. Yanlış kararı sistem otomatik düzeltmez.
-- Resmî stok ve sınırlı kayıt dışı et stoğu; oyuncu kaynağı seçer.
-- Sekiz karşılaşma: geçerli işçi, yıpranmış öğretmen, eski ay kartı,
-  yanlış kurumlu sahte kart, kullanılmış kupon, değiştirilmiş miktar,
-  eksik onay ve resmî stok tükenince gelen geçerli müşteri.
-- Gün sonunda doğru/yanlış kararlar, ciro ve kayıt dışı işlemler görülür.
+## Uygulanan ilk FPS dilimi
 
-İlk dilimde ek belge isteme, çok ürünlü sipariş, teraziyle serbest tartım,
-telefonla sorgu, aile üyesi adına alışveriş ve kampanyaya kalıcı ilişki
-sonuçları yol haritasındadır; uygulanmış gibi sunulmaz.
+- Oda, servis penceresi, dışarıdaki müşteri, çalışma masası, koliler,
+  kayıt dışı stok ve kapı açıklığı bulunan 3D blok sahne.
+- WASD, hızlı yürüyüş, duvar/zemin/tezgâh çarpışması ve yakın erişim.
+- Sol elde karne; sağ elde makas, damga, defter veya ürün. Eller ve araçlar
+  basit modellerdir; nihai rig/IK veya sanat varlıkları değildir.
+- Müşterinin uzattığı kart alınır, masaya bırakılır, tekrar alınır.
+- Ön/arka yüz, eğme, çevirme ve yakınlaştırma. Kesilen kupon iki yüzde de
+  gerçek bir boşluk bırakır; kâğıdın arkasında sağlam kupon görünmez.
+- Fiziksel SATIŞ, RET, ALIKOY damgaları; temas anında iz ve ayrı sesler.
+- Kesimde bakış çizgi boyunca ilerler; makas ağızları hareket eder.
+  Kısa veya çizgi dışı kesim kupon tüketmez.
+- Ayrılan parça 3D kupon kutusuna gider; temas sesi çalar.
+- Ürün koliden alınır, yüzeye bırakılır ve müşteriye uzatılır.
+- Gün sonu kararları dünyadaki deftere yazılır; elde okunur.
+- Hedef ipucu, konuşma altyazısı ve Esc menüsü dışında belge dashboard'u yok.
 
-## Karar sözleşmesi
+Bu dilim temel FPS ve karne etkileşimidir. Büyük yarı açık dünya haritası,
+tam vücut/IK, serbest tartım, para üstü ve kampanya devamlılığı henüz yoktur.
 
-| Durum | Kurmaca oyun kuralı |
-| --- | --- |
-| Geçerli kart, uygun kupon, stok | Satış damgası, ürün hazırlama, kupon kesme, teslim |
-| Tarih uygun değil / kupon bitmiş / onay eksik | Ret ve kartı iade |
-| Kurum-sınıf çelişkisi / değişmiş hak miktarı | Sahtecilik; alıkoyma |
-| Geçerli kart, resmî stok yok | Ret veya oyuncunun seçtiği kayıt dışı tedarik |
-| Yanlış alıkoyma | Müşteri şikâyeti ve gün sonu hata |
-| Usulsüz onay | Ürün kaybı, denetim riski ve gün sonu hata |
+## Kurmaca kart kuralları
 
-Müşterinin gerçekliğini UI yeşil/kırmızı etiketiyle önceden açıklama.
-Eksik mühür, eski tarih ve kullanılmış hak tek başına sahtecilik değildir.
-Referans verisi açık, kararın doğruluğu gün sonunda görünür olur.
+15 Şubat 1982; üç sınıf, sekiz hazırlanmış karşılaşma:
 
-Ürün hazırlanıp stok uygunluğu doğrulanmadan kupon kesilmez. Kesilmiş kupon
-bir kez tüketilir; kart çevrilince veya yeniden alınca geri gelmez. İlk
-dilimde hazırlanan ürün, satış tamamlanana kadar ayrılmış bir sipariştir;
-iptalde stok düşmez. Tamamlamada miktar yeniden kontrol edilir.
-
-## Dokunsal / ASMR sözleşmesi
-
-| Hareket | Görsel davranış | Ses ve ritim |
+| Sınıf | Et hakkı | Kurum |
 | --- | --- | --- |
-| Kartı alma | Kâğıt hafif yükselir, gölge açılır, ağırlıklı eğim | Kısa lifli kâğıt sürtünmesi |
-| Sürükleme | Konum fareyi takip eder; eğim hareket hızından yumuşak etkilenir | Sürekli yüksek gürültü yerine seyrek hafif temas |
-| Çevirme | Yüz daralır, ters yüz açılır; araç işlemleri kilitlenir | İnce kâğıt bükülmesi |
-| Yaklaştırma | Yumuşak ölçek geçişi, okunabilir metin | Gereksiz UI bip sesi yok |
-| Damga | Aşağı basış → kısa temas → kaldırma; hafif değişken iz | Tok düşük temas ve kısa mürekkep/pad ayrılma sesi |
-| Kesme | Çizgi üzerinde ilerleme; makas ağızları ritmik kapanır | Aralıklı metal tık + kâğıt kesilmesi |
-| Kupon ayrılması | Parça kopar, hafif döner, kupon kutusuna iner | Hafif düşme ve kâğıt teması |
-| İade | Kart müşteri bölgesine kayar | Yumuşak masa sürtünmesi |
-| Alıkoyma | Kart dosya bölmesine girer | Kâğıt ve çekmece teması |
+| İşçi | 750 g | F14 |
+| Öğretmen | 500 g | S03 |
+| Emekli | 250 g | E02 |
 
-Sesler yakın, kısa ve dinamik olmalı. Başarı/hata jingle'ı kâğıt sesini
-örtmemeli. Ses seviyesi kontrolü ve sessiz oynama mümkün olmalı; bütün
-işlemler ses olmadan da görülebilmeli. İlk sesler projede üretilen özgün
-prosedürel prototiplerdir; gerçek kâğıt/makas/damga kayıtları sonraki kalite
-adımıdır. “ASMR kalitesi tamamlandı” iddiası kullanıcı dinlemeden yapılmaz.
+Her sınıfta şeker 1000 g, sabun 1 adet. Ön yüzde ad/sınıf/seri/ay/haklar;
+arkada kurum kodu, onay mührü ve müdahale izleri bulunur.
 
-Animasyon temas anıyla eşlenir. Yeniden başlatma/sahne değişimi sürmekte olan
-işlemleri iptal eder; eski müşteri için bekleyen callback yeni kartı kesmez.
-Çift tıklama veya aynı kuponun tekrar kesilmesi çift satış yaratmaz.
+| Durum | Karar |
+| --- | --- |
+| Geçerli kart, kupon ve stok | SATIŞ; ürün, kesim ve kart teslimi |
+| Eski ay, kullanılmış kupon, eksik onay | RET ve kartı iade |
+| Sınıf/kurum çelişkisi veya değişmiş hak | ALIKOY ve belge bölmesine koy |
+| Geçerli kart, resmî stok yok | Ret veya kayıt dışı tedarik |
+| Yanlış onay / alıkoyma | Gün sonu hata ve denetim riski |
 
-## Erişilebilirlik ve öğrenme
+Yıpranma sahtecilik değildir. Sistem önceden doğru/yanlış etiketi göstermez.
+Oyuncu yanlış karar verebilir; sonuç gün sonu defterinde görünür.
+Kurum mührü ve satıcının işlem damgası farklı işlevler taşır.
 
-Kartı çevirme için F, yakınlaştırma için tekerlek, eğme için Q/E; bütün
-kritik işlemler görünür araçlarla da yapılabilir. Küçük kuponlar büyütülür.
-Sınıf farkları yalnızca renkle anlatılmaz; başlık ve simge de bulunur.
-İlk dilimde süre baskısı yoktur. Referans kitapçığı her an açık kalır.
-Kesme toleransı fare titremesine izin verir; mikro hassasiyet gerektirmez.
-Mekanik zorluk, açık görsel bilginin okunmasından doğar.
+Karşılaşmalar: geçerli işçi, yıpranmış öğretmen, eski ay, yanlış kurum,
+kullanılmış kupon, değiştirilmiş hak, eksik onay ve stok tükendiğinde gelen
+geçerli emekli. Kayıt dışı et ayrı stoktan azalır; geliri cebe gider ve risk
+doğurur. Stok gram/adet cinsinden izlenir.
 
-## Mimari
+## Kontroller ve işlem güvenilirliği
 
-- `content/ration/`: müşteri/kart verisi, tarihsel iddia taşımayan senaryo.
-- `RationDeskRules`: saf kararlar ve miktar hesabı; UI'yi tanımaz.
-- `Game` / `CampaignState`: işlemleri atomik uygular; masa durumu flags
-  üzerinden kayıt/kopyalama yolundan geçer.
-- `RationCardView`: kartın çizimi, sürükleme, yüz çevirme ve kesme girdisi.
-- `RationDesk`: araçlar, tezgâh, referans, müşteri akışı ve animasyonlar.
-- `RationFoley`: kâğıt, makas ve damga seslerinin çalınması.
+| Kontrol | Davranış |
+| --- | --- |
+| WASD / Shift | Yürü / hızlı yürü |
+| E | Bakılan nesneyi al; ürünü/kartı müşteriye ver; kartı çalışma alanına bırak |
+| G | Önce sağ eldeki nesneyi yüzeye bırak; sağ el boşsa karneyi masaya bırak |
+| Sağ tuş basılı + fare | Elde tutulan kartı/defteri eğ; göz kamerası dönmez |
+| F | Elde veya bakılan masada karneyi çevir |
+| Tekerlek | Elde tutulan belgeyi yaklaştır/uzaklaştır |
+| Sol tuş basılı → bırak | Damgayı kartın karar alanına bastır |
+| Sol tuş basılı + bakış | Makasla kupon çizgisini soldan sağa izle |
+| Esc | Ayar/duraklatma; tamamlanmamış kesimi iptal et |
 
-Mevcut ürün simülatörü ve anlatı prototipi erişilebilir kalır. Yeni ana sahne
-karne masasıdır. Sahne geçişleri ayrı demo günlerini başlatır; ilk dilimde
-tek kampanyanın devamı oldukları varsayılmaz.
+İşlem için karne masada ve ön yüz yukarıda olmalıdır. Ürün hazırlanmış
+olmadan kesilemez. Satış tamamlamak için ürün müşteriye uzatılmış ve kalan
+kart elde olmalıdır. Tekrarlanan teslimat çift stok/para değişimi yaratmaz.
+Ürün müşteriye uzatıldıktan sonra karar RET/ALIKOY'a çevrilemez; satış kalan
+kart iade edilerek tamamlanır. Böylece verilmiş ürün hesaptan kaybolmaz.
+Kesilmiş kupon, kart alınca veya çevrilince geri gelmez.
 
-## Kabul ölçütleri
+İlk dilimde paketler istenen miktara göre hazır gelir. Terazi ve serbest
+gramaj sonraki adımdır. Kesilen parça kutuya otomatik aktarılır; elle parça
+toplama ve serbest kesim gelecekte değerlendirilebilir.
 
-1. Ön/arka yüz aynı fiziksel kartta; kimlik ve kurcalama izleri okunabilir.
-2. Gerçek fare girdisiyle alma, sürükleme, çevirme, damga ve kesme çalışır.
-3. Kısa kesim kupon tüketmez; tamamlanan kesim yalnızca bir kez tüketir.
-4. Damga basış ve kaldırma sesleri temas anlarında tetiklenir.
-5. Stok yoksa ürün hazırlanamaz ve kupon kesilemez.
-6. Sahte karta yanlış karar verilebilir; bu gün sonunda değerlendirilir.
-7. Eksik/eskimiş belge, sahte belgeden ayrı değerlendirilir.
-8. Kayıt dışı stok resmî stoktan ayrı azalır; risk ve gelir ayrı kaydedilir.
-9. Çift tamamlamada stok/para/kayıt tekrar değişmez.
-10. Masa durumu JSON kayıt/kopyasında korunur.
-11. Var olan testler, yeni kural testleri ve gerçek sahne kontrolleri geçer.
+## Dokunsal ve ASMR sözleşmesi
 
-## Sonraki geliştirme sırası
+| Eylem | Görsel temas | Ses |
+| --- | --- | --- |
+| Alma | Kâğıt göz kamerasının önündeki ele gelir | Kısa kâğıt sürtünmesi |
+| Çevirme | Gerçek 3D yüz döner | Kâğıt bükülmesi |
+| Bırakma | Kâğıt/nesne yüzeyde kalır | Yumuşak masa teması |
+| Damga | Araç hedefe iner, bastırır ve kalkar | Tok temas ve ayrı kaldırma |
+| Kesme | Makas çizgide ilerler, ağızlar kapanır | Aralıklı kesme/metal |
+| Kupon düşüşü | Ayrı 3D parça kutuya iner | Kâğıt düşüşü |
+| İade/alıkoyma | Kâğıt müşteriye veya bölmeye gider | Kâğıt/çekmece |
 
-1. Kullanıcının oynayıp kesme toleransı, okunabilirlik ve sesleri değerlendirmesi.
-2. Gerçek foley kayıtları; farklı kâğıt kalınlığı ve makas hareketleri.
-3. İki alanı işaretleyip çelişki sorma ve ek belge uzatma.
-4. Aile adına alışveriş, yeni kart sınıfları ve birden fazla ürün talebi.
-5. Fiziksel terazi, para üstü ve müşteriye tek tek teslim.
-6. Günler arası güven, aile ihtiyacı, denetim ve tanıdık müşteriler.
-7. İçerik editörü; rastlantısal ama çözülebilir sahtecilikler.
+Başarı/hata jingle'ı temas sesini örtmez. Ses seviyesi Esc menüsünde ayarlanır.
+Sesler özgün prosedürel prototiplerdir; gerçek yakın mikrofonlu kayıtlar ve
+kullanıcı dinlemesi kalite yol haritasındadır. ASMR kalitesi bitmiş sayılmaz.
 
-Her görev için tek dosya sahibi, kabul ölçütü ve test sonucu kaydedilir.
-Bu belge kapsam kararlarını korur; uygulama durumu README'de güncellenir.
+## Mimari ve kalıcılık
 
-## İlk uygulamanın doğrulanmış durumu
+- KioskFPSPlayer: hareket, baş/göz kamerası, çarpışma.
+- fps_kiosk.gd: oda, müşteri, araçlar, tutma ve yüzey işlemleri.
+- RationCard3D: çift yüz, kupon boşlukları ve yüzey koordinatları.
+- RationCardView: yalnızca kâğıdın yazı/görselini üretir; FPS'te ekran olarak açılmaz.
+- RationDeskRules: karar/gramaj; hand/table/customer yerleşimleri ve ürün teslim aşaması.
+- Game: stok, para, kupon ve kayıtları atomik değiştirir.
+- RationFoley: temas sesleri. content/ration/: müşteri/kart verisi.
 
-Godot 4.7.2 ile 163 test geçti. Ürün simülatörünün 12 model / 25 ışın hedefi
-kontrolü de geçti. Karne masası hem headless hem pencereli OpenGL yazılım
-çizicisinde gerçek fare/klavye olaylarıyla doğrulandı: sekiz müşteri, kısa
-kesimin reddi, tam kesim, damga, ön/arka yüz, sürükleyerek iade/alıkoyma,
-gün sonu denetimi ve çevirme sırasında yeniden başlatma.
+Mantıksal yerleşim, kuponlar, damgalar ve teslim aşaması JSON kopyasında
+korunur. İlk FPS dilimi ayrı demo günü başlatır; serbest dünya nesnelerinin
+tam konum/rotasyon kayıtları ve yükleme menüsü henüz yoktur.
 
-Ses dosyalarının dalga biçimleri sıfır olmayan, kırpılmayan çıkış açısından
-kontrol edildi; temas olaylarının doğru tetiklenmesi sahnede doğrulandı.
-Sanal görüntü kontrolünde ses sürücüsü Dummy idi; duyusal kalite ve gerçek
-ses aygıtında dinleme kullanıcı değerlendirmesini bekliyor.
+## Doğrulama
 
-![Kartın ön yüzü ve referans defteri](images/ration-front.png)
+Birim testleri sınıf/kurum, miktar, kayıt dışı stok, iki kez kesme/teslim,
+fiziksel yerleşim ve JSON dönüşümünü sınar. FPS selftest'i gerçek WASD ile
+hareket/tezgâh çarpışması ve erişimi, sonra gerçek E/G/F/fare girdisiyle
+müşteri elinden alma, kamera sabitken eğme, 3D yüz çevirme, masaya bırakma,
+araç alma/bırakma, temas, kısa/tam kesim, ürün teslimi ve sekiz müşteriyi sınar.
 
-![Arka yüzde kurum kodu ve mühür](images/ration-back.png)
+Hareket/çarpışma ayrı doğrulandıktan sonra işlemler için test konumları
+kullanılır; sekiz müşterinin bütün yürüyüş rotalarının otomatik oynandığı
+iddia edilmez. Pencereli kontrol gerekir; headless tek başına görsel kaliteyi
+doğrulamaz. Sanal aygıtta Dummy ses sürücüsü kullanılır; dosyalar ve ses
+tetiklemeleri kontrol edilir, gerçek aygıtta duyusal kalite iddia edilmez.
 
-![Kesilmiş kupon ve satış damgası](images/ration-cut.png)
+## Sonraki geliştirme
+
+1. Kullanıcı değerlendirmesi: eldeki kart, erişim, okunabilirlik, kesim, ses.
+2. El rig'i/IK, parmak kavrama, kola bağlı uzanma ve müşteri teslim animasyonu.
+3. Çelişki işaretleme, konuşma ve ek belge.
+4. Yeni sınıflar, aile adına alışveriş, çok ürünlü talep.
+5. Terazi, serbest gramaj, para üstü.
+6. Gerçek foley kayıtları.
+7. Günler arası ilişkiler, denetim, ev ve yarı açık dünya rotaları.
+8. Dünya nesnelerinin fiziksel kayıt/yüklemesi.
+
+Codex, Claude ve ekip arkadaşı aynı kapsamı kullanır. Dosya sahipliği ve
+kabul ölçütleri paylaşılır. Kullanıcının son talimatı eski prototip belgelerinden üstündür.
+
+## FPS görüntüleri
+
+![Pencereden alınan karne elde](images/ration-front.png)
+![Aynı fiziksel kartın arka yüzü](images/ration-back.png)
+![Masada kesilmiş kuponun boşluğu](images/ration-cut.png)

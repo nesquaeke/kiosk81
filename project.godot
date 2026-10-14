@@ -12,7 +12,7 @@ config_version=5
 
 config/name="KIOSK '81"
 config/description="First-person narrative kiosk simulation, Warsaw 1981-1989."
-run/main_scene="res://scenes/kiosk/ration_desk.tscn"
+run/main_scene="res://scenes/kiosk/fps_kiosk.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]

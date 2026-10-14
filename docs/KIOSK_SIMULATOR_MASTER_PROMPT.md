@@ -1,5 +1,10 @@
 # Kiosk Simulator — ortak master prompt
 
+Güncel kapsam düzeltmesi: oyun hareket edilen birinci şahıs 3D'dir. Bu belge
+ilk ürün prototipinin kaydıdır; sabit kamera önerisi artık ana oyun yönü
+değildir. Yeni geliştirmede [FPS karne tasarımını](RATION_DESK_DESIGN.md) esas
+al; nesneler elde veya gerçek 3D yüzeylerde incelenir, ayrı masa ekranı açılmaz.
+
 Bu belge, kullanıcı isteğine göre Codex, Claude ve ekip arkadaşının aynı kapsamla
 çalışması içindir. Mevcut anlatı prototipini koru; ilk aşamada kiosk işletme
 mekaniklerini ayrı ve doğrudan oynanabilir bir sahnede geliştir.

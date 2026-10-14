@@ -17,6 +17,7 @@ var front: bool = true
 var tool: String = "hand"
 var busy: bool = false
 var reduced_motion: bool = false
+var render_tools: bool = true
 var _dragging: bool = false
 var _offset: Vector2 = Vector2.ZERO
 var _press: Vector2 = Vector2.ZERO
@@ -86,6 +87,12 @@ func tilt(degrees: float) -> void:
 
 static func coupon_rect(index: int) -> Rect2:
 	return Rect2(30 + index * 195, 285, 180, 90)
+
+
+func show_cut_progress(index: int, progress: float) -> void:
+	_cut_index = index
+	_cut_progress = progress
+	queue_redraw()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -175,7 +182,7 @@ func _end(at: Vector2) -> void:
 		_dragging = false
 		contact.emit("paper_place")
 		dropped.emit(get_global_transform() * (PAPER_SIZE / 2))
-	if _stamp_held:
+	if _stamp_held and render_tools:
 		_stamp_held = false
 		if _stamp_time >= 0.07 and at.distance_to(_press) < 24:
 			stamp_requested.emit(tool, _press)
@@ -235,6 +242,8 @@ func _draw() -> void:
 		var rect: Rect2 = coupon_rect(_cut_index)
 		var tip: Vector2 = rect.position + Vector2(rect.size.x * _cut_progress, 0)
 		draw_line(rect.position, tip, Color("354844"), 4)
+		if not render_tools:
+			return
 		draw_line(tip - Vector2(22, 14), tip + Vector2(12, 3), Color("747f80"), 4)
 		draw_line(tip - Vector2(22, -14), tip + Vector2(12, -3), Color("747f80"), 4)
 		draw_arc(tip - Vector2(30, 19), 9, 0, TAU, 24, Color("393c39"), 4)
