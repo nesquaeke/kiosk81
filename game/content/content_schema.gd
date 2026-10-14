@@ -22,6 +22,10 @@ const ID_PATTERN: String = "^[a-z][a-z0-9_]*$"
 const SPEAKER_ROLES: PackedStringArray = ["player", "customer", "narrator"]
 
 const TYPES: Dictionary = {
+	"ration_case": {
+		"prefix": "rc_",
+		"fields": {"id": "id", "customer": "text", "line": "text", "request": "dict", "card": "dict"},
+	},
 	"item": {
 		"prefix": "itm_",
 		"fields": {

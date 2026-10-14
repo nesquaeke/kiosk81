@@ -1,0 +1,82 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f21rq"]
+albedo_color = Color(0.8745098, 0.7254902, 0.5372549, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_17hp1"]
+size = Vector3(0.075, 0.003, 0.135)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_62mne"]
+albedo_color = Color(0.20784314, 0.19607843, 0.16862746, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_2n3a1"]
+size = Vector3(0.055, 0.001, 0.002)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_020tt"]
+albedo_color = Color(0.20784314, 0.19607843, 0.16862746, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_xy5cg"]
+size = Vector3(0.055, 0.001, 0.002)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1dtuu"]
+albedo_color = Color(0.20784314, 0.19607843, 0.16862746, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_13itp"]
+size = Vector3(0.055, 0.001, 0.002)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_afsyd"]
+albedo_color = Color(0.20784314, 0.19607843, 0.16862746, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_fuvfw"]
+size = Vector3(0.055, 0.001, 0.002)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vwmom"]
+albedo_color = Color(0.20784314, 0.19607843, 0.16862746, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_hccog"]
+size = Vector3(0.055, 0.001, 0.002)
+
+[node name="BusTicket" type="Node3D" unique_id=442351688]
+
+[node name="@MeshInstance3D@55" type="MeshInstance3D" parent="." unique_id=57343083]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002, 0)
+material_override = SubResource("StandardMaterial3D_f21rq")
+mesh = SubResource("BoxMesh_17hp1")
+
+[node name="@MeshInstance3D@56" type="MeshInstance3D" parent="." unique_id=2062067972]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0.01)
+material_override = SubResource("StandardMaterial3D_62mne")
+mesh = SubResource("BoxMesh_2n3a1")
+
+[node name="@MeshInstance3D@57" type="MeshInstance3D" parent="." unique_id=470709286]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0.019)
+material_override = SubResource("StandardMaterial3D_020tt")
+mesh = SubResource("BoxMesh_xy5cg")
+
+[node name="@MeshInstance3D@58" type="MeshInstance3D" parent="." unique_id=1799938306]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0.028)
+material_override = SubResource("StandardMaterial3D_1dtuu")
+mesh = SubResource("BoxMesh_13itp")
+
+[node name="@MeshInstance3D@59" type="MeshInstance3D" parent="." unique_id=1369702247]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0.037)
+material_override = SubResource("StandardMaterial3D_afsyd")
+mesh = SubResource("BoxMesh_fuvfw")
+
+[node name="@MeshInstance3D@60" type="MeshInstance3D" parent="." unique_id=803702800]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.005, 0.046)
+material_override = SubResource("StandardMaterial3D_vwmom")
+mesh = SubResource("BoxMesh_hccog")
+
+[node name="@Label3D@61" type="Label3D" parent="." unique_id=1842082369]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.006, -0.03)
+pixel_size = 0.0008
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "BILET"
+outline_size = 0

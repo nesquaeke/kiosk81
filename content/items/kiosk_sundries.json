@@ -1,0 +1,13 @@
+{
+  "type": "item",
+  "records": [
+    {"id":"itm_przekroj", "name":"Przekrój", "category":"periodical", "price":300, "legal":true, "notes":"Period weekly; price, edition and availability need historical verification. Prototype price."},
+    {"id":"itm_envelope", "name":"Envelope", "category":"household", "price":50, "legal":true, "notes":"Concrete sundry from the existing kiosk assortment. Prototype price and packaging."},
+    {"id":"itm_soap", "name":"Soap", "category":"household", "price":800, "legal":true, "notes":"Concrete sundry from the existing kiosk assortment. Availability, price and packaging unverified."},
+    {"id":"itm_shoelaces", "name":"Shoelaces", "category":"household", "price":400, "legal":true, "notes":"Concrete sundry from the existing kiosk assortment. Prototype price and packaging."},
+    {"id":"itm_razor_blades", "name":"Razor blades", "category":"household", "price":600, "legal":true, "notes":"Concrete sundry from the existing kiosk assortment. Prototype price and packaging."},
+    {"id":"itm_pencil", "name":"Pencil", "category":"other", "price":150, "legal":true, "notes":"Period-appropriate stationery candidate; exact kiosk availability and price unverified."},
+    {"id":"itm_notebook", "name":"Notebook", "category":"other", "price":500, "legal":true, "notes":"Period-appropriate stationery candidate; exact kiosk availability and price unverified."},
+    {"id":"itm_hard_candy", "name":"Wrapped hard candy", "category":"food", "price":100, "legal":true, "notes":"Provisional confectionery candidate. Kiosk availability, supply rules, packaging and price need historical verification; not a canonical unrestricted food supply."}
+  ]
+}

@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s6enl"]
+albedo_color = Color(0.67058825, 0.7647059, 0.6666667, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_pvb81"]
+size = Vector3(0.13, 0.035, 0.085)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ao32y"]
+albedo_color = Color(0.8980392, 0.85882354, 0.7372549, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_6mbh4"]
+size = Vector3(0.055, 0.036, 0.087)
+
+[node name="Soap" type="Node3D" unique_id=203968804]
+
+[node name="@MeshInstance3D@65" type="MeshInstance3D" parent="." unique_id=700281948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.018, 0)
+material_override = SubResource("StandardMaterial3D_s6enl")
+mesh = SubResource("BoxMesh_pvb81")
+
+[node name="@MeshInstance3D@66" type="MeshInstance3D" parent="." unique_id=1509292929]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.019, 0)
+material_override = SubResource("StandardMaterial3D_ao32y")
+mesh = SubResource("BoxMesh_6mbh4")
+
+[node name="@Label3D@67" type="Label3D" parent="." unique_id=1045016196]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.039, 0)
+pixel_size = 0.00065
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "MYDŁO"
+outline_size = 0

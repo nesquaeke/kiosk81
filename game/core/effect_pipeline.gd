@@ -69,6 +69,12 @@ static func check_invariants(s: CampaignState) -> String:
 		for item_id: String in items:
 			if int(items[item_id]) < 0:
 				return "stock %s/%s is negative" % [location, item_id]
+	for location: String in ["hand", "counter"]:
+		var units: int = 0
+		for item_id: String in s.stock.get(location, {}):
+			units += s.stock_count(location, item_id)
+		if units > 1:
+			return "%s can hold only one product" % location
 	for meter: String in s.meters:
 		if not CampaignState.METERS.has(meter):
 			return "unknown meter '%s'" % meter
