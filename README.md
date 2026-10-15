@@ -35,6 +35,7 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 
 Bağımsız görev ve kabul ölçütleri: [FPS master prompt](docs/RATION_FPS_MASTER_PROMPT.md).
 Uygulanan dilim: [RATION_DESK_DESIGN.md](docs/RATION_DESK_DESIGN.md).
+Doğrulama ve görüntüler: [Kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
 Bu oyun birinci şahıs 3D'dir. Karne incelemesi için başka bir ekrana geçilmez.
 
 - Sahne: `scenes/kiosk/fps_kiosk.tscn`. Odada **WASD** ile yürü, fareyle bak, **Shift** ile hızlı yürü. Duvar ve tezgâh çarpışmaları vardır.
@@ -42,16 +43,19 @@ Bu oyun birinci şahıs 3D'dir. Karne incelemesi için başka bir ekrana geçilm
 - Masadaki karta **E** ile etkileşip eğil. **Q** veya yürümek incelemeden çıkar; karne masada kalır. **R** karneyi açık bir seçimle eline alır.
 - **Sağ tuş basılı + fare:** eldeki kartı eğ. **F:** ön/arka yüz çevir. **Tekerlek:** yaklaştır/uzaklaştır. Kamera karakterin gözünde kalır.
 - Masaya bakıp **G** ile kartı bırak. Sağ elinde başka nesne varsa G önce onu bırakır; çalışma alanına **E** ile de kartı bırakabilirsin.
+- Karne; çift yüz baskısı, kurum mührü, sınıf/kota/ay/seri, yama ve yıpranma izleri içerir. Masada F ile çevirirken fiziksel olarak yükselir; gerçek arka yüz görünür.
 - Masadaki SATIŞ/RET/ALIKOY damgasına bakıp **E** ile al. Kartın KARAR alanına yönelip sol tuşa kısa süre basılı tut ve bırak; fiziksel temasla mürekkep izi oluşur.
+- Damga temasından önce **Q**, yürüme veya Esc işlemi iptal eder; temas etmiş mürekkep korunur. Araç alma/bırakma sesleri temas anındadır.
 - Damgayı **G** ile yüzeye bırak; önce ilgili kuponu kes, sonra raflara git.
 - Makası **E** ile al. Kuponun sol üst kesik çizgisine bak; sol tuş basılıyken bakışını çizgi boyunca sağa götür, tuşu bırak. Kısa veya çizgi dışı kesim kupon tüketmez. Kâğıtta gerçek boşluk kalır.
 - Makası bırak; **Q** ile ayrıl. Sağdaki raftan istenen ürünü **E** ile alıp tezgâha taşı. **G** ile bırakıp tekrar alabilir veya müşteriye **E** ile uzatabilirsin. Kalan karneyi **R** ile alıp müşteriye E ile ver veya alıkoyma bölmesine koy.
+- Etin kâğıt/sicim paketi, şekerin katlı torbası ve sabunun kılıfı ayrı 3D nesne görünümleridir. Her ürünün ayrı alma/bırakma sesi vardır.
 - Talep fişi masadadır; E ile alıp okunabilir. Müşteriye boş elle E ile isteğini tekrar dinle. Altyazı odada sürekli açık kalmaz.
 - Masadaki zile E ile basarak sonraki müşteriyi çağır. Sıra bitince soldaki yan masada bulunan gün sonu defterini eline alıp oku.
 - Üç meslek sınıfı, sekiz müşteri, sınıf/kurum/miktar denetimi ve resmî/gizli stok vardır. Kart kuralları bilerek kurmaca; fiyatlar geçicidir. Yanlış karar mümkündür, gün sonunda değerlendirilir.
 - **Esc:** duraklatma ve ses ayarı. Sesler kâğıt/makas/damga için özgün prosedürel prototiplerdir.
-- Kural/işlem testleri: `godot --headless --path . res://tests/run_tests.tscn -- --ci` — **171 geçti, 0 başarısız**.
-- FPS fiziksel etkileşim kontrolü: `godot --headless --path . res://scenes/kiosk/fps_kiosk.tscn -- --selftest`.
+- Kural/işlem testleri: `godot --headless --path . res://tests/run_tests.tscn -- --ci` — **186 geçti, 0 başarısız**.
+- FPS fiziksel etkileşim kontrolü (önce iptal/odak/yeniden başlatma regresyonları, ardından sekiz müşteri): `godot --headless --path . res://scenes/kiosk/fps_kiosk.tscn -- --selftest`.
 - Pencereli kontrol: aynı komutu `--headless` olmadan çalıştır. `-- --selftest --capture=/tmp/fps-shots` görüntü kaydeder.
 - Sesleri yeniden üret: `python3 tools/generate_ration_audio.py`, sonra Godot import. WAV/PNG varlıkları Git LFS'dedir; yeni checkout'ta `git lfs pull` gerekir.
 

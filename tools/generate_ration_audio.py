@@ -21,6 +21,12 @@ SOUNDS = {
     "stamp_lift": (0.18, "lift"),
     "coupon_drop": (0.32, "drop"),
     "drawer": (0.45, "drawer"),
+    "package_meat_pick": (0.34, "butcher_pick"),
+    "package_meat_place": (0.31, "butcher_place"),
+    "package_sugar_pick": (0.39, "sugar_pick"),
+    "package_sugar_place": (0.35, "sugar_place"),
+    "package_soap_pick": (0.22, "sleeve_pick"),
+    "package_soap_place": (0.24, "sleeve_place"),
 }
 
 
@@ -53,6 +59,25 @@ def make_sound(name: str, seconds: float, kind: str) -> array:
         elif kind == "drawer":
             value = slow * 0.8 * math.sin(math.pi * t / seconds)
             value += 0.18 * math.sin(2 * math.pi * 115 * t) * math.exp(-abs(t - 0.32) * 90)
+        elif kind.startswith(("butcher", "sugar", "sleeve")):
+            # Original synthesis: broad wrapping crinkles, granular bag rustle,
+            # or a close dry sleeve scrape, with a distinct weighted contact.
+            is_place = kind.endswith("place")
+            swell = math.sin(math.pi * t / seconds)
+            if kind.startswith("butcher"):
+                value = (low * 0.48 + noise * 0.035) * swell
+                value *= 0.4 + 0.6 * abs(math.sin(t * 43) * math.sin(t * 71))
+                contact_hz, contact_gain = 74, 0.29
+            elif kind.startswith("sugar"):
+                grains = 0.3 + 0.7 * abs(math.sin(t * 157) * math.sin(t * 239))
+                value = (noise * 0.055 + low * 0.31) * swell * grains
+                contact_hz, contact_gain = 105, 0.19
+            else:
+                value = (noise * 0.024 + low * 0.16) * swell
+                contact_hz, contact_gain = 225, 0.16
+            if is_place:
+                value += contact_gain * math.sin(2 * math.pi * contact_hz * t) * math.exp(-t * 36)
+                value += low * 0.22 * math.exp(-t * 55)
         else:
             value = low * 0.35 * math.exp(-t * 18)
             value += 0.12 * math.sin(2 * math.pi * 180 * t) * math.exp(-t * 45)

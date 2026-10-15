@@ -2,7 +2,6 @@ extends Node3D
 ## Physical first-person workflow. The document UI is ink on a 3D object only.
 
 const REACH: float = 2.5
-const TABLE_ROTATION: Vector3 = Vector3(-PI / 2, 0, 0)
 var player: KioskFPSPlayer
 var card: RationCard3D
 var customer: CustomerPlaceholder
@@ -11,8 +10,7 @@ var workmat: Interactable
 var drawer: Interactable
 var coupon_bin: Node3D
 var bell: Interactable
-var parcel: Interactable
-var parcel_caption: Label3D
+var parcel: RationParcel3D
 var props: Dictionary[String, Interactable] = {}
 var shelves: Dictionary[String, Interactable] = {}
 var homes: Dictionary[Node3D, Transform3D] = {}
@@ -48,6 +46,11 @@ var _stamp_charging: bool = false
 var _stamp_time: float = 0.0
 var _stamp_pixel: Vector2
 var _stamp_kind: String = ""
+var _stamp_tween: Tween
+var _stamp_animating: bool = false
+var _stamp_contacted: bool = false
+var _tool_generation: int = 0
+var _feedback_until: int = 0
 var _tweens: Array[Tween] = []
 var _tokens: Array[Node3D] = []
 var _selftest: bool = false
@@ -76,11 +79,12 @@ func _build_room() -> void:
 	environment.environment.background_color = Color("a4b7b9")
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color("e8e3ce")
-	environment.environment.ambient_light_energy = 0.8
+	environment.environment.ambient_light_energy = 0.35
 	add_child(environment)
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -28, 0)
-	sun.light_energy = 0.9
+	sun.light_energy = 0.65
+	sun.shadow_enabled = true
 	add_child(sun)
 	_solid(Vector3(14, 0.1, 16), Vector3(0, -0.05, -2), Color("a0a79f"), "floor")
 	_solid(Vector3(6, 0.02, 6), Vector3(0, 0.005, 0), Color("6d6a56"), "floor")
@@ -100,6 +104,17 @@ func _build_room() -> void:
 	_label(self, "RUCH  ·  1982", Vector3(0, 2.27, -2.88), 0.0025)
 	for x: float in [-5.0, 5.0]:
 		_solid(Vector3(2, 4, 7), Vector3(x, 2, -6), Color("848d89"))
+	_solid(Vector3(0.47, 0.43, 0.018), Vector3(-1.62, 1.78, -2.91), Color("e0d5b8"))
+	var calendar: Label3D = _label(self, "15\nLUTY · ŞUBAT\n1982", Vector3(-1.62, 1.81, -2.897), 0.0012)
+	calendar.font_size = 42
+	calendar.modulate = Color("463d32")
+	calendar.outline_size = 0
+	var task_light: OmniLight3D = OmniLight3D.new()
+	task_light.position = Vector3(-0.6, 2.15, -1.85)
+	task_light.light_color = Color("ffe5b9")
+	task_light.light_energy = 0.18
+	task_light.omni_range = 2.5
+	add_child(task_light)
 	player = KioskFPSPlayer.new()
 	add_child(player)
 	left_hand = _hand()
@@ -170,28 +185,53 @@ func _build_station() -> void:
 	_cylinder(bell, 0.05, 0.04, Vector3(0, 0.025, 0), Color("b8a46f"))
 	for i: int in 3:
 		var item: String = RationDeskRules.PRODUCT_ORDER[i]
-		var shelf: Interactable = _prop("storage", Vector3(2.52, 1.0, 0.45 - i * 0.65), Vector3(0.45, 0.30, 0.43), true, Color("a58a60"))
+		var shelf: Interactable = _prop("storage", Vector3(2.52, 1.0, 0.45 - i * 0.65), Vector3(0.45, 0.30, 0.43), false)
+		_crate(shelf, item, Color("a58a60"))
 		shelf.set_meta("source", "official")
 		shelf.collision_layer = 3
 		shelf.set_meta("item", item)
 		shelves[item] = shelf
-		shelf_labels[item] = _label(shelf, "", Vector3(0, 0.40, 0), 0.0022)
+		shelf_labels[item] = _label(shelf, "", Vector3(-0.231, 0.17, 0), 0.0012)
+		shelf_labels[item].rotation.y = -PI / 2
+		shelf_labels[item].outline_size = 0
+		shelf_labels[item].modulate = Color("382e24")
 		_solid(Vector3(0.55, 0.06, 0.48), Vector3(2.52, 0.98, 0.45 - i * 0.65), Color("675746"))
-	var hidden: Interactable = _prop("storage", Vector3(2.50, 0.15, -0.20), Vector3(0.42, 0.25, 0.40), true, Color("514735"))
+	var hidden: Interactable = _prop("storage", Vector3(2.50, 0.15, -0.20), Vector3(0.42, 0.25, 0.40), false)
+	_crate(hidden, "meat", Color("514735"))
 	hidden.set_meta("source", "hidden")
 	hidden.collision_layer = 3
 	hidden.set_meta("item", "meat")
 	shelves["hidden"] = hidden
-	shelf_labels["hidden"] = _label(hidden, "", Vector3(0, 0.32, 0), 0.0020)
-	parcel = _prop("parcel", Vector3.ZERO, Vector3(0.18, 0.10, 0.13), true, Color("ccb38a"))
-	_box(parcel, Vector3(0.04, 0.105, 0.134), Vector3(0, 0.05, 0), Color("e7dbc1"))
-	parcel_caption = _label(parcel, "", Vector3(0, 0.105, 0), 0.00055)
-	parcel_caption.rotation.x = -PI / 2
+	shelf_labels["hidden"] = _label(hidden, "", Vector3(-0.231, 0.16, 0), 0.0010)
+	shelf_labels["hidden"].rotation.y = -PI / 2
+	shelf_labels["hidden"].outline_size = 0
+	shelf_labels["hidden"].modulate = Color("ead9b5")
+	parcel = RationParcel3D.new()
+	add_child(parcel)
 	parcel.visible = false
 	parcel.collision_layer = 0
 	card = RationCard3D.new()
 	add_child(card)
 	card.visible = false
+
+
+func _crate(container: Interactable, item: String, wood: Color) -> void:
+	_box(container, Vector3(0.44, 0.025, 0.42), Vector3(0, 0.0125, 0), wood)
+	for x: float in [-0.21, 0.21]:
+		for z: float in [-0.195, 0.195]:
+			_box(container, Vector3(0.027, 0.29, 0.027), Vector3(x, 0.145, z), wood.darkened(0.15))
+	for y: float in [0.075, 0.175, 0.27]:
+		for z: float in [-0.20, 0.20]:
+			_box(container, Vector3(0.44, 0.065, 0.018), Vector3(0, y, z), wood)
+		for x: float in [-0.22, 0.22]:
+			_box(container, Vector3(0.018, 0.065, 0.42), Vector3(x, y, 0), wood)
+	var sample: RationParcel3D = RationParcel3D.new()
+	container.add_child(sample)
+	sample.configure(item, 1000 if item == "sugar" else (1 if item == "soap" else 750), "official")
+	sample.action = "display"
+	sample.collision_layer = 0
+	sample.position = Vector3(0, 0.028, 0)
+	sample.rotation.y = 0.16
 
 
 func _build_hud() -> void:
@@ -253,9 +293,11 @@ func _restart() -> void:
 	if held_tool != null: _return_tool_home()
 	for prop: Node3D in homes:
 		prop.global_transform = homes[prop]
+		if prop is CollisionObject3D: prop.collision_layer = 2
 	left_hand.visible = false
 	left_hand.reparent(player.camera)
 	right_hand.visible = false
+	right_hand.reparent(player.camera)
 	card.reparent(self)
 	card.scale = Vector3.ONE
 	card.front_showing = true
@@ -306,13 +348,18 @@ func _refresh(state: CampaignState) -> void:
 	page_viewports["order"].render_target_update_mode = SubViewport.UPDATE_ONCE
 	for item: String in RationDeskRules.PRODUCT_ORDER:
 		shelf_labels[item].text = "%s\n%s" % [RationDeskRules.GOODS[item], RationDeskRules.amount_text(item, int(work.get("official", {}).get(item, 0)))]
-	shelf_labels["hidden"].text = "GİZLİ STOK\nEt: %d g" % int(work.get("hidden", {}).get("meat", 0))
+	shelf_labels["hidden"].text = "ÖZEL STOK\nEt: %d g" % int(work.get("hidden", {}).get("meat", 0))
 	var package: Dictionary = work.get("parcel", {})
 	if package.is_empty() or package.get("delivered", false):
 		parcel.visible = false
 		parcel.collision_layer = 0
+		if package.is_empty() and held_tool == parcel:
+			right_hand.reparent(player.camera)
+			right_hand.visible = false
+			parcel.reparent(self)
+			held_tool = null
 	else:
-		parcel_caption.text = "%s · %s" % [RationDeskRules.GOODS[package["item"]], RationDeskRules.amount_text(package["item"], int(package["amount"]))]
+		parcel.configure(package["item"], int(package["amount"]), package["source"])
 
 
 func _offer_card(index: int, generation: int) -> void:
@@ -365,7 +412,7 @@ func _input(event: InputEvent) -> void:
 		elif mouse.pressed and mouse.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			_held_distance = clampf(_held_distance + (-0.035 if mouse.button_index == MOUSE_BUTTON_WHEEL_UP else 0.035), 0.30, 0.65)
 			if card_held and not _card_busy: card.position = _card_hold_position()
-			elif _is_book(held_tool): held_tool.position = Vector3(0.04, -0.10, -_held_distance)
+			elif _is_book(held_tool): held_tool.position = _book_hold_position()
 		elif mouse.button_index == MOUSE_BUTTON_LEFT:
 			if mouse.pressed: _begin_tool()
 			else: _end_tool()
@@ -381,13 +428,19 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not pause.visible and _desk_inspecting and Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO:
+	if not pause.visible and (_desk_inspecting or _stamp_charging or _stamp_animating or _cut_index >= 0) and Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO:
 		_exit_desk_inspection()
 	player.can_move = not pause.visible and not _desk_inspecting and not _busy and _cut_index < 0 and not _stamp_charging
 	player.sensitivity = 0.0008 if _cut_index >= 0 or _stamp_charging else 0.002
 	if pause.visible: return
 	subtitle.visible = _window_ready and Time.get_ticks_msec() < _subtitle_until and player.global_position.distance_to(customer_target.global_position) < 3.0 and -player.camera.global_basis.z.dot((customer_target.global_position - player.camera.global_position).normalized()) > 0.55
-	if _stamp_charging: _stamp_time += delta
+	message.visible = Time.get_ticks_msec() < _feedback_until
+	if _stamp_charging:
+		_stamp_time += delta
+		if held_tool != null:
+			var above: Vector3 = card.pixel_to_world(_stamp_pixel) + Vector3(0, 0.10, 0)
+			held_tool.global_position = held_tool.global_position.lerp(above, minf(delta * 20, 1))
+			held_tool.quaternion = held_tool.quaternion.slerp(Quaternion.IDENTITY, minf(delta * 20, 1))
 	if _cut_index >= 0: _update_cut()
 	var hit: Dictionary = _ray()
 	var target: Node = hit.get("collider") as Node
@@ -396,11 +449,17 @@ func _physics_process(delta: float) -> void:
 
 func _enter_desk_inspection() -> void:
 	if _desk_inspecting or card_held or not card.visible or RationDeskRules.desk(Game.state).get("placement") != "table": return
+	if player.camera.global_position.distance_to(card.global_position) > 1.5:
+		_message("İncelemek için masaya biraz daha yaklaş."); return
 	if _lean_tween != null and _lean_tween.is_valid(): return
 	_desk_inspecting = true
 	_eye_rest = player.camera.transform
 	var offset: Vector3 = Vector3(0, -0.28, -0.22)
 	var eye: Vector3 = player.head.to_global(offset)
+	var clearance: Dictionary = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(player.head.global_position, eye, 1))
+	if not clearance.is_empty():
+		_desk_inspecting = false
+		_message("Buradan masaya güvenle eğilemiyorsun; önüne yaklaş."); return
 	var facing: Basis = player.head.global_basis.inverse() * Basis.looking_at(card.global_position - eye, Vector3.UP)
 	_lean_tween = create_tween().set_parallel(true)
 	_lean_tween.tween_property(player.camera, "position", offset, 0.24).set_trans(Tween.TRANS_SINE)
@@ -409,6 +468,16 @@ func _enter_desk_inspection() -> void:
 
 
 func _cancel_gesture() -> void:
+	if _stamp_animating:
+		if _stamp_tween != null and _stamp_tween.is_valid(): _stamp_tween.kill()
+		_tool_generation += 1
+		if _stamp_contacted: foley.play_sound("stamp_lift")
+		_stamp_animating = false
+		_stamp_contacted = false
+		_busy = false
+		_restore_tool_to_hand()
+	elif _stamp_charging:
+		_restore_tool_to_hand()
 	if _cut_index >= 0:
 		_cut_index = -1
 		card.cut_progress(-1, 0)
@@ -451,7 +520,7 @@ func _interact() -> void:
 		if card_held: return
 		if RationDeskRules.desk(Game.state).get("location") == "intake":
 			if not _window_ready or not _execute(rules.take(Game.state)): return
-			_hold_card(true)
+			_receive_card()
 		else:
 			_enter_desk_inspection()
 	elif kind == "workmat" and card_held:
@@ -476,8 +545,37 @@ func _interact() -> void:
 		_equip(target)
 
 
-func _hold_card(settle_on_table: bool = false) -> void:
+func _receive_card() -> void:
+	card_held = false
+	card.collision_layer = 0
+	card.reparent(self)
+	_card_busy = true
+	left_hand.reparent(card)
+	left_hand.position = Vector3(-0.208, -0.04, 0.015)
+	left_hand.scale.x = -1
+	left_hand.rotation = Vector3.ZERO
+	left_hand.visible = true
+	foley.play_sound("paper_pick")
+	# The transfer takes place in world space even if the player immediately walks away.
+	if not _execute(rules.move_card(Game.state, "table")): return
+	var generation: int = _epoch
+	var transfer: Tween = create_tween().set_parallel(true)
+	_tweens.append(transfer)
+	transfer.tween_property(card, "position", Vector3(-0.20, 0.978, -2.13), 0.36).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	transfer.tween_property(card, "quaternion", RationCard3D.table_orientation(true), 0.36).set_trans(Tween.TRANS_SINE)
+	transfer.chain().tween_callback(func() -> void:
+		if generation == _epoch:
+			left_hand.reparent(player.camera)
+			left_hand.visible = false
+			card.collision_layer = 2
+			_card_busy = false
+			foley.play_sound("paper_place"))
+	_message("Karneyi masaya alıyorsun. E: eğilip incele · R: eline al. İstediğin zaman uzaklaşabilirsin.")
+
+
+func _hold_card() -> void:
 	card_held = true
+	if _is_book(held_tool): held_tool.position = _book_hold_position()
 	card.collision_layer = 0
 	card.reparent(player.camera)
 	_card_busy = true
@@ -488,20 +586,29 @@ func _hold_card(settle_on_table: bool = false) -> void:
 	pickup.tween_property(card, "rotation", Vector3(0, 0 if card.front_showing else PI, 0), 0.24)
 	pickup.chain().tween_callback(func() -> void:
 		if generation == _epoch:
-			_card_busy = false
-			if settle_on_table: _place_card(workmat.global_position))
+			_card_busy = false)
 	_inspect_angles = Vector2.ZERO
 	left_hand.reparent(card)
-	left_hand.position = Vector3(-0.208, -0.04, 0.015)
-	left_hand.scale.x = -1
-	left_hand.rotation = Vector3.ZERO
+	_align_card_grip()
 	left_hand.visible = true
 	foley.play_sound("paper_pick")
 	_message("Kart elinde. Sağ tuşa basılı tutup fareyle eğ; F ile çevir. Masaya bakıp G ile bırak.")
 
 
+func _align_card_grip() -> void:
+	# Keep the left forearm on the player's left when the sheet is turned over.
+	var side: float = 1.0 if card.front_showing else -1.0
+	left_hand.position = Vector3(-0.208 * side, -0.04, 0.015 * side)
+	left_hand.scale.x = -1
+	left_hand.rotation = Vector3(0, 0 if card.front_showing else PI, 0)
+
+
 func _card_hold_position() -> Vector3:
-	return Vector3(-0.03, -0.14 * _held_distance / 0.48, -_held_distance)
+	return Vector3(-0.20 if _is_book(held_tool) else -0.03, -0.14 * _held_distance / 0.48, -_held_distance)
+
+
+func _book_hold_position() -> Vector3:
+	return Vector3(0.22 if card_held else 0.02, -0.10, -_held_distance)
 
 
 func _place_card(at: Vector3) -> void:
@@ -509,13 +616,14 @@ func _place_card(at: Vector3) -> void:
 	left_hand.visible = false
 	left_hand.reparent(player.camera)
 	card_held = false
+	if _is_book(held_tool): held_tool.position = _book_hold_position()
 	card.reparent(self)
 	_card_busy = true
 	var generation: int = _epoch
 	var placing: Tween = create_tween().set_parallel(true)
 	_tweens.append(placing)
-	placing.tween_property(card, "position", Vector3(clampf(at.x, -0.43, 0.01), 0.987, clampf(at.z, -2.32, -1.95)), 0.24).set_trans(Tween.TRANS_SINE)
-	placing.tween_property(card, "rotation", TABLE_ROTATION + Vector3(0, 0 if card.front_showing else PI, 0), 0.24)
+	placing.tween_property(card, "position", Vector3(clampf(at.x, -0.43, 0.01), 0.978, clampf(at.z, -2.32, -1.95)), 0.24).set_trans(Tween.TRANS_SINE)
+	placing.tween_property(card, "quaternion", RationCard3D.table_orientation(card.front_showing), 0.24)
 	placing.chain().tween_callback(func() -> void:
 		if generation == _epoch:
 			card.collision_layer = 2
@@ -540,32 +648,63 @@ func _drop_held() -> void:
 			_message("Nesneyi masaya veya zemine bırak."); return
 		var tool: Interactable = held_tool
 		if tool == parcel and not _execute(rules.move_parcel(Game.state, "table")): return
-		right_hand.visible = false
-		right_hand.reparent(player.camera)
 		held_tool = null
+		if card_held: card.position = _card_hold_position()
 		tool.reparent(self)
-		tool.rotation = homes[tool].basis.get_euler() if homes.has(tool) else Vector3.ZERO
-		tool.position = hit["position"] + Vector3(0, 0.014, 0)
-		tool.collision_layer = 2
+		tool.collision_layer = 0
+		_busy = true
+		var generation: int = _epoch
+		var placing: Tween = create_tween().set_parallel(true)
+		_tweens.append(placing)
+		placing.tween_property(tool, "rotation", homes[tool].basis.get_euler() if homes.has(tool) else Vector3.ZERO, 0.16)
+		placing.tween_property(tool, "position", hit["position"] + Vector3(0, _support_height(tool), 0), 0.16).set_trans(Tween.TRANS_SINE)
+		placing.chain().tween_callback(func() -> void:
+			if generation == _epoch:
+				right_hand.visible = false
+				right_hand.reparent(player.camera)
+				tool.collision_layer = 2
+				_busy = false
+				if tool == parcel: foley.play_package("place", parcel.item_id)
+				else: foley.play_sound("paper_place"))
 		_inspecting = false
 		player.look_locked = false
-		foley.play_sound("paper_place")
 	elif card_held:
 		if on_table: _place_card(hit["position"])
 		else: _message("Karneyi çalışma masasının üzerine bırak.")
+
+
+func _support_height(tool: Interactable) -> float:
+	if tool.action == "scissors": return -0.0082
+	if tool.action.begins_with("stamp_"): return -0.0012
+	return 0.0005
 
 
 func _equip(tool: Interactable) -> void:
 	held_tool = tool
 	tool.collision_layer = 0
 	tool.reparent(player.camera)
+	var from: Transform3D = tool.transform
 	_pose_tool()
+	var to: Transform3D = tool.transform
+	tool.transform = from
+	_busy = true
+	var generation: int = _epoch
+	var pickup: Tween = create_tween().set_parallel(true)
+	_tweens.append(pickup)
+	pickup.tween_property(tool, "position", to.origin, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	pickup.tween_property(tool, "rotation", to.basis.get_euler(), 0.16)
+	if card_held: pickup.tween_property(card, "position", _card_hold_position(), 0.16)
+	pickup.chain().tween_callback(func() -> void:
+		if generation == _epoch:
+			_busy = false
+			if tool == parcel: foley.play_package("pick", parcel.item_id)
+			else: foley.play_sound("paper_pick"))
 	right_hand.reparent(tool)
 	right_hand.position = Vector3(-0.04, 0.08, 0.05)
 	if _is_book(tool): right_hand.position = Vector3(0.208, 0.026, 0.11)
+	elif tool == parcel: right_hand.position = parcel.grip_position
 	right_hand.rotation = Vector3.ZERO
 	right_hand.visible = true
-	foley.play_sound("paper_pick")
 	_message("Nesne sağ elinde. G ile bir yüzeye bırakabilirsin.")
 
 
@@ -574,10 +713,15 @@ func _pose_tool() -> void:
 	held_tool.position = Vector3(0.19, -0.27, -0.46)
 	held_tool.rotation = Vector3(0.20, 0, -0.2)
 	if _is_book(held_tool):
-		held_tool.position = Vector3(0.02, -0.10, -_held_distance)
+		held_tool.position = _book_hold_position()
 		held_tool.rotation = Vector3(PI / 2, 0, 0)
+	elif held_tool == parcel:
+		held_tool.position = parcel.carry_position()
+		held_tool.rotation = parcel.carry_rotation()
 	elif held_tool.action == "scissors":
 		held_tool.rotation = Vector3(0.7, 0, -0.2)
+		for i: int in 2:
+			(held_tool.get_node("Blade%d" % i) as Node3D).rotation.y = -0.15 if i == 0 else 0.15
 
 
 func _return_tool_home() -> void:
@@ -597,19 +741,31 @@ func _prepare_from(shelf: Interactable) -> void:
 	var item: String = shelf.get_meta("item", "")
 	if not _execute(rules.prepare(Game.state, source, item, true)): return
 	parcel.visible = true
-	parcel.position = shelf.global_position + Vector3(-0.30, 0.1, 0)
+	parcel.position = shelf.global_position + Vector3(-0.30, 0.32, 0)
 	if _execute(rules.move_parcel(Game.state, "hand")): _equip(parcel)
-	_message("Ürün elinde. Masaya G ile bırak; makası alıp ilgili kuponu kes.")
+	_message("Ürün elinde. Tezgâha taşı; G ile yüzeye bırak veya müşteriye E ile uzat.")
 
 
 func _deliver_parcel() -> void:
 	if not _execute(rules.deliver_parcel(Game.state)): return
-	right_hand.reparent(player.camera)
-	right_hand.visible = false
 	parcel.reparent(self)
-	held_tool = null
-	foley.play_sound("paper_place")
-	_message("Ürün müşteriye uzatıldı. Kalan karneyi de eline alıp müşteriye ver.")
+	parcel.visible = true
+	parcel.collision_layer = 0
+	_busy = true
+	var generation: int = _epoch
+	var handover: Tween = create_tween().set_parallel(true)
+	_tweens.append(handover)
+	handover.tween_property(parcel, "position", Vector3(0.22, 1.21, -2.91), 0.30).set_trans(Tween.TRANS_CUBIC)
+	handover.tween_property(parcel, "rotation", Vector3.ZERO, 0.30)
+	handover.chain().tween_callback(func() -> void:
+		if generation == _epoch:
+			right_hand.reparent(player.camera)
+			right_hand.visible = false
+			parcel.visible = false
+			held_tool = null
+			_busy = false
+			foley.play_package("place", parcel.item_id))
+	_message("Ürünü müşteriye uzatıyorsun. Kalan karneyi R ile alıp E ile iade et.")
 
 
 func _finish_card(destination: String) -> void:
@@ -640,14 +796,20 @@ func _flip_card() -> void:
 	_card_busy = true
 	card.front_showing = not card.front_showing
 	_inspect_angles = Vector2.ZERO
-	var target: Vector3 = Vector3.ZERO if card_held else TABLE_ROTATION
-	target.y = 0 if card.front_showing else PI
+	var target: Quaternion = Quaternion(Vector3.UP, 0 if card.front_showing else PI) if card_held else RationCard3D.table_orientation(card.front_showing)
 	var generation: int = _epoch
 	var tween: Tween = create_tween()
 	_tweens.append(tween)
-	tween.tween_property(card, "rotation", target, 0.30).set_trans(Tween.TRANS_SINE)
+	var resting: Vector3 = card.position
+	if not card_held:
+		tween.tween_property(card, "position", resting + Vector3(0, RationCard3D.WIDTH / 2 + 0.025, 0), 0.10)
+	tween.tween_property(card, "quaternion", target, 0.25).set_trans(Tween.TRANS_SINE)
+	if not card_held:
+		tween.tween_property(card, "position", resting, 0.10)
 	tween.tween_callback(func() -> void:
-		if generation == _epoch: _card_busy = false)
+		if generation == _epoch:
+			_card_busy = false
+			if card_held: _align_card_grip())
 	foley.play_sound("paper_flip")
 
 
@@ -662,6 +824,7 @@ func _begin_tool() -> void:
 		_stamp_time = 0
 		_stamp_pixel = pixel
 		_stamp_kind = held_tool.action.trim_prefix("stamp_")
+		held_tool.reparent(self)
 	elif held_tool.action == "scissors":
 		var work: Dictionary = RationDeskRules.desk(Game.state)
 		for i: int in 3:
@@ -682,7 +845,9 @@ func _end_tool() -> void:
 	if _stamp_charging:
 		_stamp_charging = false
 		if _stamp_time >= 0.08: _stamp_contact()
-		else: _message("Damgayı kısa süre basılı tutup bırak.")
+		else:
+			_restore_tool_to_hand()
+			_message("Damgayı kısa süre basılı tutup bırak.")
 	if _cut_index >= 0:
 		_update_cut()
 		if _cut_index < 0: return
@@ -698,26 +863,39 @@ func _end_tool() -> void:
 
 
 func _stamp_contact() -> void:
-	if held_tool == null or _ray().get("collider") != card or not card.front_showing: return
+	if held_tool == null: return
+	if _ray().get("collider") != card or not card.front_showing:
+		_restore_tool_to_hand(); return
 	var current: Vector2 = card.ray_pixel(player.camera.global_position, -player.camera.global_basis.z)
-	if current.distance_to(_stamp_pixel) > 28: _message("Damga alanından uzaklaştın; yeniden dene."); return
+	if current.distance_to(_stamp_pixel) > 28:
+		_restore_tool_to_hand(); _message("Damga alanından uzaklaştın; yeniden dene."); return
 	_busy = true
+	_stamp_animating = true
+	_stamp_contacted = false
+	_tool_generation += 1
+	var gesture: int = _tool_generation
+	var kind: String = _stamp_kind
+	var pixel: Vector2 = _stamp_pixel
 	var tool: Interactable = held_tool
 	var generation: int = _epoch
 	var contact: Vector3 = card.pixel_to_world(_stamp_pixel)
 	_start_tool_on_table(contact + Vector3(0, 0.12, 0))
 	var tween: Tween = create_tween()
+	_stamp_tween = tween
 	_tweens.append(tween)
-	tween.tween_property(tool, "position", contact + Vector3(0, 0.005, 0), 0.12).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(tool, "position", contact + Vector3(0, -0.0019, 0), 0.12).set_trans(Tween.TRANS_QUAD)
 	tween.tween_callback(func() -> void:
-		if generation == _epoch and _execute(rules.stamp(Game.state, _stamp_kind, _stamp_pixel, true)):
+		if generation == _epoch and gesture == _tool_generation and _execute(rules.stamp(Game.state, kind, pixel, true)):
+			_stamp_contacted = true
 			foley.play_sound("stamp_down"))
 	tween.tween_interval(0.07)
 	tween.tween_property(tool, "position", contact + Vector3(0, 0.10, 0), 0.12)
 	tween.tween_callback(func() -> void:
-		if generation == _epoch:
-			foley.play_sound("stamp_lift")
+		if generation == _epoch and gesture == _tool_generation:
+			if _stamp_contacted: foley.play_sound("stamp_lift")
 			_restore_tool_to_hand()
+			_stamp_animating = false
+			_stamp_contacted = false
 			_busy = false)
 
 
@@ -754,12 +932,11 @@ func _update_cut() -> void:
 	card.cut_progress(_cut_index, _progress)
 
 
-func _detach_coupon(index: int, item: String) -> void:
-	var token: Node3D = Node3D.new()
+func _detach_coupon(index: int, _item: String) -> void:
+	var token: Node3D = card.create_coupon(index)
 	add_child(token)
 	token.position = card.pixel_to_world(RationCardView.coupon_rect(index).get_center()) + Vector3(0, 0.02, 0)
-	_box(token, Vector3(0.10, 0.002, 0.05), Vector3.ZERO, Color("dfd0ae"))
-	_label(token, RationDeskRules.GOODS[item], Vector3(0, 0.015, 0), 0.00055)
+	token.global_rotation = card.global_rotation
 	_tokens.append(token)
 	var generation: int = _epoch
 	var tween: Tween = create_tween()
@@ -773,12 +950,13 @@ func _detach_coupon(index: int, item: String) -> void:
 func _hint(target: Node) -> String:
 	if target == null: return "WASD · Yürü    E · Al / ver    G · Yüzeye bırak    Esc · Menü"
 	if target == card:
-		if held_tool != null: return "E · Masaya eğil    R · Karneyi al    F · Çevir    Sol tuş · Aracı kullan    Q · Ayrıl"
-		return "E · Karneyi al ve masaya bırak" if RationDeskRules.desk(Game.state).get("location") == "intake" else "E · Masaya eğil    R · Karneyi eline al    F · Çevir    Q · Ayrıl"
+		if RationDeskRules.desk(Game.state).get("location") == "intake": return "E · Uzatılan karneyi masaya al"
+		var inspect: String = "Q / WASD · Ayrıl" if _desk_inspecting else "E · Eğilip incele"
+		return inspect + "    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "")
 	var kind: String = str(target.get("action")) if target is Interactable else ""
 	match kind:
 		"workmat": return "E / G · Karneyi masaya bırak" if card_held else "E · Masadaki karneyi incelemek için eğil    Q · Ayrıl"
-		"customer": return "E · Elindeki ürünü / karneyi müşteriye uzat"
+		"customer": return "E · Ürünü müşteriye uzat" if held_tool == parcel else ("E · Karneyi iade et" if card_held else "E · Müşterinin isteğini tekrar dinle")
 		"drawer": return "E · Elindeki karneyi alıkoyma bölmesine koy"
 		"storage": return "E · Bu koliden istenen ürünü hazırla ve al"
 		"parcel": return "E · Hazırlanmış ürünü al"
@@ -793,11 +971,6 @@ func _hint(target: Node) -> String:
 
 func _toggle_pause() -> void:
 	_exit_desk_inspection(true)
-	if _cut_index >= 0:
-		_cut_index = -1
-		card.cut_progress(-1, 0)
-		_restore_tool_to_hand()
-	_stamp_charging = false
 	pause.visible = not pause.visible
 	_inspecting = false
 	player.look_locked = false
@@ -814,6 +987,8 @@ func _execute(command: Dictionary) -> bool:
 
 func _message(text: String) -> void:
 	message.text = text
+	_feedback_until = Time.get_ticks_msec() + 5500
+	message.visible = true
 
 
 func _write_ledger(work: Dictionary) -> void:
@@ -854,10 +1029,12 @@ func _make_page(prop: Node3D, key: String, dimensions: Vector2, text: String) ->
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_texture = viewport.get_texture()
 	material.roughness = 1
+	var thickness: float = 0.001 if key == "order" else 0.019
+	_box(prop, Vector3(dimensions.x + 0.004, thickness, dimensions.y + 0.004), Vector3(0, thickness / 2, 0), Color("b5a782"))
 	var surface: MeshInstance3D = MeshInstance3D.new()
 	surface.mesh = plane
 	surface.material_override = material
-	surface.position.y = 0.021
+	surface.position.y = thickness + 0.002
 	prop.add_child(surface)
 
 
@@ -974,10 +1151,11 @@ func _hud_label(parent: CanvasLayer, font_size: int, preset: int, y: float) -> L
 
 
 func _run_selftest() -> void:
-	var failures: PackedStringArray = []
+	var failures: PackedStringArray = await preload("res://tests/fps_ration_regressions.gd").new().run(self)
 	await _wait_customer()
 	_aim(card.global_position)
 	_key(KEY_E)
+	await _wait_hands()
 	if card_held: failures.append("out-of-reach pickup was allowed")
 	player.camera.rotation = Vector3.ZERO
 	var start: Vector3 = player.position
@@ -996,6 +1174,7 @@ func _run_selftest() -> void:
 		_aim(card.global_position)
 		_key(KEY_E)
 		await _wait_hands()
+		await _wait_hands()
 		await get_tree().physics_frame
 		if card_held or card.get_parent() != self or RationDeskRules.desk(Game.state).get("placement") != "table":
 			failures.append("customer card did not settle on world table: " + encounter["id"])
@@ -1005,9 +1184,16 @@ func _run_selftest() -> void:
 			var eye_before: Transform3D = player.camera.transform
 			_aim(card.global_position)
 			_key(KEY_E)
+			await _wait_hands()
 			await get_tree().create_timer(0.28).timeout
 			if not _desk_inspecting or player.camera.position.length() < 0.1: failures.append("world desk inspection did not lean the eye camera")
 			await _capture("06_lean_inspection")
+			_key(KEY_F)
+			await _wait_hands()
+			if card.global_basis.z.dot(Vector3.DOWN) < 0.99: failures.append("table flip did not expose physical back face")
+			await _capture("12_table_back")
+			_key(KEY_F)
+			await _wait_hands()
 			_key_down(KEY_S, true)
 			await get_tree().create_timer(0.25).timeout
 			_key_down(KEY_S, false)
@@ -1042,12 +1228,15 @@ func _run_selftest() -> void:
 		await _wait_hands()
 		if card.front_showing: failures.append("physical back-face flip failed")
 		if i == 0: await _capture("03_held_back")
+		elif i == 5: await _capture("08_tampered_back")
 		_key(KEY_F)
 		await get_tree().create_timer(0.34).timeout
 		await _wait_hands()
 		if i == 0: await _capture("02_held_front")
+		elif i == 5: await _capture("07_tampered_front")
 		_aim(workmat.global_position)
 		_key(KEY_G)
+		await _wait_hands()
 		await get_tree().create_timer(0.27).timeout
 		await _wait_hands()
 		await get_tree().physics_frame
@@ -1058,6 +1247,7 @@ func _run_selftest() -> void:
 		var stamp: Interactable = props["stamp_" + kind]
 		_aim(stamp.global_position + Vector3(0, 0.08, 0))
 		_key(KEY_E)
+		await _wait_hands()
 		if held_tool != stamp: failures.append("physical stamp pickup failed: " + encounter["id"])
 		await get_tree().physics_frame
 		_aim(card.pixel_to_world(Vector2(540, 190)))
@@ -1069,12 +1259,14 @@ func _run_selftest() -> void:
 		if RationDeskRules.desk(Game.state).get("stamp") != kind: failures.append("3D stamp contact failed: " + encounter["id"])
 		_aim(homes[stamp].origin)
 		_key(KEY_G)
+		await _wait_hands()
 		if held_tool != null: failures.append("physical stamp put-down failed")
 		await get_tree().physics_frame
 		if kind == "approve":
 			var item: String = encounter["request"]["item"]
 			_aim(props["scissors"].global_position + Vector3(0, 0.016, 0))
 			_key(KEY_E)
+			await _wait_hands()
 			if held_tool != props["scissors"]: failures.append("physical scissors pickup failed")
 			await get_tree().physics_frame
 			var rect: Rect2 = RationCardView.coupon_rect(RationDeskRules.PRODUCT_ORDER.find(item))
@@ -1095,6 +1287,7 @@ func _run_selftest() -> void:
 			if i == 0: await _capture("04_table_cut")
 			_aim(Vector3(0.25, 0.966, -1.66))
 			_key(KEY_G)
+			await _wait_hands()
 			await get_tree().physics_frame
 			if not (RationDeskRules.desk(Game.state).get("parcel", {}) as Dictionary).is_empty(): failures.append("paperwork required goods before completion")
 			# Actual walking/lean release is tested above; fixture positions isolate shelf handling.
@@ -1103,19 +1296,29 @@ func _run_selftest() -> void:
 			var shelf: Interactable = shelves["hidden" if i == 7 else item]
 			_aim(shelf.global_position + Vector3(0, 0.14, 0))
 			_key(KEY_E)
+			await _wait_hands()
 			if held_tool != parcel: failures.append("shelf package pickup after paperwork failed: " + encounter["id"])
+			if i == 0: await _capture("09_goods_hand")
+			elif i == 1: await _capture("11_sugar_hand")
 			await get_tree().physics_frame
 			player.position = Vector3(0, 0.025, -1.25)
 			await get_tree().physics_frame
 			_aim(Vector3(-0.85, 0.966, -1.66))
 			_key(KEY_G)
+			await _wait_hands()
 			await get_tree().physics_frame
+			if i == 0:
+				_aim(parcel.global_position + Vector3(0, 0.05, 0))
+				await _capture("10_goods_counter")
 			_aim(parcel.global_position + Vector3(0, 0.05, 0))
 			_key(KEY_E)
+			await _wait_hands()
 			await get_tree().physics_frame
 			_aim(customer_target.global_position + Vector3(0, 0.45, 0))
 			_key(KEY_E)
+			await _wait_hands()
 			if not RationDeskRules.desk(Game.state).get("parcel", {}).get("delivered", false): failures.append("package was not handed to customer")
+			await _wait_hands()
 		_aim(card.global_position)
 		_key(KEY_R)
 		await get_tree().create_timer(0.27).timeout
@@ -1123,6 +1326,7 @@ func _run_selftest() -> void:
 		await get_tree().physics_frame
 		_aim((drawer.global_position + Vector3(0, 0.045, 0)) if kind == "seize" else (customer_target.global_position + Vector3(0, 0.45, 0)))
 		_key(KEY_E)
+		await _wait_hands()
 		await get_tree().create_timer(0.34).timeout
 		await _wait_hands()
 		if not RationDeskRules.desk(Game.state).get("done", false):
@@ -1130,6 +1334,7 @@ func _run_selftest() -> void:
 			break
 		_aim(bell.global_position + Vector3(0, 0.03, 0))
 		_key(KEY_E)
+		await _wait_hands()
 	var results: Array = RationDeskRules.desk(Game.state).get("results", [])
 	if results.size() != 8: failures.append("only %d of 8 cases completed" % results.size())
 	for result: Dictionary in results:
@@ -1139,6 +1344,7 @@ func _run_selftest() -> void:
 	if rules.current(Game.state).is_empty():
 		_aim(props["ledger"].global_position)
 		_key(KEY_E)
+		await _wait_hands()
 		await _capture("05_ledger")
 	# Interrupted hand/NPC animations must not alter the new day's document.
 	_restart()
@@ -1147,6 +1353,7 @@ func _run_selftest() -> void:
 	await get_tree().physics_frame
 	_aim(card.global_position)
 	_key(KEY_E)
+	await _wait_hands()
 	await _wait_hands()
 	_aim(card.global_position)
 	_key(KEY_F)

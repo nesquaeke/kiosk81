@@ -1,6 +1,7 @@
 # FPS karne etkileşimi — ana mekanik ve ortak geliştirme belgesi
 
 Bağımsız uygulama görevi: [FPS master prompt](RATION_FPS_MASTER_PROMPT.md).
+Doğrulama ve güncel görüntüler: [Kabul raporu](RATION_FPS_ACCEPTANCE.md).
 Bu belge uygulanan dilimi kaydeder; master prompt hedefi ve kabul ölçütlerini tanımlar.
 
 ## Değişmez temel
@@ -48,19 +49,25 @@ karakterin bakış yönü korunur. Elde nesneyle odada yürünebilir.
 - WASD, hızlı yürüyüş, duvar/zemin/tezgâh çarpışması ve yakın erişim.
 - Sol elde karne; sağ elde makas, damga, defter veya ürün. Eller ve araçlar
   basit modellerdir; nihai rig/IK veya sanat varlıkları değildir.
-- Müşteriden alınan kart kısa hareket sonunda kendiliğinden masaya yerleşir;
+- Müşteriden alınan kart kameraya bağlanmadan dünya uzayında masaya yerleşir;
   masadaki karta E ile eğilinir, R ile bilinçli olarak ele alınır.
 - Q veya yürüyüş eğilme pozundan çıkar. Karne masada ve işlem korunur.
   Q yarım kesimi ve basılı inceleme durumunu da temizler.
 - Konuşma kısa süreli ve yakın bakışta görünür; E ile tekrar dinlenebilir.
   Talep fişi masada fiziksel olarak okunabilir.
-- Ön/arka yüz, eğme, çevirme ve yakınlaştırma. Kesilen kupon iki yüzde de
+- Ön/arka yüz, eğme, çevirme ve yakınlaştırma. Masadaki çevirme, kâğıdı
+  masa yüzeyinden kaldırıp gerçek arka yüzü açar; quaternion bileşimi kullanılır. Kesilen kupon iki yüzde de
   gerçek bir boşluk bırakır; kâğıdın arkasında sağlam kupon görünmez.
-- Fiziksel SATIŞ, RET, ALIKOY damgaları; temas anında iz ve ayrı sesler.
+- Fiziksel SATIŞ, RET, ALIKOY damgaları; yaklaşma/basma/kaldırma ve temas
+  anında iz/ses. Temastan önce Q/yürüme/Esc iptalinde iz oluşmaz; temastan
+  sonra iptal mevcut izi korur ve aracı ele geri verir.
 - Kesimde bakış çizgi boyunca ilerler; makas ağızları hareket eder.
   Kısa veya çizgi dışı kesim kupon tüketmez.
-- Ayrılan parça 3D kupon kutusuna gider; temas sesi çalar.
-- Ürün koliden alınır, yüzeye bırakılır ve müşteriye uzatılır.
+- Ayrılan parça aynı belgenin ürün, miktar ve seri baskısını iki yüzünde taşır;
+  3D kupon kutusuna gider; temas sesi çalar.
+- Et kâğıt/sicim paketi, şeker katlı torba, sabun kılıflı bar olarak gösterilir.
+  Ürün açık ahşap koliden alınır, yüzeye bırakılır ve müşteriye hareketle uzatılır.
+  Her birinin ayrı alma/bırakma foley olayı vardır.
 - Gün sonu kararları dünyadaki deftere yazılır; elde okunur.
 - Hedef ipucu, konuşma altyazısı ve Esc menüsü dışında belge dashboard'u yok.
 
@@ -78,7 +85,9 @@ tam vücut/IK, serbest tartım, para üstü ve kampanya devamlılığı henüz y
 | Emekli | 250 g | E02 |
 
 Her sınıfta şeker 1000 g, sabun 1 adet. Ön yüzde ad/sınıf/seri/ay/haklar;
-arkada kurum kodu, onay mührü ve müdahale izleri bulunur.
+arkada kurum kodu, onay mührü ve müdahale izleri bulunur. Çift yüz kupon
+kayıtları, baskı deseni, lif, kat izi, kenar aşınması ve damgada sabit mürekkep
+aşınması kâğıdın üstündedir. Yama iki yüzde aynı fiziksel konuma hizalanır.
 
 | Durum | Karar |
 | --- | --- |
@@ -152,6 +161,7 @@ kullanıcı dinlemesi kalite yol haritasındadır. ASMR kalitesi bitmiş sayılm
 - RationCardView: yalnızca kâğıdın yazı/görselini üretir; FPS'te ekran olarak açılmaz.
 - RationDeskRules: karar/gramaj; hand/table/customer yerleşimleri ve ürün teslim aşaması.
 - Game: stok, para, kupon ve kayıtları atomik değiştirir.
+- RationParcel3D: tek aktif paket, ürün ambalajı, fiziksel baskı ve tutuş.
 - RationFoley: temas sesleri. content/ration/: müşteri/kart verisi.
 
 Mantıksal yerleşim, kuponlar, damgalar ve teslim aşaması JSON kopyasında
@@ -160,8 +170,12 @@ tam konum/rotasyon kayıtları ve yükleme menüsü henüz yoktur.
 
 ## Doğrulama
 
-Birim testleri sınıf/kurum, miktar, kayıt dışı stok, iki kez kesme/teslim,
-fiziksel yerleşim ve JSON dönüşümünü sınar. FPS selftest'i gerçek WASD ile
+186 birim testi içinde karne testleri sınıf/kurum, miktar, kayıt dışı stok, iki kez kesme/teslim,
+fiziksel yerleşim ve JSON dönüşümünü sınar. Gerçek baz yönleri, arka yüz kupon
+hizası ve üç ambalajın collider/etiket/yeniden kullanım özellikleri ayrıca sınanır.
+`tests/fps_ration_regressions.gd` duvar engeli, teslim sırasında yürüme, eğilmeden
+çıkış, gerçek masada arka yüz, odak kaybı, damga/kesim iptali ve nesne bırakırken
+yeniden başlatmayı gerçek girdilerle kontrol eder. FPS selftest'i gerçek WASD ile
 hareket/tezgâh çarpışması ve erişimi, sonra gerçek E/G/F/fare girdisiyle
 müşteriden masaya teslim alma, masaya eğilme/yürüyerek ayrılma, açık çıkış,
 kamera sabitken elde eğme, 3D yüz çevirme, masaya bırakma,

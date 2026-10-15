@@ -217,31 +217,27 @@ func get_last_mouse_velocity() -> Vector2:
 func _draw() -> void:
 	if card.is_empty():
 		return
-	draw_style_box(_paper_style(Color(0, 0, 0, 0.23), 10), Rect2(Vector2(5, 9), PAPER_SIZE))
-	draw_style_box(_paper_style(Color("e9dfc5"), 3), Rect2(Vector2.ZERO, PAPER_SIZE))
-	for fibre: Vector2 in _fibres:
-		draw_line(fibre, fibre + Vector2(2, 0.3), Color(0.35, 0.27, 0.15, 0.065), 1)
 	var spec: Dictionary = RationDeskRules.CLASSES.get(card.get("class", ""), {})
 	var color: Color = spec.get("color", Color.GRAY)
-	draw_rect(Rect2(14, 14, 612, 48), color)
-	_text(Vector2(30, 46), "KARTA ZAOPATRZENIA", 28, Color("fff7df"))
-	_text(Vector2(445, 44), "STYCZEŃ · 1982" if card.get("month") == "1982-01" else "LUTY · 1982", 18, Color("fff7df"))
+	_draw_paper(color)
+	draw_rect(Rect2(14, 14, 612, 47), color.darkened(0.13))
+	_text(Vector2(29, 43), "KARTA ZAOPATRZENIA", 26, Color("fff7df"))
+	_text(Vector2(463, 42), _month_name(), 17, Color("fff7df"))
+	_text(Vector2(31, 59), "WARSZAWA · PUNKT ZAOPATRZENIA 81", 9, Color("f0e3c7"))
 	if front:
 		_draw_front(spec)
 	else:
 		_draw_back(spec)
-	if card.get("worn", false):
-		for x: float in [110.0, 320.0, 510.0]:
-			draw_line(Vector2(x, 66), Vector2(x + 4, 276), Color(0.30, 0.22, 0.14, 0.10), 2)
-		draw_line(Vector2(8, 235), Vector2(631, 243), Color(0.30, 0.22, 0.14, 0.12), 2)
-	if _stamp_held:
+	_draw_folds()
+	_text(Vector2(31, 391), "DRUK PZ-81  /  %s  /  %s" % [str(card.get("serial", "")), "01" if front else "02"], 9, Color("8c7d60"))
+	if _stamp_held and render_tools:
 		var depression: float = minf(_stamp_time / 0.08, 1)
 		draw_circle(_press - Vector2(0, 22 - depression * 8), 16, Color("534130"))
 		draw_rect(Rect2(_press - Vector2(55, 11 - depression * 5), Vector2(110, 20)), Color("34312c"))
 	if _cut_index >= 0:
 		var rect: Rect2 = coupon_rect(_cut_index)
 		var tip: Vector2 = rect.position + Vector2(rect.size.x * _cut_progress, 0)
-		draw_line(rect.position, tip, Color("354844"), 4)
+		draw_line(rect.position, tip, Color("354844"), 2)
 		if not render_tools:
 			return
 		draw_line(tip - Vector2(22, 14), tip + Vector2(12, 3), Color("747f80"), 4)
@@ -251,63 +247,191 @@ func _draw() -> void:
 
 
 func _draw_front(spec: Dictionary) -> void:
-	_text(Vector2(30, 94), spec.get("name", "BİLİNMEYEN SINIF"), 25)
-	_text(Vector2(30, 123), "IMIĘ I NAZWISKO / AD SOYAD", 15, Color("797160"))
-	_text(Vector2(30, 151), card.get("holder", ""), 28)
-	_text(Vector2(30, 187), "NR  " + str(card.get("serial", "")), 22)
-	_text(Vector2(275, 187), "AY  " + str(card.get("month", "")), 22)
-	_text(Vector2(30, 223), "ET HAKKI  %s" % RationDeskRules.amount_text("meat", int(card.get("meat", 0))), 25)
-	_text(Vector2(30, 255), "Kontrol → damga / kupon → ürün teslimi.", 17, Color("797160"))
-	draw_rect(DECISION_RECT, Color(0.3, 0.25, 0.15, 0.04))
-	draw_rect(DECISION_RECT, Color("a39373"), false, 1)
-	_text(Vector2(475, 158), "KARAR / DECYZJA", 15, Color("8b7f64"))
+	var tint: Color = spec.get("color", Color.GRAY)
+	draw_rect(Rect2(26, 73, 413, 30), Color(tint, 0.10))
+	draw_rect(Rect2(26, 73, 4, 30), tint)
+	_text(Vector2(38, 95), spec.get("name", "BİLİNMEYEN SINIF"), 21)
+	_draw_rosette(Vector2(540, 96), 27, Color(tint, 0.25))
+	_text(Vector2(30, 120), "IMIĘ I NAZWISKO / AD SOYAD", 11, Color("797160"))
+	_text(Vector2(30, 148), card.get("holder", ""), 27)
+	draw_line(Vector2(30, 155), Vector2(435, 155), Color("b9aa88"), 0.7)
+	_text(Vector2(30, 171), "NUMER / SERİ", 10, Color("797160"))
+	_text(Vector2(246, 171), "MIESIĄC / GEÇERLİ AY", 10, Color("797160"))
+	_text(Vector2(30, 195), str(card.get("serial", "")), 23)
+	_text(Vector2(246, 195), str(card.get("month", "")), 23)
+	draw_rect(Rect2(30, 205, 405, 42), Color(tint, 0.08))
+	_text(Vector2(40, 221), "PRZYDZIAŁ MIĘSA / ET HAKKI", 10, Color("797160"))
+	if card.get("patch", false):
+		# This is the altered quota's paper patch, not a truth indicator.
+		draw_rect(Rect2(285, 208, 137, 34), Color("e9e1c8"))
+		draw_line(Vector2(285, 209), Vector2(421, 208), Color(0.47, 0.40, 0.28, 0.30), 0.7)
+		draw_line(Vector2(286, 241), Vector2(421, 242), Color(0.47, 0.40, 0.28, 0.22), 0.7)
+	_text(Vector2(40, 239), "MIESIĘCZNIE / AYLIK", 10, Color("797160"))
+	_text(Vector2(295, 235), RationDeskRules.amount_text("meat", int(card.get("meat", 0))), 25)
+	_text(Vector2(30, 265), "ODCINKI TOWAROWE / ÜRÜN KUPONLARI", 12, Color("746b55"))
+	_text(Vector2(30, 278), "Kesik çizgiden ayırınız. Haklar yalnızca bu kart için geçerlidir.", 10, Color("8b7d63"))
+	draw_rect(DECISION_RECT, Color(tint, 0.045))
+	_dashed_rect(DECISION_RECT, Color("a39373"), 5.0)
+	_text(Vector2(474, 151), "KARAR / DECYZJA", 12, Color("8b7f64"))
+	_text(Vector2(474, 216), "PIECZĘĆ SPRZEDAWCY", 10, Color("9b8e73"))
 	for mark: Dictionary in work.get("marks", []):
 		_draw_mark(mark)
 	for i: int in 3:
-		var rect: Rect2 = coupon_rect(i)
-		var item: String = RationDeskRules.PRODUCT_ORDER[i]
-		if item in work.get("cuts", []) or not item in card.get("available", []):
-			draw_rect(rect, Color("354844"))
-			_text(rect.position + Vector2(17, 48), "AYRILMIŞ KUPON", 17, Color("94a499"))
-		else:
-			draw_rect(rect, Color(0.65, 0.53, 0.30, 0.08))
-			draw_rect(rect, Color("ab9a76"), false, 1)
-			_text(rect.position + Vector2(13, 30), RationDeskRules.GOODS[item], 19)
-			_text(rect.position + Vector2(13, 60), RationDeskRules.amount_text(item, int(card.get(item, 0))), 27)
-		for x: int in range(0, 180, 10):
-			draw_line(rect.position + Vector2(x, 0), rect.position + Vector2(x + 5, 0), Color("75694f"), 1.5)
+		_draw_coupon(i, false, tint)
 
 
 func _draw_back(spec: Dictionary) -> void:
-	_text(Vector2(30, 94), "KURUM KAYDI / POTWIERDZENIE", 25)
-	_text(Vector2(30, 136), "KURUM KODU", 18, Color("797160"))
-	_text(Vector2(30, 180), str(card.get("institution", "")), 42)
-	_text(Vector2(30, 222), "SERİ  " + str(card.get("serial", "")), 23)
+	var tint: Color = spec.get("color", Color.GRAY)
+	_text(Vector2(30, 94), "KURUM KAYDI / POTWIERDZENIE", 23)
+	draw_line(Vector2(30, 103), Vector2(609, 103), Color("b9aa88"), 0.7)
+	_text(Vector2(30, 128), "KOD INSTYTUCJI / KURUM KODU", 11, Color("797160"))
+	_text(Vector2(30, 168), str(card.get("institution", "")), 40)
+	_text(Vector2(30, 190), "REJESTR / ÖN YÜZ SERİSİ", 10, Color("797160"))
+	_text(Vector2(30, 214), str(card.get("serial", "")), 23)
+	_text(Vector2(30, 236), "OKRES / DÖNEM  " + str(card.get("month", "")), 13)
+	var seal_at: Vector2 = Vector2(520, 167)
+	# The issuing seal is separate from the player's decision stamp.
+	draw_arc(seal_at, 53, 0, TAU, 72, Color(0.46, 0.41, 0.31, 0.18), 0.7, true)
+	_text(Vector2(471, 231), "PIECZĘĆ ZAKŁADU", 10, Color("8b7f64"))
 	if card.get("seal", false):
-		draw_arc(Vector2(350, 184), 64, 0, TAU, 80, Color("645470"), 3)
-		draw_arc(Vector2(350, 184), 57, 0, TAU, 80, Color("645470"), 1)
-		_text(Vector2(307, 176), "ONAYLI", 21, Color("645470"))
-		_text(Vector2(323, 204), str(card.get("institution", "")), 26, Color("645470"))
-	else:
-		draw_rect(Rect2(278, 130, 144, 108), Color("a39373"), false, 1)
+		var ink: Color = Color("67546e")
+		for i: int in 36:
+			var angle: float = float(i) / 36.0 * TAU
+			# Small gaps and imperfect pressure resemble a rubber institution seal.
+			if i not in [5, 16, 29]:
+				draw_arc(seal_at, 49, angle, angle + 0.14, 5, Color(ink, 0.74 + float(i % 3) * 0.07), 2, true)
+		draw_arc(seal_at, 43, 0, TAU, 80, Color(ink, 0.68), 0.9, true)
+		_text(Vector2(481, 147), "WARSZAWA", 12, Color(ink, 0.80))
+		_center_text(seal_at + Vector2(0, 10), str(card.get("institution", "")), 28, Color(ink, 0.86))
+		_center_text(seal_at + Vector2(0, 29), "ZATWIERDZONO", 9, Color(ink, 0.79))
 	if card.get("patch", false):
-		draw_rect(Rect2(467, 119, 128, 100), Color("eee9d7"))
-		draw_rect(Rect2(467, 119, 128, 100), Color("ae9e7e"), false, 1)
-		for y: int in range(122, 220, 13):
-			draw_line(Vector2(465, y), Vector2(474, y + 4), Color("b6a585"), 1)
-	_text(Vector2(30, 287), "Karne bedava ürün sağlamaz; ödeme gereklidir.", 20)
-	_text(Vector2(30, 322), "Kartı ürünle birlikte müşteriye geri veriniz.", 20)
-	_text(Vector2(30, 365), "Kuponlar başka bir kartla birleştirilemez.", 17, Color("797160"))
+		# Mirror the changed field's position through the same physical sheet.
+		var patch: Rect2 = Rect2(218, 208, 137, 34)
+		draw_rect(patch.grow(2), Color(0.56, 0.43, 0.21, 0.12))
+		draw_rect(patch, Color("e7e0c9"))
+		draw_rect(patch, Color(0.51, 0.43, 0.30, 0.35), false, 0.8)
+		for y: int in range(211, 240, 6):
+			draw_line(Vector2(216, y), Vector2(223, y + 2), Color(0.52, 0.43, 0.27, 0.36), 0.8)
+	_text(Vector2(30, 261), "Karne ödeme yerine geçmez. Kuponları başka bir kartla birleştirmeyiniz.", 12, Color("746b55"))
+	_text(Vector2(30, 278), "Kurum onayını, sınıfı ve geçerli ayı ön yüzdeki kayıtla karşılaştırınız.", 11, Color("8b7d63"))
+	for i: int in 3:
+		_draw_coupon(i, true, tint)
 
 
 func _draw_mark(mark: Dictionary) -> void:
 	var kind: String = mark["kind"]
-	var color: Color = Color("476952") if kind == "approve" else Color("9b463b")
+	var color: Color = Color("355f46") if kind == "approve" else Color("8c3c32")
 	var at: Vector2 = Vector2(float(mark["x"]), float(mark["y"]))
 	var rect: Rect2 = Rect2(at - Vector2(65, 22), Vector2(130, 44))
-	draw_rect(rect, color, false, 3)
-	draw_rect(rect.grow(-4), Color(color, 0.6), false, 1)
-	_text(at + Vector2(-51, 8), {"approve": "SATIŞ", "reject": "RET", "seize": "ALIKOY"}[kind], 24, color)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = int(at.x * 17 + at.y * 31) + kind.hash()
+	# Deterministic ink wear stays anchored to the contact coordinates.
+	for edge: int in 4:
+		var start: Vector2 = [rect.position, rect.position + Vector2(130, 0), rect.end, rect.position + Vector2(0, 44)][edge]
+		var end: Vector2 = [rect.position + Vector2(130, 0), rect.end, rect.position + Vector2(0, 44), rect.position][edge]
+		for step: int in 22:
+			if rng.randf() > 0.075:
+				draw_line(start.lerp(end, float(step) / 22.0), start.lerp(end, float(step + 1) / 22.0), Color(color, rng.randf_range(0.66, 0.93)), 2.6, true)
+	draw_rect(rect.grow(-4), Color(color, 0.46), false, 0.8)
+	_center_text(at + Vector2(0, 7), {"approve": "SATIŞ", "reject": "RET", "seize": "ALIKOY"}[kind], 24, Color(color, 0.86))
+	for i: int in 34:
+		var spot: Vector2 = rect.position + Vector2(rng.randf_range(3, 127), rng.randf_range(3, 41))
+		draw_circle(spot, rng.randf_range(0.2, 0.9), Color("e9dfc5"))
+
+
+func _draw_paper(tint: Color) -> void:
+	if render_tools:
+		draw_style_box(_paper_style(Color(0, 0, 0, 0.23), 10), Rect2(Vector2(5, 9), PAPER_SIZE))
+	draw_style_box(_paper_style(Color("e9dfc5"), 2), Rect2(Vector2.ZERO, PAPER_SIZE))
+	draw_rect(Rect2(10, 10, 620, 380), Color("ab9a77"), false, 0.8)
+	draw_rect(Rect2(12, 12, 616, 376), Color(0.63, 0.55, 0.39, 0.20), false, 0.6)
+	for fibre: Vector2 in _fibres:
+		draw_line(fibre, fibre + Vector2(2, 0.3), Color(0.35, 0.27, 0.15, 0.08), 0.7)
+	# Fine printing stays low contrast so it never obscures evidence fields.
+	for strand: int in 9:
+		var points: PackedVector2Array = PackedVector2Array()
+		for i: int in 93:
+			var x: float = 20 + float(i) * 6.5
+			var y: float = 68 + float(strand) * 24 + sin(x * 0.037 + float(strand) * 0.62) * 5.0
+			points.append(Vector2(x, y))
+		draw_polyline(points, Color(tint, 0.08), 0.5, true)
+
+
+func _draw_folds() -> void:
+	var worn: bool = card.get("worn", false)
+	var strength: float = 0.15 if worn else 0.045
+	var x: float = 319.0 if front else 321.0
+	draw_line(Vector2(x, 4), Vector2(x + 1, 396), Color(0.30, 0.22, 0.14, strength), 1.6)
+	draw_line(Vector2(x + 2, 4), Vector2(x + 3, 396), Color(1.0, 0.97, 0.87, strength * 1.6), 1.1)
+	if not worn:
+		return
+	draw_line(Vector2(4, 243), Vector2(636, 246), Color(0.30, 0.22, 0.14, strength * 0.8), 1.9)
+	draw_line(Vector2(4, 245), Vector2(636, 248), Color(1.0, 0.97, 0.87, strength * 1.4), 1.0)
+	for i: int in 23:
+		var y: float = 21.0 + float(i) * 15.0
+		draw_line(Vector2(3, y), Vector2(7 + i % 4, y + 4), Color(0.44, 0.34, 0.18, 0.19), 1.2)
+		draw_line(Vector2(636, y + 4), Vector2(630 - i % 3, y + 8), Color(0.44, 0.34, 0.18, 0.16), 1.1)
+
+
+func _draw_coupon(index: int, reverse: bool, tint: Color) -> void:
+	var item: String = RationDeskRules.PRODUCT_ORDER[index]
+	var rect: Rect2 = coupon_rect(index)
+	if reverse:
+		rect.position.x = PAPER_SIZE.x - rect.end.x
+	var missing: bool = item in work.get("cuts", []) or not item in card.get("available", [])
+	if missing:
+		# The 3D shader discards this area, including fold and reverse ink.
+		if render_tools:
+			draw_rect(rect, Color("354844"))
+			_text(rect.position + Vector2(17, 48), "AYRILMIŞ KUPON", 17, Color("94a499"))
+		return
+	draw_rect(rect, Color(tint, 0.085))
+	_dashed_rect(rect, Color("9a8865"), 5)
+	if reverse:
+		_draw_rosette(rect.get_center(), 29, Color(tint, 0.20))
+		_center_text(rect.position + Vector2(90, 25), "PZ-81 / %02d" % (index + 1), 12, Color("8a7c62"))
+		_center_text(rect.position + Vector2(90, 51), str(card.get("serial", "")), 19, Color("706952"))
+		_center_text(rect.position + Vector2(90, 74), str(card.get("month", "")), 11, Color("8a7c62"))
+	else:
+		_text(rect.position + Vector2(12, 25), RationDeskRules.GOODS[item], 18)
+		_text(rect.position + Vector2(12, 56), RationDeskRules.amount_text(item, int(card.get(item, 0))), 28)
+		_text(rect.position + Vector2(12, 77), "%s  /  %02d" % [str(card.get("serial", "")), index + 1], 10, Color("8a7c62"))
+
+
+func _draw_rosette(at: Vector2, radius: float, tint: Color) -> void:
+	for strand: int in 3:
+		var points: PackedVector2Array = PackedVector2Array()
+		for i: int in 161:
+			var angle: float = float(i) / 160.0 * TAU
+			var r: float = radius * (0.76 + 0.18 * sin(angle * 13 + float(strand) * 0.9))
+			points.append(at + Vector2(cos(angle), sin(angle)) * r)
+		draw_polyline(points, tint, 0.65, true)
+
+
+func _dashed_rect(rect: Rect2, color: Color, dash: float) -> void:
+	for offset: int in range(0, int(rect.size.x), int(dash * 2)):
+		var width: float = minf(dash, rect.size.x - float(offset))
+		draw_line(rect.position + Vector2(offset, 0), rect.position + Vector2(offset + width, 0), color, 1.1)
+		draw_line(rect.position + Vector2(offset, rect.size.y), rect.position + Vector2(offset + width, rect.size.y), color, 0.7)
+	for offset: int in range(0, int(rect.size.y), int(dash * 2)):
+		var height: float = minf(dash, rect.size.y - float(offset))
+		draw_line(rect.position + Vector2(0, offset), rect.position + Vector2(0, offset + height), color, 0.7)
+		draw_line(rect.position + Vector2(rect.size.x, offset), rect.position + Vector2(rect.size.x, offset + height), color, 0.7)
+
+
+func _month_name() -> String:
+	var month: String = str(card.get("month", ""))
+	var parts: PackedStringArray = month.split("-")
+	if parts.size() != 2:
+		return month
+	var names: PackedStringArray = ["STYCZEŃ", "LUTY", "MARZEC", "KWIECIEŃ", "MAJ", "CZERWIEC", "LIPIEC", "SIERPIEŃ", "WRZESIEŃ", "PAŹDZIERNIK", "LISTOPAD", "GRUDZIEŃ"]
+	var index: int = parts[1].to_int() - 1
+	return "%s · %s" % [names[index], parts[0]] if index >= 0 and index < names.size() else month
+
+
+func _center_text(at: Vector2, text: String, font_size: int, color: Color) -> void:
+	var width: float = _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	_text(at - Vector2(width * 0.5, 0), text, font_size, color)
 
 
 func _text(at: Vector2, text: String, font_size: int, color: Color = Color("393a31")) -> void:

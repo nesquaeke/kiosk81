@@ -2,7 +2,7 @@ class_name RationFoley
 extends Node
 ## Original procedural placeholders. A contact sound is never used as a verdict cue.
 
-const NAMES: PackedStringArray = ["paper_pick", "paper_flip", "paper_place", "snip", "stamp_down", "stamp_lift", "coupon_drop", "drawer"]
+const NAMES: PackedStringArray = ["paper_pick", "paper_flip", "paper_place", "snip", "stamp_down", "stamp_lift", "coupon_drop", "drawer", "package_meat_pick", "package_meat_place", "package_sugar_pick", "package_sugar_place", "package_soap_pick", "package_soap_place"]
 var streams: Dictionary[String, AudioStream] = {}
 var players: Array[AudioStreamPlayer] = []
 var events: PackedStringArray = []
@@ -37,6 +37,13 @@ func play_sound(name: String) -> void:
 	events.append(name)
 	if events.size() > 128:
 		events.remove_at(0)
+
+
+func play_package(contact: String, item: String) -> void:
+	# Caller chooses the real grip/surface contact, not the initial button press.
+	if contact not in ["pick", "place"] or item not in ["meat", "sugar", "soap"]:
+		return
+	play_sound("package_%s_%s" % [item, contact])
 
 
 func set_level(value: float) -> void:

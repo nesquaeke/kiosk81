@@ -81,6 +81,8 @@ func prepare(state: CampaignState, source: String, item: String = "", physical: 
 	if not source in ["official", "hidden"]:
 		return _reject("Geçersiz tedarik kaynağı.")
 	var request: Dictionary = current(state)["request"]
+	if not _valid_request(request):
+		return _reject("Siparişin ürün ve miktar bilgisi geçersiz.")
 	if item != "" and item != request["item"]:
 		return _reject("Müşteri bu ürünü istemedi.")
 	if physical and not request["item"] in work.get("cuts", []):
@@ -108,6 +110,8 @@ func deliver_parcel(state: CampaignState) -> Dictionary:
 	var parcel: Dictionary = work.get("parcel", {})
 	if not _active(work) or parcel.is_empty() or parcel.get("placement") != "hand" or parcel.get("delivered", false):
 		return _reject("Teslim edilecek ürün elinde olmalı.")
+	if not _parcel_matches_request(parcel, current(state).get("request", {})):
+		return _reject("Hazırlanan paketin ürün, miktar veya kaynak bilgisi siparişle uyuşmuyor.")
 	if work.get("stamp") != "approve" or not parcel["item"] in work["cuts"]:
 		return _reject("Önce satış damgası ve uygun kupon kesimi gerekli.")
 	if int(work[parcel["source"]].get(parcel["item"], 0)) < int(parcel["amount"]):
@@ -124,6 +128,8 @@ func cut(state: CampaignState, item: String, physical: bool = false) -> Dictiona
 	if not _active(work) or work.get("stamp") != "approve":
 		return _reject("Kesmeden önce SATIŞ damgası gerekli.")
 	var request: Dictionary = current(state)["request"]
+	if not _valid_request(request):
+		return _reject("Siparişin ürün ve miktar bilgisi geçersiz.")
 	if request["item"] != item:
 		return _reject("Yalnızca müşterinin istediği ürünün kuponunu kes.")
 	if int(work["official"].get(item, 0)) < int(request["amount"]) and int(work["hidden"].get(item, 0)) < int(request["amount"]):
@@ -132,7 +138,7 @@ func cut(state: CampaignState, item: String, physical: bool = false) -> Dictiona
 	if not item in card["available"] or item in work["cuts"]:
 		return _reject("Bu kupon yok veya zaten kesildi.")
 	if int(card.get(item, 0)) < int(request["amount"]):
-		return _reject("Kupondaki miktar hazırlanan üründen az.")
+		return _reject("Kupondaki miktar istenen üründen az.")
 	(work["cuts"] as Array).append(item)
 	return _commit(work)
 
@@ -151,9 +157,11 @@ func finish(state: CampaignState, destination: String, physical: bool = false) -
 	if (destination == "seize") != (kind == "seize"):
 		return _reject("Karar damgasıyla belge bölmesi uyuşmuyor.")
 	var encounter: Dictionary = current(state)
+	var request: Dictionary = encounter.get("request", {})
+	if not _valid_request(request):
+		return _reject("Siparişin ürün ve miktar bilgisi geçersiz.")
 	var problems: PackedStringArray = issues(encounter)
 	var forged: bool = is_forged(encounter)
-	var request: Dictionary = encounter["request"]
 	var official: Dictionary = work["official"]
 	var shortage: bool = int(official.get(request["item"], 0)) < int(request["amount"])
 	var extra: Array[Dictionary] = []
@@ -164,6 +172,8 @@ func finish(state: CampaignState, destination: String, physical: bool = false) -
 		var parcel: Dictionary = work.get("parcel", {})
 		if parcel.is_empty() or not request["item"] in work["cuts"]:
 			return _reject("Ürünü hazırla ve uygun kuponu tamamen kes.")
+		if not _parcel_matches_request(parcel, request):
+			return _reject("Hazırlanan paketin ürün, miktar veya kaynak bilgisi siparişle uyuşmuyor.")
 		if physical and not parcel.get("delivered", false):
 			return _reject("Önce hazırlanan ürünü müşteriye uzat.")
 		source = parcel["source"]
@@ -251,6 +261,16 @@ static func is_forged(encounter: Dictionary) -> bool:
 
 static func _active(work: Dictionary) -> bool:
 	return work.get("location") == "desk" and not work.get("done", false)
+
+
+static func _valid_request(request: Dictionary) -> bool:
+	return request.get("item", "") in PRODUCT_ORDER and typeof(request.get("amount")) == TYPE_INT and int(request["amount"]) > 0
+
+
+## A saved or stale parcel must never deliver one quantity and bill another.
+## These are order invariants; authenticity remains the player's decision.
+static func _parcel_matches_request(parcel: Dictionary, request: Dictionary) -> bool:
+	return _valid_request(request) and parcel.get("item") == request["item"] and typeof(parcel.get("amount")) == TYPE_INT and parcel["amount"] == request["amount"] and parcel.get("source", "") in ["official", "hidden"]
 
 
 static func _commit(work: Dictionary, extra: Array[Dictionary] = []) -> Dictionary:

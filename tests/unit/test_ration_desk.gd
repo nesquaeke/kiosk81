@@ -319,3 +319,130 @@ func test_paperwork_survives_leaving_before_hidden_goods_collection() -> void:
 	assert_true(_apply(rules.finish(state, "return", true)))
 	assert_eq(RationDeskRules.desk(state)["hidden"]["meat"], 250)
 	assert_eq(state.money["pocket"], 1000)
+
+
+func test_prepared_undelivered_goods_survive_a_changed_mind_without_duplication() -> void:
+	_stamp("approve")
+	assert_true(_apply(rules.move_card(state, "table")))
+	assert_true(_apply(rules.cut(state, "meat", true)))
+	assert_true(_apply(rules.prepare(state, "official", "meat", true)))
+	assert_true(_apply(rules.move_parcel(state, "table")))
+	var prepared: Dictionary = RationDeskRules.desk(state)["parcel"].duplicate(true)
+	assert_true(_apply(rules.stamp(state, "reject", Vector2(540, 190), true)))
+	state = CampaignState.from_dict(JSON.parse_string(JSON.stringify(state.to_dict())))
+	assert_eq(RationDeskRules.desk(state)["parcel"], prepared)
+	assert_eq(RationDeskRules.desk(state)["cuts"], ["meat"])
+	assert_true(_apply(rules.move_parcel(state, "hand")))
+	assert_false(rules.deliver_parcel(state)["ok"], "a prepared package cannot bypass a changed decision")
+	assert_true(_apply(rules.stamp(state, "approve", Vector2(540, 190), true)))
+	assert_false(rules.prepare(state, "official", "meat", true)["ok"])
+	assert_false(rules.prepare(state, "hidden", "meat", true)["ok"])
+	assert_true(_apply(rules.deliver_parcel(state)))
+	assert_true(_apply(rules.move_card(state, "hand")))
+	assert_true(_apply(rules.finish(state, "return", true)))
+	assert_eq(state.money["till"], 5000)
+	assert_eq(state.register.size(), 1)
+	assert_eq(RationDeskRules.desk(state)["official"]["meat"], 0)
+	assert_eq(RationDeskRules.desk(state)["results"][0]["marks"].size(), 3)
+
+
+func test_reject_or_seize_cleans_undelivered_parcel_without_charging_stock() -> void:
+	for kind: String in ["reject", "seize"]:
+		before_each()
+		_stamp("approve")
+		assert_true(_apply(rules.cut(state, "meat")))
+		assert_true(_apply(rules.prepare(state, "official", "meat", true)))
+		assert_true(_apply(rules.move_parcel(state, "hand")))
+		assert_true(_apply(rules.stamp(state, kind, Vector2(540, 190))))
+		assert_true(_apply(rules.finish(state, "seize" if kind == "seize" else "return", true)))
+		assert_eq(RationDeskRules.desk(state)["parcel"], {})
+		assert_eq(RationDeskRules.desk(state)["official"]["meat"], 750)
+		assert_eq(state.money["till"], 2000)
+		assert_eq(state.money["pocket"], 0)
+		assert_eq(state.register.size(), 0)
+		var result: Dictionary = RationDeskRules.desk(state)["results"][0]
+		assert_eq(result["cuts"], ["meat"], "a cancelled sale must not restore the removed paper")
+		assert_false(result["correct"], "damaging the entitlement before rejection is audited")
+		assert_eq(result["revenue"], 0)
+		assert_eq(result["source"], "")
+		assert_true(_apply(rules.next(state)))
+		assert_eq(RationDeskRules.desk(state)["parcel"], {})
+		assert_eq(RationDeskRules.desk(state)["cuts"], [])
+		assert_eq(RationDeskRules.desk(state)["results"].size(), 1)
+
+
+func test_restored_parcel_must_match_request_before_delivery_or_accounting() -> void:
+	for mismatch: Dictionary in [{"item": "soap"}, {"amount": 500}, {"amount": -750}, {"source": "shelf"}]:
+		before_each()
+		_stamp("approve")
+		assert_true(_apply(rules.cut(state, "meat")))
+		assert_true(_apply(rules.prepare(state, "official", "meat", true)))
+		assert_true(_apply(rules.move_parcel(state, "hand")))
+		var saved: Dictionary = state.to_dict()
+		var parcel: Dictionary = saved["flags"][RationDeskRules.KEY]["parcel"]
+		parcel.merge(mismatch, true)
+		state = CampaignState.from_dict(JSON.parse_string(JSON.stringify(saved)))
+		var before: Dictionary = state.to_dict()
+		assert_false(rules.deliver_parcel(state)["ok"])
+		assert_false(rules.finish(state, "return")["ok"])
+		assert_eq(state.to_dict(), before)
+		assert_eq(state.money["till"], 2000)
+		assert_eq(RationDeskRules.desk(state)["official"]["meat"], 750)
+
+
+func test_invalid_request_amount_cannot_cut_prepare_or_pay() -> void:
+	for bad_amount: Variant in [0, -750, 1.5]:
+		before_each()
+		rules.cases[0]["request"]["amount"] = bad_amount
+		_stamp("approve")
+		var before: Dictionary = state.to_dict()
+		assert_false(rules.cut(state, "meat")["ok"])
+		assert_false(rules.prepare(state, "official")["ok"])
+		assert_false(rules.finish(state, "return")["ok"])
+		assert_eq(state.to_dict(), before)
+
+
+func test_entitlement_amount_cannot_be_bypassed_by_collecting_first() -> void:
+	rules.cases[0]["request"]["amount"] = 751
+	_stamp("approve")
+	var work: Dictionary = RationDeskRules.desk(state).duplicate(true)
+	work["official"]["meat"] = 2000
+	state.flags[RationDeskRules.KEY] = work
+	assert_true(_apply(rules.prepare(state, "official")), "legacy logical preparation does not consume stock")
+	assert_false(rules.cut(state, "meat")["ok"])
+	assert_false(rules.finish(state, "return")["ok"])
+	assert_eq(RationDeskRules.desk(state)["cuts"], [])
+	assert_eq(RationDeskRules.desk(state)["official"]["meat"], 2000)
+	assert_eq(state.money["till"], 2000)
+
+
+func test_valid_soap_sale_uses_units_and_charges_once_after_physical_handoff() -> void:
+	# Demo soap customers need rejection; use a valid card to cover the sale route.
+	rules.cases[0]["request"] = {"item": "soap", "amount": 1}
+	assert_true(RationDeskRules.issues(rules.cases[0]).is_empty())
+	assert_true(_apply(rules.take(state)))
+	assert_true(_apply(rules.move_card(state, "table")))
+	assert_true(_apply(rules.stamp(state, "approve", Vector2(540, 190), true)))
+	assert_true(_apply(rules.cut(state, "soap", true)))
+	assert_eq(RationDeskRules.desk(state)["parcel"], {}, "the paperwork precedes collecting goods")
+	assert_true(_apply(rules.prepare(state, "official", "soap", true)))
+	assert_eq(RationDeskRules.desk(state)["parcel"]["amount"], 1)
+	assert_eq(RationDeskRules.desk(state)["official"]["soap"], 4)
+	assert_true(_apply(rules.move_parcel(state, "hand")))
+	assert_true(_apply(rules.deliver_parcel(state)))
+	assert_eq(state.money["till"], 2000, "accounting waits for the card's return")
+	assert_true(_apply(rules.move_card(state, "hand")))
+	assert_true(_apply(rules.finish(state, "return", true)))
+	assert_eq(RationDeskRules.desk(state)["official"]["soap"], 3)
+	assert_eq(RationDeskRules.desk(state)["official"]["meat"], 750)
+	assert_eq(RationDeskRules.desk(state)["official"]["sugar"], 3000)
+	assert_eq(state.money["till"], 2800)
+	assert_eq(state.register.size(), 1)
+	assert_eq(state.register[0]["item"], "ration_soap")
+	assert_eq(state.register[0]["amount"], 1)
+	assert_eq(state.register[0]["price"], 800)
+	assert_true(RationDeskRules.desk(state)["results"][0]["correct"])
+	var completed: Dictionary = state.to_dict()
+	assert_false(rules.deliver_parcel(state)["ok"])
+	assert_false(rules.finish(state, "return", true)["ok"])
+	assert_eq(state.to_dict(), completed)

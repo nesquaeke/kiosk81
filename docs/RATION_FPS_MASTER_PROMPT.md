@@ -5,6 +5,9 @@ olarak verilebilir. Kullanıcının son talimatı bu belgeden üstündür. Bu be
 hedefi tanımlar; bir özelliğin burada yazması, oyunda tamamlandığı anlamına gelmez.
 Uygulanan dilimin güncel durumu README ve `RATION_DESK_DESIGN.md` içinde tutulur.
 
+Bu çekirdeğin uygulama ve doğrulama kaydı: [Kabul raporu](RATION_FPS_ACCEPTANCE.md).
+Aşağıdaki onay kutuları yeni uygulamalar için görev şablonudur.
+
 ## 1. Görevin
 
 Godot ile geliştirilen KIOSK '81 oyununda ana mekanik olan karne etkileşimini
