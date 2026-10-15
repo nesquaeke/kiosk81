@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3derk"]
+albedo_color = Color(0.90588236, 0.8745098, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_ph5np"]
+size = Vector3(0.17, 0.015, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vyals"]
+albedo_color = Color(0.27450982, 0.41960785, 0.3647059, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_fwp0c"]
+size = Vector3(0.18, 0.002, 0.23)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pxllj"]
+albedo_color = Color(0.19215687, 0.2937255, 0.2552941, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_k3ast"]
+size = Vector3(0.015, 0.02, 0.23)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x1yuh"]
+albedo_color = Color(0.90588236, 0.8745098, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_dhuue"]
+size = Vector3(0.12, 0.001, 0.055)
+
+[node name="Notebook" type="Node3D" unique_id=382662682]
+
+[node name="@MeshInstance3D@81" type="MeshInstance3D" parent="." unique_id=475807106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, 0)
+material_override = SubResource("StandardMaterial3D_3derk")
+mesh = SubResource("BoxMesh_ph5np")
+
+[node name="@MeshInstance3D@82" type="MeshInstance3D" parent="." unique_id=514054047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.018, 0)
+material_override = SubResource("StandardMaterial3D_vyals")
+mesh = SubResource("BoxMesh_fwp0c")
+
+[node name="@MeshInstance3D@83" type="MeshInstance3D" parent="." unique_id=846581186]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.087, 0.011, 0)
+material_override = SubResource("StandardMaterial3D_pxllj")
+mesh = SubResource("BoxMesh_k3ast")
+
+[node name="@MeshInstance3D@84" type="MeshInstance3D" parent="." unique_id=1488031308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.06)
+material_override = SubResource("StandardMaterial3D_x1yuh")
+mesh = SubResource("BoxMesh_dhuue")
+
+[node name="@Label3D@85" type="Label3D" parent="." unique_id=686456036]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.022, -0.06)
+pixel_size = 0.0011
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "ZESZYT"
+outline_size = 0

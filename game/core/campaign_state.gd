@@ -10,7 +10,7 @@ const SCHEMA_VERSION: int = 1
 ## Saturday · pocket: off-the-book cash · household: the family budget · usd: dollar
 ## stash in CENTS (demo plan: money flow).
 const ACCOUNTS: PackedStringArray = ["till", "commission", "pocket", "household", "usd"]
-const STOCK_LOCATIONS: PackedStringArray = ["shelf", "backroom", "hidden"]
+const STOCK_LOCATIONS: PackedStringArray = ["shelf", "backroom", "hidden", "hand", "counter"]
 const PHASES: PackedStringArray = ["morning", "shift", "closing", "evening", "night"]
 const RELATIONS: PackedStringArray = ["trust", "suspicion", "debt", "leverage", "affinity"]
 const DAY_START_MINUTE: int = 450  # 07:30
@@ -35,7 +35,7 @@ var money: Dictionary[String, int] = {"till": 0, "commission": 0, "pocket": 0, "
 ## Meter -> value, always inside its METERS range.
 var meters: Dictionary[String, int] = CampaignState.default_meters()
 ## Location -> {item_id: count}.
-var stock: Dictionary[String, Dictionary] = {"shelf": {}, "backroom": {}, "hidden": {}}
+var stock: Dictionary[String, Dictionary] = {"shelf": {}, "backroom": {}, "hidden": {}, "hand": {}, "counter": {}}
 ## Entries written in the kiosk register book.
 var register: Array[Dictionary] = []
 ## Character id -> {"status", "relations", "memories"}.

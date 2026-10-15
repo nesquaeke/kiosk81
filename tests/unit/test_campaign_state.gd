@@ -63,7 +63,9 @@ func test_missing_fields_use_defaults() -> void:
 	assert_eq(s.day, 4)
 	assert_eq(s.phase, "morning")
 	assert_eq(s.money["pocket"], 0)
-	assert_eq(s.stock.keys().size(), 3)
+	assert_eq(s.stock.keys().size(), 5)
+	assert_eq(s.stock_count("hand", "itm_matches"), 0)
+	assert_eq(s.stock_count("counter", "itm_matches"), 0)
 
 
 func test_ensure_character_is_neutral() -> void:

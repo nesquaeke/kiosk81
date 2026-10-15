@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5a58n"]
+albedo_color = Color(0.31764707, 0.4509804, 0.5294118, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_wesqh"]
+size = Vector3(0.105, 0.027, 0.075)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0jt4a"]
+albedo_color = Color(0.39607844, 0.28235295, 0.19607843, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_p4dou"]
+size = Vector3(0.106, 0.014, 0.003)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cu8ds"]
+albedo_color = Color(0.9372549, 0.8901961, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_binps"]
+size = Vector3(0.072, 0.001, 0.05)
+
+[node name="RazorBlades" type="Node3D" unique_id=1178725305]
+
+[node name="@MeshInstance3D@74" type="MeshInstance3D" parent="." unique_id=932247009]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+material_override = SubResource("StandardMaterial3D_5a58n")
+mesh = SubResource("BoxMesh_wesqh")
+
+[node name="@MeshInstance3D@75" type="MeshInstance3D" parent="." unique_id=554133612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0.039)
+material_override = SubResource("StandardMaterial3D_0jt4a")
+mesh = SubResource("BoxMesh_p4dou")
+
+[node name="@MeshInstance3D@76" type="MeshInstance3D" parent="." unique_id=280195219]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+material_override = SubResource("StandardMaterial3D_cu8ds")
+mesh = SubResource("BoxMesh_binps")
+
+[node name="@Label3D@77" type="Label3D" parent="." unique_id=1723829162]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.03, 0)
+pixel_size = 0.0007
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "ŻYLETKI"
+outline_size = 0

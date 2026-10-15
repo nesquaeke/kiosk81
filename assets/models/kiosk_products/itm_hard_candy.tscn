@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hib4a"]
+albedo_color = Color(0.7647059, 0.3019608, 0.28627452, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_sjj7f"]
+top_radius = 0.015
+bottom_radius = 0.015
+height = 0.045
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_u6gf2"]
+albedo_color = Color(0.9098039, 0.8, 0.6117647, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_q3epq"]
+top_radius = 0.008
+bottom_radius = 0.018
+height = 0.016
+radial_segments = 6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wyacf"]
+albedo_color = Color(0.9098039, 0.8, 0.6117647, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_6sua2"]
+top_radius = 0.008
+bottom_radius = 0.018
+height = 0.016
+radial_segments = 6
+
+[node name="HardCandy" type="Node3D" unique_id=546734685]
+
+[node name="@MeshInstance3D@86" type="MeshInstance3D" parent="." unique_id=1808984995]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0.02, 0)
+material_override = SubResource("StandardMaterial3D_hib4a")
+mesh = SubResource("CylinderMesh_sjj7f")
+
+[node name="@MeshInstance3D@87" type="MeshInstance3D" parent="." unique_id=2103475669]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, -0.031, 0.02, 0)
+material_override = SubResource("StandardMaterial3D_u6gf2")
+mesh = SubResource("CylinderMesh_q3epq")
+
+[node name="@MeshInstance3D@88" type="MeshInstance3D" parent="." unique_id=699064103]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.031, 0.02, 0)
+material_override = SubResource("StandardMaterial3D_wyacf")
+mesh = SubResource("CylinderMesh_6sua2")

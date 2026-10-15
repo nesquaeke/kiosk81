@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xbemr"]
+albedo_color = Color(0.77254903, 0.58431375, 0.30588236, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_lgw0p"]
+size = Vector3(0.105, 0.027, 0.075)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7va0b"]
+albedo_color = Color(0.39607844, 0.28235295, 0.19607843, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_v82j8"]
+size = Vector3(0.106, 0.014, 0.003)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s8hxg"]
+albedo_color = Color(0.9372549, 0.8901961, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_7fm3l"]
+size = Vector3(0.072, 0.001, 0.05)
+
+[node name="Matches" type="Node3D" unique_id=488152032]
+
+[node name="@MeshInstance3D@51" type="MeshInstance3D" parent="." unique_id=437772100]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0)
+material_override = SubResource("StandardMaterial3D_xbemr")
+mesh = SubResource("BoxMesh_lgw0p")
+
+[node name="@MeshInstance3D@52" type="MeshInstance3D" parent="." unique_id=1029717867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.014, 0.039)
+material_override = SubResource("StandardMaterial3D_7va0b")
+mesh = SubResource("BoxMesh_v82j8")
+
+[node name="@MeshInstance3D@53" type="MeshInstance3D" parent="." unique_id=2007562312]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.028, 0)
+material_override = SubResource("StandardMaterial3D_s8hxg")
+mesh = SubResource("BoxMesh_7fm3l")
+
+[node name="@Label3D@54" type="Label3D" parent="." unique_id=18340482]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.03, 0)
+pixel_size = 0.0007
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "ZAPAŁKI"
+outline_size = 0

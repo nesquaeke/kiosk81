@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p1ndu"]
+albedo_color = Color(0.90588236, 0.8745098, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_abisn"]
+size = Vector3(0.17, 0.015, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s60jg"]
+albedo_color = Color(0.65882355, 0.27450982, 0.22352941, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_gmw52"]
+size = Vector3(0.18, 0.002, 0.23)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8o1kf"]
+albedo_color = Color(0.46117648, 0.19215687, 0.15647058, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_7edoq"]
+size = Vector3(0.015, 0.02, 0.23)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p8jmo"]
+albedo_color = Color(0.90588236, 0.8745098, 0.78039217, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_skbdb"]
+size = Vector3(0.12, 0.001, 0.055)
+
+[node name="Przekroj" type="Node3D" unique_id=1200813552]
+
+[node name="@MeshInstance3D@46" type="MeshInstance3D" parent="." unique_id=858126714]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.009, 0)
+material_override = SubResource("StandardMaterial3D_p1ndu")
+mesh = SubResource("BoxMesh_abisn")
+
+[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="." unique_id=56950362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.018, 0)
+material_override = SubResource("StandardMaterial3D_s60jg")
+mesh = SubResource("BoxMesh_gmw52")
+
+[node name="@MeshInstance3D@48" type="MeshInstance3D" parent="." unique_id=1562885767]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.087, 0.011, 0)
+material_override = SubResource("StandardMaterial3D_8o1kf")
+mesh = SubResource("BoxMesh_7edoq")
+
+[node name="@MeshInstance3D@49" type="MeshInstance3D" parent="." unique_id=1920111115]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.06)
+material_override = SubResource("StandardMaterial3D_p8jmo")
+mesh = SubResource("BoxMesh_skbdb")
+
+[node name="@Label3D@50" type="Label3D" parent="." unique_id=301156407]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.022, -0.06)
+pixel_size = 0.0011
+modulate = Color(0.22352941, 0.20392157, 0.17254902, 1)
+text = "PRZEKRÓJ"
+outline_size = 0
