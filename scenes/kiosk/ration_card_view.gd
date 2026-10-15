@@ -257,7 +257,7 @@ func _draw_front(spec: Dictionary) -> void:
 	_text(Vector2(30, 187), "NR  " + str(card.get("serial", "")), 22)
 	_text(Vector2(275, 187), "AY  " + str(card.get("month", "")), 22)
 	_text(Vector2(30, 223), "ET HAKKI  %s" % RationDeskRules.amount_text("meat", int(card.get("meat", 0))), 25)
-	_text(Vector2(30, 255), "Kupon, ürün hazırlandıktan sonra kesilir.", 17, Color("797160"))
+	_text(Vector2(30, 255), "Kontrol → damga / kupon → ürün teslimi.", 17, Color("797160"))
 	draw_rect(DECISION_RECT, Color(0.3, 0.25, 0.15, 0.04))
 	draw_rect(DECISION_RECT, Color("a39373"), false, 1)
 	_text(Vector2(475, 158), "KARAR / DECYZJA", 15, Color("8b7f64"))

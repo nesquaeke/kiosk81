@@ -1,5 +1,8 @@
 # FPS karne etkileşimi — ana mekanik ve ortak geliştirme belgesi
 
+Bağımsız uygulama görevi: [FPS master prompt](RATION_FPS_MASTER_PROMPT.md).
+Bu belge uygulanan dilimi kaydeder; master prompt hedefi ve kabul ölçütlerini tanımlar.
+
 ## Değişmez temel
 
 KIOSK '81 üç boyutlu, birinci şahıs, ileride yarı açık dünya olacak bir oyundur.
@@ -26,12 +29,13 @@ Belge gerçekliği, hak miktarı, tedarik ve ödeme ayrı konulardır. Karne
 
 ## Fiziksel döngü
 
-Odada yürüyerek cama gel → müşteri karneyi uzatır → kendi elinle al →
-elinde yaklaştır/eğ/çevir → masaya bırak → kural defterini eline alıp
-karşılaştır → masadaki damgayı alıp kâğıda bastır → doğru koliden ürünü al
-ve masaya bırak → makası al, uygun kuponu kes → makası bırak → ürünü tekrar
-alıp müşteriye uzat → kalan karneyi eline alıp iade et veya alıkoyma
-bölmesine koy → zille sonraki müşteriyi çağır.
+Odada yürüyerek cama gel → müşteri karneyi uzatır → E ile al ve kısa
+hareketle masaya bırak → masadaki karta E ile etkileşip aynı göz kamerasıyla
+eğil → masada incele veya R ile bilinçli olarak eline al → eğ/çevir ve tekrar
+masaya bırak → kural defteriyle karşılaştır → karar damgasını alıp kâğıda bas →
+makası al, uygun kuponu kes → aracı bırak → Q veya yürüyüşle masadan ayrıl →
+doğru raftan ürünü al → tezgâha taşı/bırak → müşteriye uzat → kalan karneyi
+R ile alıp iade et veya alıkoyma bölmesine koy → zille sonraki müşteriyi çağır.
 
 Kamera hiçbir aşamada karakterin gözünden ayrılmaz. Masaya yaklaşmak UI
 açmaz. Yazılar 3D kâğıdın yüzeyindedir. Elde incelemede fare nesneyi döndürür;
@@ -44,7 +48,12 @@ karakterin bakış yönü korunur. Elde nesneyle odada yürünebilir.
 - WASD, hızlı yürüyüş, duvar/zemin/tezgâh çarpışması ve yakın erişim.
 - Sol elde karne; sağ elde makas, damga, defter veya ürün. Eller ve araçlar
   basit modellerdir; nihai rig/IK veya sanat varlıkları değildir.
-- Müşterinin uzattığı kart alınır, masaya bırakılır, tekrar alınır.
+- Müşteriden alınan kart kısa hareket sonunda kendiliğinden masaya yerleşir;
+  masadaki karta E ile eğilinir, R ile bilinçli olarak ele alınır.
+- Q veya yürüyüş eğilme pozundan çıkar. Karne masada ve işlem korunur.
+  Q yarım kesimi ve basılı inceleme durumunu da temizler.
+- Konuşma kısa süreli ve yakın bakışta görünür; E ile tekrar dinlenebilir.
+  Talep fişi masada fiziksel olarak okunabilir.
 - Ön/arka yüz, eğme, çevirme ve yakınlaştırma. Kesilen kupon iki yüzde de
   gerçek bir boşluk bırakır; kâğıdın arkasında sağlam kupon görünmez.
 - Fiziksel SATIŞ, RET, ALIKOY damgaları; temas anında iz ve ayrı sesler.
@@ -93,7 +102,9 @@ doğurur. Stok gram/adet cinsinden izlenir.
 | Kontrol | Davranış |
 | --- | --- |
 | WASD / Shift | Yürü / hızlı yürü |
-| E | Bakılan nesneyi al; ürünü/kartı müşteriye ver; kartı çalışma alanına bırak |
+| E | Teslim al/masaya bırak; masadaki karneye eğil; araç/ürün al veya teslim et |
+| R | Masadaki karneyi açık bir seçimle eline al |
+| Q / eğilmedeyken WASD | İncelemeden ayrıl; yarım hareketi iptal et |
 | G | Önce sağ eldeki nesneyi yüzeye bırak; sağ el boşsa karneyi masaya bırak |
 | Sağ tuş basılı + fare | Elde tutulan kartı/defteri eğ; göz kamerası dönmez |
 | F | Elde veya bakılan masada karneyi çevir |
@@ -102,9 +113,13 @@ doğurur. Stok gram/adet cinsinden izlenir.
 | Sol tuş basılı + bakış | Makasla kupon çizgisini soldan sağa izle |
 | Esc | Ayar/duraklatma; tamamlanmamış kesimi iptal et |
 
-İşlem için karne masada ve ön yüz yukarıda olmalıdır. Ürün hazırlanmış
-olmadan kesilemez. Satış tamamlamak için ürün müşteriye uzatılmış ve kalan
+İşlem için karne masada ve ön yüz yukarıda olmalıdır. Kupon, ürün hazırlanmadan
+da kesilebilir; satış kararı, doğru kullanılabilir kupon, yeterli hak ve iki
+stoktan en az birinde yeterli miktar gerekir. Fiziksel raf etkileşimi belge
+işlemlerinin bitmesini bekler; kaynak raf seçimiyle belirlenir. Satışı tamamlamak
+için ürün müşteriye uzatılmış ve kalan
 kart elde olmalıdır. Tekrarlanan teslimat çift stok/para değişimi yaratmaz.
+Aynı sipariş için ikinci paket hazırlanamaz; mevcut paket geri alınır.
 Ürün müşteriye uzatıldıktan sonra karar RET/ALIKOY'a çevrilemez; satış kalan
 kart iade edilerek tamamlanır. Böylece verilmiş ürün hesaptan kaybolmaz.
 Kesilmiş kupon, kart alınca veya çevrilince geri gelmez.
@@ -148,8 +163,10 @@ tam konum/rotasyon kayıtları ve yükleme menüsü henüz yoktur.
 Birim testleri sınıf/kurum, miktar, kayıt dışı stok, iki kez kesme/teslim,
 fiziksel yerleşim ve JSON dönüşümünü sınar. FPS selftest'i gerçek WASD ile
 hareket/tezgâh çarpışması ve erişimi, sonra gerçek E/G/F/fare girdisiyle
-müşteri elinden alma, kamera sabitken eğme, 3D yüz çevirme, masaya bırakma,
-araç alma/bırakma, temas, kısa/tam kesim, ürün teslimi ve sekiz müşteriyi sınar.
+müşteriden masaya teslim alma, masaya eğilme/yürüyerek ayrılma, açık çıkış,
+kamera sabitken elde eğme, 3D yüz çevirme, masaya bırakma,
+araç alma/bırakma, temas, kısa/tam kesim, belge işlemlerinden sonra ürün
+toplama/teslim ve sekiz müşteriyi sınar.
 
 Hareket/çarpışma ayrı doğrulandıktan sonra işlemler için test konumları
 kullanılır; sekiz müşterinin bütün yürüyüş rotalarının otomatik oynandığı
@@ -172,6 +189,8 @@ Codex, Claude ve ekip arkadaşı aynı kapsamı kullanır. Dosya sahipliği ve
 kabul ölçütleri paylaşılır. Kullanıcının son talimatı eski prototip belgelerinden üstündür.
 
 ## FPS görüntüleri
+
+![Aynı göz kamerasıyla masadaki karneye eğilme](images/fps-desk-inspection.png)
 
 ![Pencereden alınan karne elde](images/ration-front.png)
 ![Aynı fiziksel kartın arka yüzü](images/ration-back.png)

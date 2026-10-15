@@ -1,7 +1,9 @@
 # KIOSK '81 development context
 
 The user chose the ration-card interaction as the main game mechanic. Read
-`docs/RATION_DESK_DESIGN.md` before changing card rules or desk interactions.
+`docs/RATION_FPS_MASTER_PROMPT.md` for the standalone task and acceptance
+criteria, and `docs/RATION_DESK_DESIGN.md` for the implemented slice, before
+changing card rules or desk interactions.
 Its class categories, entitlements and seals are intentionally fictional game
 design; do not impose historical-simulation requirements the user has rejected.
 `docs/KIOSK_SIMULATOR_MASTER_PROMPT.md` documents the earlier physical-product

@@ -1,3 +1,6 @@
+> FPS task and acceptance criteria: [RATION_FPS_MASTER_PROMPT.md](docs/RATION_FPS_MASTER_PROMPT.md).
+> Read it with the implementation design; paperwork precedes collecting goods.
+
 # Shared project context
 
 Read `AGENTS.md`, `README.md` and `docs/RATION_DESK_DESIGN.md` before continuing

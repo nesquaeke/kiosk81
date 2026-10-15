@@ -74,7 +74,7 @@ func stamp(state: CampaignState, kind: String, position: Vector2, physical: bool
 	return _commit(work)
 
 
-func prepare(state: CampaignState, source: String, item: String = "") -> Dictionary:
+func prepare(state: CampaignState, source: String, item: String = "", physical: bool = false) -> Dictionary:
 	var work: Dictionary = desk(state).duplicate(true)
 	if not _active(work) or work.get("stamp") != "approve":
 		return _reject("Ürün hazırlamak için SATIŞ damgasını bas.")
@@ -83,11 +83,13 @@ func prepare(state: CampaignState, source: String, item: String = "") -> Diction
 	var request: Dictionary = current(state)["request"]
 	if item != "" and item != request["item"]:
 		return _reject("Müşteri bu ürünü istemedi.")
-	if (work.get("parcel", {}) as Dictionary).get("delivered", false):
-		return _reject("Ürün zaten teslim edildi; kart işlemini tamamla.")
+	if physical and not request["item"] in work.get("cuts", []):
+		return _reject("Önce karne işlemlerini tamamla: satış damgası ve ilgili kupon kesimi gerekli.")
+	if not (work.get("parcel", {}) as Dictionary).is_empty():
+		return _reject("Ürün zaten hazırlandı; mevcut paketi masadan al veya teslim et.")
 	var stock: Dictionary = work[source]
 	if int(stock.get(request["item"], 0)) < int(request["amount"]):
-		return _reject("Bu kaynakta istenen miktar yok; kuponu kesme.")
+		return _reject("Bu kaynakta istenen miktar yok; diğer stoku kontrol et.")
 	work["parcel"] = {"item": request["item"], "amount": request["amount"], "source": source, "placement": "shelf", "delivered": false}
 	return _commit(work)
 
@@ -121,13 +123,15 @@ func cut(state: CampaignState, item: String, physical: bool = false) -> Dictiona
 		return _reject("Kesmek için kartı masaya bırak.")
 	if not _active(work) or work.get("stamp") != "approve":
 		return _reject("Kesmeden önce SATIŞ damgası gerekli.")
-	var parcel: Dictionary = work.get("parcel", {})
-	if parcel.get("item", "") != item:
-		return _reject("Önce müşterinin ürününü hazırla; yalnızca ilgili kuponu kes.")
+	var request: Dictionary = current(state)["request"]
+	if request["item"] != item:
+		return _reject("Yalnızca müşterinin istediği ürünün kuponunu kes.")
+	if int(work["official"].get(item, 0)) < int(request["amount"]) and int(work["hidden"].get(item, 0)) < int(request["amount"]):
+		return _reject("İki kaynakta da yeterli stok yok; kuponu kesme.")
 	var card: Dictionary = current(state)["card"]
 	if not item in card["available"] or item in work["cuts"]:
 		return _reject("Bu kupon yok veya zaten kesildi.")
-	if int(card.get(item, 0)) < int(parcel["amount"]):
+	if int(card.get(item, 0)) < int(request["amount"]):
 		return _reject("Kupondaki miktar hazırlanan üründen az.")
 	(work["cuts"] as Array).append(item)
 	return _commit(work)

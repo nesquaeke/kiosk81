@@ -68,20 +68,24 @@ func test_stamp_location_and_kind_are_validated() -> void:
 	assert_eq(RationDeskRules.desk(state)["marks"].size(), 1)
 
 
-func test_cut_requires_preparation_and_matches_request() -> void:
+func test_cut_precedes_goods_and_matches_request() -> void:
 	_stamp("approve")
-	assert_false(rules.cut(state, "meat")["ok"])
-	assert_true(_apply(rules.prepare(state, "official")))
+	assert_false(rules.prepare(state, "official", "meat", true)["ok"])
 	assert_false(rules.cut(state, "sugar")["ok"])
 	assert_true(_apply(rules.cut(state, "meat")))
 	assert_false(rules.cut(state, "meat")["ok"])
 	assert_eq(RationDeskRules.desk(state)["cuts"], ["meat"])
+	assert_eq(RationDeskRules.desk(state)["parcel"], {})
+	assert_true(_apply(rules.prepare(state, "official", "meat", true)))
 
 
 func test_preparation_reserves_without_spending_stock() -> void:
 	_stamp("approve")
 	assert_true(_apply(rules.prepare(state, "official")))
-	assert_true(_apply(rules.prepare(state, "official")))
+	var prepared: Dictionary = state.to_dict()
+	assert_false(rules.prepare(state, "official")["ok"])
+	assert_false(rules.prepare(state, "hidden")["ok"])
+	assert_eq(state.to_dict(), prepared)
 	assert_eq(RationDeskRules.desk(state)["official"]["meat"], 750)
 	assert_eq(state.money["till"], 2000)
 	assert_eq(state.register.size(), 0)
@@ -135,6 +139,7 @@ func test_no_stock_no_preparation_or_coupon_loss() -> void:
 	_case(7)
 	var data: Dictionary = RationDeskRules.desk(state).duplicate(true)
 	data["official"]["meat"] = 0
+	data["hidden"]["meat"] = 0
 	state.flags[RationDeskRules.KEY] = data
 	_stamp("approve")
 	assert_false(rules.prepare(state, "official")["ok"])
@@ -290,3 +295,27 @@ func test_card_3d_coordinates_match_printed_fields_and_flip() -> void:
 		assert_true(paper.pixel_to_world(Vector2(480, 100)).distance_to(point) < 0.00001)
 		assert_eq(paper.ray_pixel(point - normal, -normal), Vector2(-1, -1), "rays behind the card must not hit its front")
 	world.free()
+
+
+func test_paperwork_survives_leaving_before_hidden_goods_collection() -> void:
+	_case(7)
+	var opening: Dictionary = RationDeskRules.desk(state).duplicate(true)
+	opening["official"]["meat"] = 0
+	state.flags[RationDeskRules.KEY] = opening
+	_stamp("approve")
+	assert_true(_apply(rules.move_card(state, "table")))
+	assert_true(_apply(rules.cut(state, "meat", true)))
+	var restored: CampaignState = CampaignState.from_dict(JSON.parse_string(JSON.stringify(state.to_dict())))
+	state = restored
+	assert_eq(RationDeskRules.desk(state)["placement"], "table")
+	assert_eq(RationDeskRules.desk(state)["parcel"], {})
+	assert_eq(RationDeskRules.desk(state)["cuts"], ["meat"])
+	assert_false(rules.prepare(state, "official", "meat", true)["ok"])
+	assert_true(_apply(rules.prepare(state, "hidden", "meat", true)))
+	assert_eq(RationDeskRules.desk(state)["hidden"]["meat"], 500)
+	assert_true(_apply(rules.move_parcel(state, "hand")))
+	assert_true(_apply(rules.deliver_parcel(state)))
+	assert_true(_apply(rules.move_card(state, "hand")))
+	assert_true(_apply(rules.finish(state, "return", true)))
+	assert_eq(RationDeskRules.desk(state)["hidden"]["meat"], 250)
+	assert_eq(state.money["pocket"], 1000)
