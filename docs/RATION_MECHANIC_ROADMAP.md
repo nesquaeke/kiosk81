@@ -165,6 +165,9 @@ kalmaz. Belirsizlik gizli bilgiye veya rastgele cezaya dayanmaz.
   zorunlu olmamalı; birkaç baskılık kullanım aralığı olabilir. İyi hissettirmiyorsa ekleme.
 - Hız/bekleme farkları görünür ama abartısız; hızlı baskı rastgele okunmaz etiketi
   üretmesin. Piksellik hizalama normal işi cezalandırmasın.
+- Şu anda damga ön yüzdeki karar alanıyla sınırlı. Kâğıdın başka yerine basıldığında
+  da fiziksel mürekkep izi oluşması deneyde değerlendirilsin; resmî işlemin geçerli
+  sayılması ayrı kuraldır. Normal baskıyı piksel hassasiyetiyle cezalandırma.
 - Basınç gerçek donanım kuvveti olarak sunulmasın; fare hareketinden yapılan oyun
   yorumudur. Kolay basma alternatifi ve hassasiyet ayarı sınansın.
 - İzin okunabilirliğini işleme koşulu yapmak ayrı deneydir; şimdilik ustalık hissi
