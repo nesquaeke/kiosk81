@@ -4,7 +4,7 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 
 - **Motor:** Godot 4.7.2 (standart sürüm, GDScript)
 - **Açmak için:** Godot'u başlat → Import → bu klasördeki `project.godot` dosyasını seç.
-- **Durum:** **F5: FPS karne sistemi** — yürüyerek cama gitme, müşteriden kart alma, elde/masada inceleme, fiziksel damga ve makas, ürün ve kart teslimi. Kurmaca kart kuralları, basit 3D modeller.
+- **Durum:** **F5: karne inceleme masası** — müşteriden teslim alma, üstten 3D masa/elde inceleme, sahtecilik karşılaştırması, kalıcı kesikler ve temasla damga. Ürün/ekonomi döngüsü bu odak modunun dışında; prosedürel prototip.
 
 ## Klasörler
 
@@ -31,38 +31,74 @@ Varşova, 1981–1989. Bir Ruch kioskunun arkasında, birinci şahıs bir anlat�
 - **Godot'ta:** `tests/run_tests.tscn` sahnesini aç ve **F6**'ya bas. Yazılar yeşilse bütün testler geçmiştir, kırmızıysa en az biri kırılmıştır.
 - **Komut satırında:** `godot --headless --path . res://tests/run_tests.tscn -- --ci` (bütün testler geçerse çıkış kodu 0).
 
-## FPS karne sistemi (F5)
+## Karne inceleme masası (F5)
 
-Bağımsız görev ve kabul ölçütleri: [FPS master prompt](docs/RATION_FPS_MASTER_PROMPT.md).
-Uygulanan dilim: [RATION_DESK_DESIGN.md](docs/RATION_DESK_DESIGN.md).
-Doğrulama ve görüntüler: [Kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
-Bu oyun birinci şahıs 3D'dir. Karne incelemesi için başka bir ekrana geçilmez.
+Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
+Şimdiki görev **yalnızca müşteriden karne alma, masada/elde inceleme,
+sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
+harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
-- Sahne: `scenes/kiosk/fps_kiosk.tscn`. Odada **WASD** ile yürü, fareyle bak, **Shift** ile hızlı yürü. Duvar ve tezgâh çarpışmaları vardır.
-- Cama yaklaş; müşterinin uzattığı karta **E** ile etkileş. Kart kısa hareketle masaya yerleşir.
-- Masadaki karta **E** ile etkileşip eğil. **Q** veya yürümek incelemeden çıkar; karne masada kalır. **R** karneyi açık bir seçimle eline alır.
-- **Sağ tuş basılı + fare:** eldeki kartı eğ. **F:** ön/arka yüz çevir. **Tekerlek:** yaklaştır/uzaklaştır. Kamera karakterin gözünde kalır.
-- Masaya bakıp **G** ile kartı bırak. Sağ elinde başka nesne varsa G önce onu bırakır; çalışma alanına **E** ile de kartı bırakabilirsin.
-- Karne; çift yüz baskısı, kurum mührü, sınıf/kota/ay/seri, yama ve yıpranma izleri içerir. Masada F ile çevirirken fiziksel olarak yükselir; gerçek arka yüz görünür.
-- Masadaki SATIŞ/RET/ALIKOY damgasına bakıp **E** ile al. Kartın KARAR alanına yönelip sol tuşa kısa süre basılı tut ve bırak; fiziksel temasla mürekkep izi oluşur.
-- Damga temasından önce **Q**, yürüme veya Esc işlemi iptal eder; temas etmiş mürekkep korunur. Araç alma/bırakma sesleri temas anındadır.
-- Damgayı **G** ile yüzeye bırak; önce ilgili kuponu kes, sonra raflara git.
-- Makası **E** ile al. Kuponun sol üst kesik çizgisine bak; sol tuş basılıyken bakışını çizgi boyunca sağa götür, tuşu bırak. Kısa veya çizgi dışı kesim kupon tüketmez. Kâğıtta gerçek boşluk kalır.
-- Makası bırak; **Q** ile ayrıl. Sağdaki raftan istenen ürünü **E** ile alıp tezgâha taşı. **G** ile bırakıp tekrar alabilir veya müşteriye **E** ile uzatabilirsin. Kalan karneyi **R** ile alıp müşteriye E ile ver veya alıkoyma bölmesine koy.
-- Etin kâğıt/sicim paketi, şekerin katlı torbası ve sabunun kılıfı ayrı 3D nesne görünümleridir. Her ürünün ayrı alma/bırakma sesi vardır.
-- Talep fişi masadadır; E ile alıp okunabilir. Müşteriye boş elle E ile isteğini tekrar dinle. Altyazı odada sürekli açık kalmaz.
-- Masadaki zile E ile basarak sonraki müşteriyi çağır. Sıra bitince soldaki yan masada bulunan gün sonu defterini eline alıp oku.
-- Üç meslek sınıfı, sekiz müşteri, sınıf/kurum/miktar denetimi ve resmî/gizli stok vardır. Kart kuralları bilerek kurmaca; fiyatlar geçicidir. Yanlış karar mümkündür, gün sonunda değerlendirilir.
-- **Esc:** duraklatma ve ses ayarı. Sesler kâğıt/makas/damga için özgün prosedürel prototiplerdir.
-- Kural/işlem testleri: `godot --headless --path . res://tests/run_tests.tscn -- --ci` — **186 geçti, 0 başarısız**.
-- FPS fiziksel etkileşim kontrolü (önce iptal/odak/yeniden başlatma regresyonları, ardından sekiz müşteri): `godot --headless --path . res://scenes/kiosk/fps_kiosk.tscn -- --selftest`.
-- Pencereli kontrol: aynı komutu `--headless` olmadan çalıştır. `-- --selftest --capture=/tmp/fps-shots` görüntü kaydeder.
-- Sesleri yeniden üret: `python3 tools/generate_ration_audio.py`, sonra Godot import. WAV/PNG varlıkları Git LFS'dedir; yeni checkout'ta `git lfs pull` gerekir.
+[Bağımsız master prompt](docs/RATION_FPS_MASTER_PROMPT.md) ·
+[Etkileşim tasarımı](docs/RATION_DESK_DESIGN.md) ·
+[Tarihli kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
+17 Ekim doğrulaması ve oyun içinden yeni görüntüler kabul raporundadır.
 
-El/müşteri modelleri basittir; tam IK, büyük yarı açık dünya, terazi, para üstü,
-çok ürünlü sipariş ve kampanya devamlılığı sonraki aşamalardır.
-Eski `ration_desk.tscn` 2D denemesi yalnızca geliştirme referansıdır.
-Ürün simülatörü ve anlatı prototipi ayrı sahneler olarak F6 ile açılabilir.
+- **WASD / fare / Shift:** pencereye yürü, bak, hızlı yürü.
+- Müşterinin uzattığı karneye **E**: aynı 3D kâğıdı al, masaya yerleştir.
+  Geri çekilince kâğıt masada kalır; konuşma hareketi kilitlemez.
+- Masadaki karneye **E**: aynı kamera masanın üstüne gelir. Görünen imleçle
+  çalış; **sağ tuş sürükle** ile masayı kaydır, **tekerlek** ile yakınlaş.
+  Bu, dünyadaki kâğıda bakıştır; eski tam ekran belge arayüzü değildir.
+- **Q / masadayken WASD:** çalışma açısından ayrıl. Kamera, FOV ve normal
+  FPS bakışı geri döner. **R** karneyi bilinçli olarak ele alır; **sağ tuş + fare**
+  elde eğmek, **F** çevirmek, **G** masaya bırakmak içindir.
+- Ön/arka yüzdeki ay, sınıf, kurum, hak, mühür ve müdahale izlerini karşılaştır.
+  Yıpranmış kâğıt tek başına sahte değildir; sistem cevabı önceden göstermez.
+- SATIŞ / RET / ALIKOY damgasını **E** ile al. İmleci karar alanına götür;
+  **sol tuş basılı + fare aşağı** ile indir/bastır. Hız, bekleme ve basınç izi
+  değiştirir. Bırakınca kaldır; **Shift + tekerlek** açıyı değiştirir.
+  Temas öncesi iptal iz bırakmaz; temas etmiş mürekkep kalır.
+- Makası **E** ile al; **sol tuş + sürükleme** ile gerçek uzunluk kadar kes.
+  **2 cm kesik, bıraktıktan veya Q'dan sonra da 2 cm hasar olarak kalır.**
+  Bir kısa kesik bütün kuponu tüketmez; dört kenarı ayrılınca tek parça kopar.
+- Aracı uygun boş yüzeye **G** ile bırak. Karneyi **R** ile alıp müşteriye
+  **E** ile iade et veya ALIKOY kararında belge bölmesine koy.
+  Odak modunda bu, belge işlemini tamamlar; raftan ürün almak gerekmez.
+- **Esc:** duraklatma/ses. Odak kaybı kontrolü bırakır; tamamlanmış izleri silmez.
+
+Masadaki bez ciltli referans sınıfları, miktarları ve örnek kurum mühürlerini
+birlikte gösterir. **Büyüteci E ile alıp kâğıt üzerinde gezdir**: altındaki gerçek
+3D baskıyı yaklaşık 2,4 kat büyütür. **G** ile bırak; Q ile ayrılınca optik
+render durur. Kâğıt iki yüzlü, ince kenarlı ve elde hafif bükülen bir 3D yüzeydir;
+yapıştırılmış kota değişikliğinin yükselen kenarı vardır.
+
+Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar**.
+Bunun ardından onay basılırsa istenen hak ayrıca işlenir. Yanlış kuponu kesmek
+siparişi karşılamaz; tamamlanan incelemenin denetim kaydında hatalı hasar görünür.
+
+Doğrulama komutları:
+
+```sh
+godot --headless --path . res://tests/run_tests.tscn -- --ci
+godot --headless --path . res://scenes/kiosk/ration_desk_focus.tscn -- --selftest
+# Grafik oturumunda; fare, okunabilirlik ve optik için de gerekli:
+godot --path . res://scenes/kiosk/ration_desk_focus.tscn -- --selftest --capture=/tmp/ration-focus-shots
+```
+
+Sistemdeki motor farklıysa Godot 4.7.2 binary'sini kullan. Pencereli kontrolde
+araçların gerçekten görüntü içinde seçilebildiğini sınamak gerekir; offscreen
+test koordinatı yeterli değildir. Dummy ses sürücüsü dinleme kontrolü sayılmaz.
+
+Kâğıt/araç/eller ve foley prosedürel prototiplerdir; bitmiş AAA üretimi değildir.
+Ana hedef kontrol, kanıt okuma ve temas hissidir. Ses üretimi:
+`python3 tools/generate_ration_audio.py`, ardından Godot import.
+WAV/PNG varlıkları Git LFS'dedir; yeni checkout'ta `git lfs pull` gerekir.
+
+`scenes/kiosk/fps_kiosk.tscn` önceki erzak/ürün teslimli tam satış deneyini ayrı
+korur; ortak kod değişirse onun selftest'i de çalıştırılır. İleride karne işi
+bittikten sonra ürün toplama ve resmî/gizli stok seçimi yeniden bağlanabilir.
+Yarı açık dünya, oda genişletme, terazi, para üstü ve kampanya şimdiki görev değildir.
+Eski `ration_desk.tscn` 2D denemesi geliştirme referansıdır.
 
 ## Kiosk Simulator
 

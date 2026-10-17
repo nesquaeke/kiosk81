@@ -1,20 +1,25 @@
-> FPS task and acceptance criteria: [RATION_FPS_MASTER_PROMPT.md](docs/RATION_FPS_MASTER_PROMPT.md).
-> Read it with the implementation design; paperwork precedes collecting goods.
-
 # Shared project context
 
-Read `AGENTS.md`, `README.md` and `docs/RATION_DESK_DESIGN.md` before continuing
-the ration-card mechanic. The user chose this as the main interaction and
-explicitly permits fictional class cards, quotas and rules. Preserve the
-physical paper / scissors / stamp feel and its sound contacts.
+Read [AGENTS.md](AGENTS.md), [the master prompt](docs/RATION_FPS_MASTER_PROMPT.md)
+and [the interaction design](docs/RATION_DESK_DESIGN.md) before continuing.
+The latest task is ONLY customer handoff, card/table inspection, forgery
+comparison, physical cutting and stamping. No room/stock/economy expansion.
 
-The 2D desk prototype was rejected. Implement every interaction in 3D from the
-character's first-person camera, using hands, world surfaces and physical
-tools. Do not revive the old desk dashboard. The current entry scene is
-`scenes/kiosk/fps_kiosk.tscn`; the design document records this correction.
+F5 opens `scenes/kiosk/ration_desk_focus.tscn` with `document_focus = true`.
+Paperwork finishes by returning or retaining the card, without gathering goods
+or billing stock. `fps_kiosk.tscn` preserves the older full-sale experiment.
 
-`docs/KIOSK_SIMULATOR_MASTER_PROMPT.md` records the product-handling prototype.
-Use the same shared task scope and file ownership with Codex and the human
-contributor. Keep the design document current; distinguish implemented features
-from the roadmap. There is no requirement to ask permission for ordinary fixes
-or reversible implementation work already requested by the user.
+First-person movement/handheld inspection and the same Camera3D moving above
+the 3D desk are both intended. In desk mode the cursor moves physical tools;
+right-drag pans and the wheel zooms. Q/WASD restores walking. Do not restore the
+rejected 2D document dashboard or an obsolete eye-camera-only restriction.
+
+Every partial incision remains on the paper; 2 cm of cutting is not a whole
+coupon or a gesture that heals on release. Stamp contact speed, dwell and
+pressure affect persistent ink. Physical references/loupe serve evidence
+comparison, not automatic authenticity grading. Class/quota rules are fictional.
+
+Preserve Game/CampaignState ownership, contact-sound timing and other developers'
+work. Run relevant checks; record actual results separately from targets.
+Ordinary authorized fixes need no extra confirmation. Procedural prototype
+geometry/foley must not be described as finished AAA production.

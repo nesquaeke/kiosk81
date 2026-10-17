@@ -102,3 +102,100 @@ func test_table_hand_table_roundtrip_preserves_document_work_and_holes() -> void
 		assert_eq(renderer.work["marks"], work["marks"])
 	for material: ShaderMaterial in card.materials:
 		assert_eq(material.get_shader_parameter("missing"), Vector3(1, 0, 0), "both faces retain the same cut")
+
+
+func test_two_centimetre_incision_opens_only_the_actual_path_and_has_cut_wall_geometry() -> void:
+	var card: RationCard3D = _card()
+	var document: Dictionary = (ContentDB.all_of("ration_case")[0] as Dictionary)["card"].duplicate(true)
+	var end_x: float = 30.0 + 0.02 / (RationCard3D.WIDTH / 640.0)
+	card.refresh(document, {"cuts": [], "marks": [], "incisions": [{"points": [[30.0, 285.0], [end_x, 285.0]]}]})
+	assert_true(card.incision_openness_at(Vector2(48, 285)) > 0.48, "the cut is a transparent slit")
+	assert_eq(card.incision_openness_at(Vector2(70, 285)), 0.0, "paper beyond two centimetres remains intact")
+	assert_eq(card.incision_openness_at(Vector2(48, 290)), 0.0, "paper beside the actual path remains intact")
+	for material: ShaderMaterial in card.materials:
+		assert_eq(material.get_shader_parameter("missing"), Vector3.ZERO, "a partial cut cannot remove a coupon")
+		assert_true(material.get_shader_parameter("has_incisions"))
+	assert_eq(card.materials[0].get_shader_parameter("incision_texture"), card.materials[1].get_shader_parameter("incision_texture"), "the two printed faces share one physical opening")
+	var edges: MeshInstance3D = card.get_node("ExposedCutWallsAndFibres") as MeshInstance3D
+	assert_true(edges.visible and edges.mesh != null, "the slit has thickness, cut lips and fibre geometry")
+	assert_true(absf(edges.mesh.get_aabb().size.x - 0.02) < 0.0001, "cut walls cover two centimetres, not a whole coupon")
+
+
+func test_live_slit_preview_clears_without_healing_persisted_incisions() -> void:
+	var card: RationCard3D = _card()
+	var document: Dictionary = (ContentDB.all_of("ration_case")[0] as Dictionary)["card"].duplicate(true)
+	var work: Dictionary = {"cuts": [], "marks": [], "incisions": [{"points": [[30, 285], [60, 285]]}]}
+	card.refresh(document, work)
+	card.cut_preview(PackedVector2Array([Vector2(60, 285), Vector2(90, 285)]))
+	assert_true(card.incision_openness_at(Vector2(75, 285)) > 0.48, "only the actual live blade path opens")
+	card.clear_cut_preview()
+	assert_eq(card.incision_openness_at(Vector2(75, 285)), 0.0, "uncommitted preview clears explicitly")
+	assert_true(card.incision_openness_at(Vector2(45, 285)) > 0.48, "committed damage remains")
+	assert_eq(card.renderers[0].work["incisions"], work["incisions"], "preview never mutates campaign work")
+
+
+func test_more_than_128_separate_cuts_render_without_silently_losing_old_damage() -> void:
+	var card: RationCard3D = _card()
+	var document: Dictionary = (ContentDB.all_of("ration_case")[0] as Dictionary)["card"].duplicate(true)
+	var incisions: Array = []
+	for index: int in 140:
+		incisions.append({"points": [[20 + index * 4, 100], [22 + index * 4, 100]]})
+	card.refresh(document, {"cuts": [], "marks": [], "incisions": incisions})
+	assert_true(card.incision_openness_at(Vector2(21, 100)) > 0.48, "the oldest cut is retained")
+	assert_true(card.incision_openness_at(Vector2(577, 100)) > 0.48, "the newest cut is retained")
+	assert_eq(card.incision_openness_at(Vector2(23, 100)), 0.0, "separate strokes are not joined by invented damage")
+
+
+func test_paper_is_tessellated_for_held_flex_but_planar_for_desk_operations() -> void:
+	var card: RationCard3D = _card()
+	var surfaces: int = 0
+	for child: Node in card.get_children():
+		if child is MeshInstance3D and (child as MeshInstance3D).material_override is ShaderMaterial:
+			var material: ShaderMaterial = (child as MeshInstance3D).material_override as ShaderMaterial
+			if material.shader == preload("res://assets/shaders/ration_paper.gdshader"):
+				assert_true((child as MeshInstance3D).mesh is ArrayMesh, "paper is geometry rather than a single quad")
+				assert_true((child as MeshInstance3D).mesh.get_surface_count() > 0)
+				surfaces += 1
+	assert_eq(surfaces, 2)
+	card.set_held(true)
+	for material: ShaderMaterial in card.materials:
+		assert_eq(material.get_shader_parameter("bend_amount"), 1.0)
+	card.set_held(false)
+	for material: ShaderMaterial in card.materials:
+		assert_eq(material.get_shader_parameter("bend_amount"), 0.0, "desk cutting stays metrically planar")
+
+
+func test_detached_piece_print_centre_matches_its_original_coupon_on_both_faces() -> void:
+	# A resolution increase once cropped the holder's name onto the detached
+	# coupon. Compare the actual viewport->print transform, not a scale constant.
+	var card: RationCard3D = _card()
+	var document: Dictionary = (ContentDB.all_of("ration_case")[0] as Dictionary)["card"].duplicate(true)
+	card.refresh(document, {"cuts": [], "marks": []})
+	for index: int in 3:
+		var piece: Node3D = card.create_coupon(index)
+		fixture.add_child(piece)
+		var count: int = 0
+		for child: Node in piece.get_children():
+			if not child is SubViewport: continue
+			var viewport: SubViewport = child as SubViewport
+			var printing: RationCardView = viewport.get_child(0) as RationCardView
+			var sampled_print_point: Vector2 = printing.get_transform().affine_inverse() * (Vector2(viewport.size) / 2.0)
+			var expected: Vector2 = RationCardView.coupon_rect(index).get_center()
+			if not printing.front: expected.x = 640.0 - expected.x
+			assert_true(sampled_print_point.distance_to(expected) < 0.001, "the detached face samples its own original product/amount, independent of render resolution")
+			assert_eq(printing.card["serial"], document["serial"], "the original document's ink is retained")
+			count += 1
+		assert_eq(count, 2, "both physical faces carry the matching coupon ink")
+
+
+func test_physically_severed_paper_detaches_before_approval_without_consuming_entitlement() -> void:
+	var card: RationCard3D = _card()
+	var document: Dictionary = (ContentDB.all_of("ration_case")[0] as Dictionary)["card"].duplicate(true)
+	var rect: Rect2 = RationCardView.coupon_rect(1)
+	var damage: Dictionary = {"cuts": [], "marks": [], "incisions": [{"points": [[rect.position.x, rect.position.y], [rect.end.x, rect.position.y], [rect.end.x, rect.end.y], [rect.position.x, rect.end.y], [rect.position.x, rect.position.y]]}]}
+	card.refresh(document, damage)
+	assert_false(card.has_paper_at(rect.get_center()), "four severed edges open a real hole even before a stamp")
+	assert_true(card.has_paper_at(RationCardView.coupon_rect(0).get_center()), "other coupons remain present")
+	assert_eq(damage["cuts"], [], "physical paper removal does not silently process a food entitlement")
+	for material: ShaderMaterial in card.materials:
+		assert_true((material.get_shader_parameter("missing") as Vector3).is_equal_approx(Vector3(0, 1, 0)), "both printed faces share the physical damage")
