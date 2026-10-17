@@ -69,6 +69,7 @@ func _ready() -> void:
 		materials.append(material)
 		add_child(instance)
 	add_child(_paper_rim(Rect2(0, 0, 640, 400)))
+	_build_binding_staple()
 	for i: int in 3:
 		var rim: MeshInstance3D = _paper_rim(RationCardView.coupon_rect(i))
 		rim.visible = false
@@ -82,6 +83,35 @@ func _ready() -> void:
 	_edge_materials.append(wall_material)
 	_cut_walls.material_override = wall_material
 	add_child(_cut_walls)
+
+
+func _build_binding_staple() -> void:
+	# A bent metal registration staple crosses the sheet and folds behind it.
+	# Its actual geometry and contact shadow remain when the paper is flipped.
+	var binding: Node3D = Node3D.new()
+	binding.name = "RegistrationStaple"
+	add_child(binding)
+	var metal: StandardMaterial3D = StandardMaterial3D.new()
+	metal.albedo_color = Color("77776b")
+	metal.metallic = 0.88
+	metal.roughness = 0.32
+	var a: Vector3 = Vector3(-0.172, 0.051, 0.0007)
+	var b: Vector3 = a + Vector3(0, 0.018, 0)
+	var points: Array[Vector3] = [a, b, b + Vector3(0, 0, -0.0015), b + Vector3(0.004, 0, -0.0015)]
+	for line: Array in [[points[0], points[1]], [points[1], points[2]], [points[2], points[3]], [a, a + Vector3(0, 0, -0.0015)], [a + Vector3(0, 0, -0.0015), a + Vector3(0.004, 0, -0.0015)]]:
+		var from: Vector3 = line[0]
+		var to: Vector3 = line[1]
+		var wire: CylinderMesh = CylinderMesh.new()
+		wire.top_radius = 0.00032
+		wire.bottom_radius = 0.00032
+		wire.height = from.distance_to(to)
+		wire.radial_segments = 10
+		var mesh: MeshInstance3D = MeshInstance3D.new()
+		mesh.mesh = wire
+		mesh.material_override = metal
+		mesh.position = (from + to) / 2.0
+		mesh.quaternion = Quaternion(Vector3.UP, (to - from).normalized())
+		binding.add_child(mesh)
 
 
 func set_held(held: bool) -> void:
@@ -205,6 +235,7 @@ func create_coupon(index: int) -> Node3D:
 		material.set_shader_parameter("paper_texture", viewport.get_texture())
 		material.set_shader_parameter("back_face", back)
 		material.set_shader_parameter("physical_size", piece_size)
+		material.set_shader_parameter("corner_lift", 0.0)
 		material.set_shader_parameter("wear", 1.0 if _document.get("worn", false) else 0.15)
 		face.material_override = material
 		piece.add_child(face)
@@ -239,6 +270,7 @@ func _paper_rim(rect: Rect2, follows_sheet: bool = true) -> MeshInstance3D:
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = preload("res://assets/shaders/paper_cut_edge.gdshader")
 	material.set_shader_parameter("paper_tint", Color("c8b99a"))
+	material.set_shader_parameter("corner_lift", 1.0 if follows_sheet else 0.0)
 	if follows_sheet:
 		_edge_materials.append(material)
 	instance.material_override = material

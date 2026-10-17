@@ -23,3 +23,8 @@ Preserve Game/CampaignState ownership, contact-sound timing and other developers
 work. Run relevant checks; record actual results separately from targets.
 Ordinary authorized fixes need no extra confirmation. Procedural prototype
 geometry/foley must not be described as finished AAA production.
+
+18 Ekim doğrudan kontroller: müşteri kartına tek tık/E odak sahnesinde otomatik
+üstten kamera açar; boş elle sol sürükle kâğıdı kaldırır, sağ tutarak yerinde
+döndürür. ScissorStroke yalnız kapanırken keser. Güncel hareketli kanıt ve
+sahne/dal ayrımı: `docs/DESK_ROOM_FIXES.md`.

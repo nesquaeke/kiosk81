@@ -63,6 +63,13 @@ var _cut_tip: Vector2 = Vector2.ZERO
 var _cut_points: PackedVector2Array = []
 var _cut_length_m: float = 0.0
 var _cut_direction: Vector2 = Vector2.RIGHT
+var _scissor_stroke: ScissorStroke
+var _last_snip_cycle: int = -1
+var _paper_dragging: bool = false
+var _paper_rotating: bool = false
+var _paper_drag_offset: Vector3 = Vector3.ZERO
+var _paper_rotation_anchor: Vector3 = Vector3.ZERO
+var _table_yaw: float = 0.0
 var _stamp_height: float = 0.10
 var _stamp_target_height: float = 0.10
 var _stamp_impact_speed: float = 0.0
@@ -119,6 +126,8 @@ func _build_room() -> void:
 	sun.rotation_degrees = Vector3(-48, -28, 0)
 	sun.light_energy = 0.45
 	sun.shadow_enabled = true
+	sun.shadow_bias = 0.20
+	sun.shadow_normal_bias = 1.5
 	add_child(sun)
 	_solid(Vector3(14, 0.1, 16), Vector3(0, -0.05, -2), Color("a0a79f"), "floor")
 	_solid(Vector3(6, 0.02, 6), Vector3(0, 0.005, 0), Color("6d6a56"), "floor")
@@ -184,7 +193,7 @@ func _build_station() -> void:
 	for z: float in [-0.08, 0.08]: _box(coupon_bin, Vector3(0.20, 0.055, 0.01), Vector3(0, 0.025, z), Color("967950"))
 	for i: int in 3:
 		var kind: String = ["approve", "reject", "seize"][i]
-		var stamp: Interactable = _prop("stamp_" + kind, Vector3(0.16 + i * 0.15, 0.968, -1.89), Vector3(0.105, 0.20, 0.07))
+		var stamp: Interactable = _prop("stamp_" + kind, Vector3(0.12 + i * 0.13, 0.968, -1.89), Vector3(0.105, 0.20, 0.07))
 		_adopt_visual(stamp, WorkbenchArt.build_stamp(kind))
 		var stamp_name: Label3D = _label(stamp, ["ONAY", "RET", "ALIKOY"][i], Vector3(0, 0.023, 0.022), 0.00032)
 		stamp_name.rotation.x = -PI / 2
@@ -201,7 +210,7 @@ func _build_station() -> void:
 	book.add_child(preload("res://scenes/kiosk/desk_reference.gd").new())
 	var loupe: InspectionLoupe = preload("res://scenes/kiosk/inspection_loupe.gd").new()
 	add_child(loupe)
-	loupe.position = Vector3(0.56, 0.969, -2.41)
+	loupe.position = Vector3(0.45, 0.969, -2.41)
 	loupe.configure(get_world_3d())
 	props["loupe"] = loupe
 	_remember(loupe)
@@ -328,6 +337,8 @@ func _restart() -> void:
 		if is_instance_valid(token): token.queue_free()
 	_tokens.clear()
 	_cut_index = -1
+	_paper_dragging = false
+	_table_yaw = 0.0
 	_stamp_charging = false
 	_busy = false
 	_card_busy = false
@@ -447,12 +458,16 @@ func _input(event: InputEvent) -> void:
 			KEY_G:
 				if not pause.visible: _drop_held()
 			KEY_F:
-				if not pause.visible: _flip_card()
+				if not pause.visible and not _paper_dragging: _flip_card()
 	if pause.visible: return
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
 		if mouse.button_index == MOUSE_BUTTON_RIGHT:
-			if _desk_inspecting:
+			if _paper_dragging:
+				if mouse.pressed: _paper_rotation_anchor = card.global_position
+				else: _paper_drag_offset = card.global_position - _table_point()
+				_paper_rotating = mouse.pressed
+			elif _desk_inspecting:
 				_desk_pan = mouse.pressed and not _stamp_charging and _cut_index < 0
 			else:
 				_inspecting = mouse.pressed and (card_held or _is_book(held_tool))
@@ -470,13 +485,23 @@ func _input(event: InputEvent) -> void:
 				if card_held and not _card_busy: card.position = _card_hold_position()
 				elif _is_book(held_tool): held_tool.position = _book_hold_position()
 		elif mouse.button_index == MOUSE_BUTTON_LEFT:
-			if mouse.pressed: _begin_tool()
-			else: _end_tool()
+			if mouse.pressed:
+				if held_tool == null and not _busy and not _card_busy:
+					if _desk_inspecting and _ray().get("collider") == card: _begin_paper_drag()
+					else: _interact()
+				else: _begin_tool()
+			else:
+				if _paper_dragging: _end_paper_drag()
+				else: _end_tool()
 	elif event is InputEventMouseMotion:
 		var mouse: InputEventMouseMotion = event
 		var movement: Vector2 = mouse.screen_relative
 		if movement == Vector2.ZERO: movement = mouse.relative * get_viewport().get_screen_transform().get_scale()
-		if _stamp_charging:
+		if _paper_dragging:
+			if _paper_rotating: _table_yaw += movement.x * 0.006
+			if not _selftest: _desk_cursor_override = Vector2(INF, INF)
+			get_viewport().set_input_as_handled()
+		elif _stamp_charging:
 			_stamp_target_height = clampf(_stamp_target_height - movement.y * 0.00065, -0.004, 0.14)
 			_stamp_offset.x = clampf(_stamp_offset.x + movement.x * 0.00012, -0.009, 0.009)
 			get_viewport().set_input_as_handled()
@@ -504,7 +529,8 @@ func _physics_process(delta: float) -> void:
 	crosshair.visible = not _desk_inspecting
 	subtitle.visible = not _desk_inspecting and _window_ready and Time.get_ticks_msec() < _subtitle_until and player.global_position.distance_to(customer_target.global_position) < 3.0 and -player.camera.global_basis.z.dot((customer_target.global_position - player.camera.global_position).normalized()) > 0.55
 	message.visible = Time.get_ticks_msec() < _feedback_until
-	if _stamp_charging: _update_stamp(delta)
+	if _paper_dragging: _update_paper_drag(delta)
+	elif _stamp_charging: _update_stamp(delta)
 	elif _cut_index >= 0: _update_cut(delta)
 	elif _desk_inspecting and not _busy and not _card_busy and held_tool != null:
 		_update_tool_hover()
@@ -520,8 +546,8 @@ func _enter_desk_inspection() -> void:
 	_eye_fov = player.camera.fov
 	_desk_inspecting = true
 	_desk_center = Vector3(card.global_position.x, card.global_position.y, card.global_position.z)
-	_desk_distance = maxf(1.05, 1.50 / (2.0 * tan(deg_to_rad(25.0)) * maxf(0.8, get_viewport().get_visible_rect().size.aspect())))
-	_desk_center.x = -0.10
+	_desk_distance = maxf(0.90, 1.30 / (2.0 * tan(deg_to_rad(25.0)) * maxf(0.8, get_viewport().get_visible_rect().size.aspect())))
+	_desk_center.x = -0.12
 	_desk_cursor_override = Vector2(INF, INF)
 	player.look_locked = true
 	player.camera.reparent(self)
@@ -565,6 +591,7 @@ func _table_point() -> Vector3:
 	return origin + direction * ((_desk_center.y - origin.y) / direction.y)
 
 func _cancel_gesture() -> void:
+	if _paper_dragging: _end_paper_drag(true)
 	if _cut_index >= 0: _commit_incision()
 	if _stamp_charging or _stamp_animating:
 		if _stamp_contacted: _save_stamp_impression()
@@ -618,7 +645,11 @@ func _interact() -> void:
 	if _busy or _card_busy or _cut_index >= 0 or _stamp_charging: return
 	var hit: Dictionary = _ray()
 	var target: Interactable = hit.get("collider") as Interactable
-	if target == null: return
+	if target == null:
+		var surface: Node = hit.get("collider") as Node
+		if surface != null and surface.get_meta("surface", "") == "table" and not card_held:
+			_enter_desk_inspection()
+		return
 	var kind: String = target.action
 	if target == card:
 		if card_held: return
@@ -649,6 +680,49 @@ func _interact() -> void:
 		_equip(target)
 
 
+func _begin_paper_drag() -> void:
+	if not _desk_inspecting or card_held or _busy or _card_busy or held_tool != null: return
+	_paper_dragging = true
+	_paper_rotating = false
+	_paper_drag_offset = card.global_position - _table_point()
+	card.set_held(true)
+	foley.play_sound("paper_pick")
+
+
+func _update_paper_drag(delta: float) -> void:
+	var target: Vector3 = _paper_rotation_anchor if _paper_rotating else _table_point() + _paper_drag_offset
+	target.x = clampf(target.x, -0.72, 0.58)
+	target.z = clampf(target.z, -2.52, -1.80)
+	target.y = 1.025
+	card.global_position = card.global_position.lerp(target, 1.0 - exp(-delta * 22.0))
+	card.quaternion = Quaternion(Vector3.UP, _table_yaw) * RationCard3D.table_orientation(card.front_showing)
+
+
+func _paper_rest_height() -> float:
+	var radius_x: float = absf(cos(_table_yaw)) * 0.18 + absf(sin(_table_yaw)) * 0.1125
+	var radius_z: float = absf(sin(_table_yaw)) * 0.18 + absf(cos(_table_yaw)) * 0.1125
+	var footprint: Rect2 = Rect2(Vector2(card.position.x - radius_x, card.position.z - radius_z), Vector2(radius_x, radius_z) * 2.0)
+	return 0.978 if footprint.intersects(Rect2(-0.535, -2.345, 0.67, 0.43)) else 0.9608
+
+
+func _end_paper_drag(immediate: bool = false) -> void:
+	_paper_dragging = false
+	_paper_rotating = false
+	card.set_held(false)
+	if immediate:
+		card.position.y = _paper_rest_height()
+		return
+	_card_busy = true
+	var generation: int = _epoch
+	var settle: Tween = create_tween()
+	_tweens.append(settle)
+	settle.tween_property(card, "position:y", _paper_rest_height(), 0.16).set_trans(Tween.TRANS_SINE)
+	settle.tween_callback(func() -> void:
+		if generation == _epoch:
+			_card_busy = false
+			foley.play_sound("paper_place"))
+
+
 func _receive_card() -> void:
 	card_held = false
 	card.set_held(false)
@@ -674,7 +748,8 @@ func _receive_card() -> void:
 			left_hand.visible = false
 			card.collision_layer = 2
 			_card_busy = false
-			foley.play_sound("paper_place"))
+			foley.play_sound("paper_place")
+			if document_focus and not pause.visible: _enter_desk_inspection())
 	_message("Karneyi masaya alıyorsun. E: eğilip incele · R: eline al. İstediğin zaman uzaklaşabilirsin.")
 
 
@@ -730,7 +805,7 @@ func _place_card(at: Vector3) -> void:
 	var placing: Tween = create_tween().set_parallel(true)
 	_tweens.append(placing)
 	placing.tween_property(card, "position", Vector3(clampf(at.x, -0.43, 0.01), 0.978, clampf(at.z, -2.32, -1.95)), 0.24).set_trans(Tween.TRANS_SINE)
-	placing.tween_property(card, "quaternion", RationCard3D.table_orientation(card.front_showing), 0.24)
+	placing.tween_property(card, "quaternion", Quaternion(Vector3.UP, _table_yaw) * RationCard3D.table_orientation(card.front_showing), 0.24)
 	placing.chain().tween_callback(func() -> void:
 		if generation == _epoch:
 			card.collision_layer = 2
@@ -790,6 +865,12 @@ func _support_height(tool: Interactable) -> float:
 
 func _equip(tool: Interactable) -> void:
 	held_tool = tool
+	if _desk_inspecting and tool.action == "scissors":
+		_desk_center = card.global_position
+		_desk_distance = maxf(0.68, 0.75 / (2.0 * tan(deg_to_rad(25.0)) * maxf(0.8, get_viewport().get_visible_rect().size.aspect())))
+		_update_overhead_camera()
+		get_viewport().warp_mouse(player.camera.unproject_position(card.global_position))
+		if _selftest: _desk_cursor_override = player.camera.unproject_position(card.global_position)
 	tool.collision_layer = 0
 	tool.reparent(player.camera)
 	var from: Transform3D = tool.transform
@@ -846,7 +927,9 @@ func _update_tool_hover() -> void:
 	held_tool.global_position = point + Vector3(0, 0.11, 0)
 	held_tool.global_rotation = Vector3(0, _stamp_yaw, 0)
 	if held_tool.action == "scissors":
-		held_tool.global_position = point + Vector3(-0.107, 0.020, 0)
+		held_tool.global_position = point + Vector3(-0.107, -0.0095, 0)
+		(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
+		(held_tool.get_node("Blade1") as Node3D).rotation.y = 0.48
 	elif _is_book(held_tool): held_tool.global_position = point + Vector3(0, 0.04, 0)
 	elif held_tool is InspectionLoupe:
 		held_tool.global_position = point + Vector3(0, 0.022, 0)
@@ -930,7 +1013,7 @@ func _flip_card() -> void:
 	_card_busy = true
 	card.front_showing = not card.front_showing
 	_inspect_angles = Vector2.ZERO
-	var target: Quaternion = Quaternion(Vector3.UP, 0 if card.front_showing else PI) if card_held else RationCard3D.table_orientation(card.front_showing)
+	var target: Quaternion = Quaternion(Vector3.UP, 0 if card.front_showing else PI) if card_held else Quaternion(Vector3.UP, _table_yaw) * RationCard3D.table_orientation(card.front_showing)
 	var generation: int = _epoch
 	var tween: Tween = create_tween()
 	_tweens.append(tween)
@@ -982,6 +1065,8 @@ func _begin_tool() -> void:
 		_cut_points = PackedVector2Array([pixel])
 		_cut_length_m = 0
 		_snips = 0
+		_scissor_stroke = ScissorStroke.new()
+		_last_snip_cycle = -1
 		held_tool.reparent(self)
 		_message("Makasın ucu kadar kesilir. Sol tuşla ilerle; bırakınca gerçek kesik kalır. Kuponun dört kenarını takip et.")
 
@@ -1063,32 +1148,44 @@ func _restore_tool_to_hand() -> void:
 	_pose_tool()
 
 func _update_cut(delta: float = 1.0 / 60.0) -> void:
-	if _cut_index < 0: return
+	if _cut_index < 0 or _scissor_stroke == null: return
 	var target: Vector2 = _paper_pixel()
 	if not target.is_finite(): return
 	target = target.clamp(Vector2.ZERO, Vector2(640, 400))
 	var difference: Vector2 = target - _cut_tip
-	var max_pixel: float = 0.075 * delta * 640.0 / RationCard3D.WIDTH
-	var step: Vector2 = difference.limit_length(max_pixel)
+	var travel: float = _scissor_stroke.advance(delta, difference.length() > 0.01)
+	var step: Vector2 = difference.limit_length(travel * 640.0 / RationCard3D.WIDTH)
 	if step.length() > 0.01:
 		_cut_tip += step
 		_cut_direction = step.normalized()
 		_cut_length_m += step.length() * RationCard3D.WIDTH / 640.0
 		_cut_points.append(_cut_tip)
 		card.cut_preview(_cut_points)
+		if _last_snip_cycle != _scissor_stroke.cycle():
+			_last_snip_cycle = _scissor_stroke.cycle()
+			_snips += 1
+			foley.play_sound("snip")
 	var tangent: Vector3 = (card.global_basis * Vector3(_cut_direction.x, -_cut_direction.y, 0)).normalized()
 	var normal: Vector3 = card.global_basis.z.normalized()
 	held_tool.global_basis = Basis(tangent, normal, tangent.cross(normal))
-	held_tool.global_position = card.pixel_to_world(_cut_tip) - tangent * 0.107 + normal * 0.002
-	var phase: float = _cut_length_m / 0.018 * TAU
-	for i: int in 2:
-		(held_tool.get_node("Blade%d" % i) as Node3D).rotation.y = (1 if i == 0 else -1) * (0.025 + (0.5 + 0.5 * cos(phase)) * 0.34)
-	var snips: int = int(_cut_length_m / 0.008)
-	if snips > _snips: foley.play_sound("snip"); _snips = snips
+	# One blade passes underneath the sheet, the other closes over it.
+	# Previously both blades floated around a centimetre above their cut.
+	held_tool.global_position = card.pixel_to_world(_cut_tip) - tangent * 0.107 - normal * 0.0105
+	var jaw: float = _scissor_stroke.jaw_angle()
+	(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
+	(held_tool.get_node("Blade1") as Node3D).rotation.y = jaw
+	right_hand.position = Basis(Vector3.UP, jaw * 0.7) * Vector3(-0.065, 0.064, 0.025)
+	right_hand.rotation.y = jaw * 0.5
+	left_hand.reparent(self)
+	left_hand.global_transform = Transform3D(Basis(Vector3.UP, _table_yaw).scaled(Vector3(-1, 1, 1)), card.pixel_to_world(Vector2(-35, 220)) + Vector3.UP * 0.028)
+	left_hand.visible = true
 
 
 func _commit_incision() -> void:
 	_cut_index = -1
+	left_hand.visible = false
+	left_hand.reparent(player.camera)
+	right_hand.rotation = Vector3.ZERO
 	var path: Array = []
 	for pixel: Vector2 in _cut_points: path.append([pixel.x, pixel.y])
 	var before: Array = (RationDeskRules.desk(Game.state).get("incisions", []) as Array).duplicate(true)
@@ -1141,6 +1238,7 @@ func _detach_coupon(index: int, _item: String) -> void:
 
 func _hint(target: Node) -> String:
 	if _desk_inspecting:
+		if _paper_dragging: return "Sol tuşu bırak: masaya koy · Sağ tuş + sürükle: kâğıdı döndür · Q: bırak ve ayrıl"
 		if _cut_index >= 0: return "%.1f cm kesildi · Fareyle makası ilerlet · Bırak/Q: kesik kâğıtta kalır" % (_cut_length_m * 100.0)
 		if _stamp_charging: return "Fare aşağı: indir/bastır · Basılı tut: mürekkep işlemesi · Bırak: kaldır"
 		if held_tool is InspectionLoupe: return "Büyüteci kâğıt üstünde gezdir · Tekerlek: yaklaş · G: bırak · Q: ayrıl"
@@ -1150,7 +1248,7 @@ func _hint(target: Node) -> String:
 	if target == card:
 		if RationDeskRules.desk(Game.state).get("location") == "intake": return "E · Uzatılan karneyi masaya al"
 		var inspect: String = "Q / WASD · Ayrıl" if _desk_inspecting else "E · Üstten masa görünümü"
-		return inspect + "    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "")
+		return inspect + "    Sol tut · Masada taşı    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "")
 	var kind: String = str(target.get("action")) if target is Interactable else ""
 	match kind:
 		"workmat": return "E / G · Karneyi masaya bırak" if card_held else "E · Masadaki karneyi incelemek için eğil    Q · Ayrıl"
@@ -1360,7 +1458,8 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/document_review_regressions.gd").new().run(self)
+		failures = await preload("res://tests/desk_direct_interaction_regressions.gd").new().run(self)
+		failures.append_array(await preload("res://tests/document_review_regressions.gd").new().run(self))
 	else:
 		failures = await preload("res://tests/fps_ration_regressions.gd").new().run(self)
 	await _wait_customer()
@@ -1384,6 +1483,7 @@ func _run_selftest() -> void:
 		_aim(card.global_position)
 		_key(KEY_E)
 		await _wait_hands()
+		await _test_camera_settled()
 		if card_held or card.get_parent() != self or RationDeskRules.desk(Game.state).get("placement") != "table":
 			failures.append("world handoff failed: " + encounter["id"]); break
 		_aim(card.global_position)

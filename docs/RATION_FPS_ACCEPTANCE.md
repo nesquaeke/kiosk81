@@ -1,5 +1,22 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## 18 Ekim 2026 — doğrudan masa ve makas düzeltmeleri
+
+[Değişiklikler ve normal oyun penceresinden hareketli kayıt](DESK_ROOM_FIXES.md).
+
+- 229 birim testi geçti, 0 başarısız; makasın açılışta kesmemesi ve FPS farkında
+  aynı kapanış mesafesi yeni regresyonlarla kontrol edildi.
+- Normal oyun penceresi kaydı geçti: `--selftest` olmadan tek tıkla üstten kamera,
+  kâğıdı kaldırma/döndürme, gerçek viewport imleciyle makas ve kalıcı kesik.
+- Pencereli ve headless odak koşuları geçti: doğrudan masa kontrolleri,
+  damgadan önce kesim ve sekiz müşteri. Eski satış yolu headless koşusu da geçti.
+- Son yerinde döndürme düzeltmesi ayrıca pencereli doğrudan masa regresyonuyla
+  kontrol edildi; döndürürken kâğıdın konumunun kaymaması sınanıyor.
+- Oda/karakter/el varlıkları prosedürel prototip; gerçek aygıtta ses dinleme ve
+  oyuncuyla eğlence/ASMR onayı bu kontrollerin kapsamında değildir.
+
+Aşağıdaki 17 Ekim kaydı önceki sürüme aittir.
+
 17 Ekim 2026 · Godot 4.7.2 standard · `codex/ration-card-desk`.
 
 F5 artık `scenes/kiosk/ration_desk_focus.tscn` sahnesini açar. Bu dilim yalnızca

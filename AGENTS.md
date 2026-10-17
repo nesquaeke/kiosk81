@@ -17,6 +17,9 @@ The game is 3D with first-person approach/handheld inspection. The latest desk
 interaction explicitly permits the SAME Camera3D to move above the physical
 desk: visible cursor, right-drag pan, wheel zoom, then Q/WASD return to walking.
 An old prohibition on moving the eye camera no longer describes this mode.
+Focus handoff now automatically enters overhead on one click/E; broad tabletop
+click/E reopens it. Empty-hand LMB lifts/drags paper; RMB while dragging rotates
+in place. ScissorStroke advances the blade only during its closing phase.
 Documents and tools remain world objects. Do not revive the rejected 2D
 dashboard; a Control/SubViewport may supply ink or optical rendering only.
 

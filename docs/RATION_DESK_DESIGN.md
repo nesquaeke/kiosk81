@@ -31,9 +31,9 @@ alıkoyma kuralları kurmacadır. Meslek veya yıpranmış kâğıt suçluluk ka
 
 ## Tek müşteri döngüsü
 
-1. Pencereye yaklaş; müşteri karneyi uzatsın. E ile aynı 3D belgeyi teslim al.
+1. Pencereye yaklaş; müşteri karneyi uzatsın. Tek sol tık/E ile aynı 3D belgeyi teslim al.
 2. Karne dünya uzayında masaya yerleşsin. Geri çekilince kameraya yapışmasın.
-3. Masadaki karneyle E üzerinden etkileş; aynı kamerayla üstten çalışma açısına geç.
+3. Odak sahnesi teslimden sonra otomatik üstten çalışma açısına geçer; geri dönüşte kart veya geniş masa yüzeyiyle tık/E üzerinden etkileş.
 4. Ön/arka yüz, tarih, sınıf, kurum, hak ve müdahale izlerini fiziksel kaynakla karşılaştır.
 5. Gerektiğinde karneyi R ile ele al, sağ tuşla eğ, F ile çevir ve G ile geri bırak.
 6. Karar aracını masadan al. Damgayı kâğıda hizala, indir, bastır ve kaldır.
@@ -118,6 +118,8 @@ Baskı hissi sahtecilik cevabı değildir. Oyuncu yanlış karar aracını da ku
 Araçlar sabit, anlaşılır yerlerden alınır; bırakma başka aracı örtüp onu
 seçilemez hale getirmemelidir. Araç yüzeyi, çarpışması ve tutma noktası aynı
 fiziksel konuma karşılık gelir.
+
+18 Ekim doğrudan masa/makas değişiklikleri ve hareketli kayıt: [masa düzeltmeleri](DESK_ROOM_FIXES.md).
 
 ## Kontroller
 

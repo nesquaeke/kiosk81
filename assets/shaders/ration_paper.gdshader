@@ -10,10 +10,19 @@ uniform bool quota_patch = false;
 uniform vec2 physical_size = vec2(0.36, 0.225);
 uniform float wear : hint_range(0.0, 1.0) = 0.15;
 uniform float sheet_seed = 0.0;
+uniform float corner_lift = 1.0;
 uniform float bend_amount : hint_range(0.0, 1.0) = 0.0;
 
 float grain_hash(vec2 value) {
 	return fract(sin(dot(value, vec2(127.1, 311.7)) + sheet_seed) * 43758.5453);
+}
+
+
+float sheet_lift(vec2 p) {
+	float upper_left = pow(max(0.0, 1.0 - p.x / 0.055 - p.y / 0.075), 2.0) * 0.0035;
+	float upper_right = pow(max(0.0, 1.0 - (1.0 - p.x) / 0.065 - p.y / 0.09), 2.0) * 0.007;
+	float lower_right = pow(max(0.0, 1.0 - (1.0 - p.x) / 0.035 - (1.0 - p.y) / 0.055), 2.0) * 0.002;
+	return (upper_left + upper_right + lower_right) * corner_lift;
 }
 
 void vertex() {
@@ -22,7 +31,13 @@ void vertex() {
 	vec2 p = vec2(back_face ? 1.0 - UV.x : UV.x, UV.y);
 	float curl = pow(abs(p.x - 0.5) * 2.0, 3.0) * 0.0022;
 	float fold = sin(p.y * 3.14159265) * sin(p.x * 6.2831853) * 0.00055;
-	VERTEX.z += (back_face ? -1.0 : 1.0) * (curl + fold) * bend_amount;
+	float dogear = pow(max(0.0, 1.0 - (1.0 - p.x) / 0.065 - p.y / 0.09), 2.0) * corner_lift;
+	VERTEX.x += (back_face ? 1.0 : -1.0) * dogear * 0.008;
+	VERTEX.y -= dogear * 0.007;
+	VERTEX.z += (back_face ? -1.0 : 1.0) * ((curl + fold) * bend_amount + sheet_lift(p));
+	float du = (sheet_lift(p + vec2(0.001, 0.0)) - sheet_lift(p - vec2(0.001, 0.0))) / (0.002 * physical_size.x);
+	float dv = (sheet_lift(p + vec2(0.0, 0.001)) - sheet_lift(p - vec2(0.0, 0.001))) / (0.002 * physical_size.y);
+	NORMAL = normalize(vec3(-du, back_face ? -dv : dv, 1.0));
 	// A pasted alteration has a raised paper edge, not just a painted label.
 	if (quota_patch && !back_face) {
 		vec2 q = p * vec2(640.0, 400.0);

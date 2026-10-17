@@ -38,17 +38,20 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
+[18 Ekim masa düzeltmeleri ve hareketli kayıt](docs/DESK_ROOM_FIXES.md) ·
 [Bağımsız master prompt](docs/RATION_FPS_MASTER_PROMPT.md) ·
 [Etkileşim tasarımı](docs/RATION_DESK_DESIGN.md) ·
 [Tarihli kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
-17 Ekim doğrulaması ve oyun içinden yeni görüntüler kabul raporundadır.
+18 Ekim doğrudan masa düzeltmeleri, hareketli kayıt ve doğrulama sonuçları bağlantılardadır.
 
 - **WASD / fare / Shift:** pencereye yürü, bak, hızlı yürü.
-- Müşterinin uzattığı karneye **E**: aynı 3D kâğıdı al, masaya yerleştir.
-  Geri çekilince kâğıt masada kalır; konuşma hareketi kilitlemez.
-- Masadaki karneye **E**: aynı kamera masanın üstüne gelir. Görünen imleçle
+- Müşterinin uzattığı karneye **tek sol tık / E**: aynı 3D kâğıdı masaya al;
+  kamera otomatik olarak üstten çalışma açısına gelir. Konuşma hareketi kilitlemez.
+- Masadaki karneye veya geniş masa yüzeyine **tık / E**: aynı kamera masanın üstüne gelir. Görünen imleçle
   çalış; **sağ tuş sürükle** ile masayı kaydır, **tekerlek** ile yakınlaş.
   Bu, dünyadaki kâğıda bakıştır; eski tam ekran belge arayüzü değildir.
+- Masada boş elle **sol tut + sürükle**: kâğıdı kaldır ve taşı.
+  Sol tutarken **sağ tuş + sürükle**: yerinde döndür. Bırakınca yüzeye oturur.
 - **Q / masadayken WASD:** çalışma açısından ayrıl. Kamera, FOV ve normal
   FPS bakışı geri döner. **R** karneyi bilinçli olarak ele alır; **sağ tuş + fare**
   elde eğmek, **F** çevirmek, **G** masaya bırakmak içindir.
@@ -58,7 +61,8 @@ harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dış
   **sol tuş basılı + fare aşağı** ile indir/bastır. Hız, bekleme ve basınç izi
   değiştirir. Bırakınca kaldır; **Shift + tekerlek** açıyı değiştirir.
   Temas öncesi iptal iz bırakmaz; temas etmiş mürekkep kalır.
-- Makası **E** ile al; **sol tuş + sürükleme** ile gerçek uzunluk kadar kes.
+- Makası **tık / E** ile al; kamera kesim için yaklaşır. **Sol tuş + sürükleme**
+  sırasında bıçaklar görünür biçimde açılıp kapanır; yalnızca kapanırken keser.
   **2 cm kesik, bıraktıktan veya Q'dan sonra da 2 cm hasar olarak kalır.**
   Bir kısa kesik bütün kuponu tüketmez; dört kenarı ayrılınca tek parça kopar.
 - Aracı uygun boş yüzeye **G** ile bırak. Karneyi **R** ile alıp müşteriye
