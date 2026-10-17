@@ -2,6 +2,8 @@
 
 Bağımsız uygulama görevi: [master prompt](RATION_FPS_MASTER_PROMPT.md).
 Çalıştırılmış kontrollerin tarihli kaydı: [kabul raporu](RATION_FPS_ACCEPTANCE.md).
+Objektif değerlendirme ve önerilen geliştirme sırası: [yol haritası](RATION_MECHANIC_ROADMAP.md).
+
 Bu belge davranışı ve sınırları tanımlar; yeni sürümün bütün kontrolleri geçtiği
 iddiası değildir. Eski rapor ve görüntüler kendi sürümlerinin kanıtıdır.
 
