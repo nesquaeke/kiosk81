@@ -24,7 +24,9 @@ work. Run relevant checks; record actual results separately from targets.
 Ordinary authorized fixes need no extra confirmation. Procedural prototype
 geometry/foley must not be described as finished AAA production.
 
-18 Ekim doğrudan kontroller: müşteri kartına tek tık/E odak sahnesinde otomatik
-üstten kamera açar; boş elle sol sürükle kâğıdı kaldırır, sağ tutarak yerinde
-döndürür. ScissorStroke yalnız kapanırken keser. Güncel hareketli kanıt ve
-sahne/dal ayrımı: `docs/DESK_ROOM_FIXES.md`.
+Güncel kontroller: müşteri kartına E/tık aynı karneyi ele alır. Elde F inceleme
+modunu açar; sol sürükle döndürür, sağ tık ters yüzü gösterir, tekerlek yakınlaşır,
+R düzeltir; F/Esc/Q/WASD çıkar. Masaya E/G bırakma önizlemesiyle yerleştirip
+üstten kamera açar. Masada F kâğıdı çevirir. `docs/CARD_INTERACTION_BACKLOG.md`
+onaylanmış sıralı listedir; ilk iki dilim uygulanıp doğrulandı. Geçici damga kılavuzu
+kalıcı mürekkebe/kayda giremez. Alan dışına fiziksel baskı iz bırakır, karar vermez.

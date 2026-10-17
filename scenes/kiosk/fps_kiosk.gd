@@ -86,6 +86,14 @@ var _tweens: Array[Tween] = []
 var _tokens: Array[Node3D] = []
 var _selftest: bool = false
 var _capture_dir: String = ""
+var _object_inspector: HeldObjectInspector
+var _inspect_pending: bool = false
+var _inspection_back: bool = false
+var _inspection_left_visible: bool = false
+var _inspection_right_visible: bool = false
+var _placement_preview: PaperPlacementPreview
+var _stamp_guide: StampPlacementGuide
+var _stamp_assistance: bool = true
 
 
 func _ready() -> void:
@@ -97,6 +105,12 @@ func _ready() -> void:
 	add_child(foley)
 	_build_room()
 	_build_station()
+	_object_inspector = HeldObjectInspector.new()
+	add_child(_object_inspector)
+	_placement_preview = PaperPlacementPreview.new()
+	add_child(_placement_preview)
+	_stamp_guide = StampPlacementGuide.new()
+	card.add_child(_stamp_guide)
 	_build_hud()
 	Game.state_changed.connect(_refresh)
 	_restart()
@@ -310,7 +324,7 @@ func _build_hud() -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	pause.add_child(rows)
 	var controls: Label = Label.new()
-	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlı yürü\nE: al / teslim et · G: yüzeye bırak\nE: üstten masa görünümü · R: karneyi eline al\nQ / WASD: masadan ayrıl\nSağ tuş basılı: elde incele\nF: kartı çevir · Tekerlek: yaklaştır\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla gerçek kesim\n\nSes"
+	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlı yürü\nE: al / teslim et · G: yüzeye bırak\nE: üstten masa · R: karneyi eline al\nF: eldeki nesneyi yakından incele\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nTekerlek: yakınlaş · F/Esc: geri\nMasada F: kartı çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla gerçek kesim\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
 	controls.add_theme_font_size_override("font_size", 20)
 	rows.add_child(controls)
 	var volume: HSlider = HSlider.new()
@@ -319,6 +333,11 @@ func _build_hud() -> void:
 	volume.value = 0.56
 	volume.value_changed.connect(foley.set_level)
 	rows.add_child(volume)
+	var assistance: CheckBox = CheckBox.new()
+	assistance.text = "İlk 2 müşteride damga hedefini vurgula"
+	assistance.button_pressed = _stamp_assistance
+	assistance.toggled.connect(func(enabled: bool) -> void: _stamp_assistance = enabled)
+	rows.add_child(assistance)
 	for entry: Array in [["Devam", _toggle_pause], ["Yeni deneme günü", _restart]]:
 		var button: Button = Button.new()
 		button.text = entry[0]
@@ -328,6 +347,8 @@ func _build_hud() -> void:
 
 
 func _restart() -> void:
+	_close_object_inspection()
+	_inspect_pending = false
 	_exit_desk_inspection(true)
 	_epoch += 1
 	for tween: Tween in _tweens:
@@ -339,6 +360,8 @@ func _restart() -> void:
 	_cut_index = -1
 	_paper_dragging = false
 	_table_yaw = 0.0
+	_stamp_yaw = 0.0
+	_held_distance = 0.48
 	_stamp_charging = false
 	_busy = false
 	_card_busy = false
@@ -385,6 +408,8 @@ func _refresh(state: CampaignState) -> void:
 		subtitle.text = "Gün tamamlandı. Masadaki gün sonu defterini eline alıp inceleyebilirsin."
 		_write_ledger(work)
 	elif index != _index:
+		_close_object_inspection()
+		_inspect_pending = false
 		_index = index
 		_window_ready = false
 		card_held = false
@@ -441,7 +466,102 @@ func _offer_card(index: int, generation: int) -> void:
 	subtitle.text = "%s: %s (%s)" % [encounter["customer"], encounter["line"], RationDeskRules.amount_text(encounter["request"]["item"], int(encounter["request"]["amount"]))]
 
 
+func _open_object_inspection() -> void:
+	if _object_inspector.active or _busy or _card_busy or _paper_dragging or _stamp_charging or _cut_index >= 0: return
+	var target: Node3D = card if card_held else held_tool
+	if target == null: return
+	_exit_desk_inspection(true)
+	_inspecting = false
+	_inspection_back = false
+	_inspection_left_visible = left_hand.visible
+	_inspection_right_visible = right_hand.visible
+	left_hand.visible = false
+	right_hand.visible = false
+	if held_tool != null: held_tool.visible = held_tool == target
+	var readable: Quaternion = Quaternion.IDENTITY
+	var dimensions: Vector3 = Vector3(RationCard3D.WIDTH, RationCard3D.HEIGHT, 0.01)
+	var center: Vector3 = Vector3.ZERO
+	if target == card:
+		readable = Quaternion(Vector3.UP, 0.0 if card.front_showing else PI)
+	elif _is_book(held_tool):
+		readable = Quaternion(Vector3.RIGHT, PI / 2)
+		dimensions = Vector3(0.37, 0.025, 0.47) if held_tool.action == "ledger" else Vector3(0.28, 0.02, 0.23)
+	elif held_tool.action.begins_with("stamp_"):
+		dimensions = Vector3(0.105, 0.20, 0.07)
+		center.y = 0.09
+	elif held_tool.action == "scissors":
+		readable = Quaternion(Vector3.RIGHT, PI / 2)
+		dimensions = Vector3(0.24, 0.04, 0.11)
+	else:
+		readable = Quaternion(Vector3.RIGHT, PI / 2)
+		dimensions = Vector3(0.16, 0.04, 0.24)
+	_object_inspector.open(target, player.camera, readable, dimensions, center)
+	player.look_locked = true
+	player.can_move = false
+	_placement_preview.visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_viewport().warp_mouse(get_viewport().get_visible_rect().size / 2)
+	_feedback_until = 0
+
+
+func _close_object_inspection() -> void:
+	if _object_inspector == null or not _object_inspector.active: return
+	_object_inspector.close()
+	left_hand.visible = _inspection_left_visible
+	right_hand.visible = _inspection_right_visible
+	if held_tool != null: held_tool.visible = true
+	player.look_locked = false
+	player.can_move = not pause.visible
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _inspection_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match (event as InputEventKey).physical_keycode:
+			KEY_F, KEY_ESCAPE, KEY_Q: _close_object_inspection()
+			KEY_R:
+				_inspection_back = false
+				_object_inspector.reset_pose()
+			KEY_W, KEY_A, KEY_S, KEY_D: _close_object_inspection()
+	elif event is InputEventMouseButton:
+		var mouse: InputEventMouseButton = event as InputEventMouseButton
+		if mouse.button_index == MOUSE_BUTTON_LEFT: _object_inspector.dragging = mouse.pressed
+		elif mouse.pressed:
+			match mouse.button_index:
+				MOUSE_BUTTON_RIGHT:
+					_inspection_back = not _inspection_back
+					_object_inspector.readable_face(_inspection_back)
+					foley.play_sound("paper_flip")
+				MOUSE_BUTTON_WHEEL_UP: _object_inspector.zoom(-1.0)
+				MOUSE_BUTTON_WHEEL_DOWN: _object_inspector.zoom(1.0)
+	elif event is InputEventMouseMotion:
+		var mouse: InputEventMouseMotion = event as InputEventMouseMotion
+		var movement: Vector2 = mouse.screen_relative
+		if movement == Vector2.ZERO: movement = mouse.relative
+		_object_inspector.rotate_object(movement)
+
+
+func _card_placement(at: Vector3) -> Vector3:
+	# This function is shared by the footprint and the actual placement tween.
+	return Vector3(clampf(at.x, -0.43, 0.01), 0.978, clampf(at.z, -2.32, -1.95))
+
+
+func _update_placement_preview() -> void:
+	_placement_preview.visible = false
+	if not document_focus or not card_held or _object_inspector.active or _card_busy or _busy: return
+	var hit: Dictionary = _ray()
+	var target: Node = hit.get("collider") as Node
+	if target == null or not (target == workmat or target.get_meta("surface", "") == "table"): return
+	_placement_preview.global_position = _card_placement(hit["position"]) + Vector3.UP * 0.001
+	_placement_preview.rotation.y = _table_yaw
+	_placement_preview.visible = true
+
+
 func _input(event: InputEvent) -> void:
+	if _object_inspector.active:
+		_inspection_input(event)
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match (event as InputEventKey).physical_keycode:
 			KEY_ESCAPE: _toggle_pause(); get_viewport().set_input_as_handled(); return
@@ -449,6 +569,7 @@ func _input(event: InputEvent) -> void:
 				if not pause.visible: _interact()
 			KEY_Q:
 				if not pause.visible:
+					_inspect_pending = false
 					_exit_desk_inspection()
 					_subtitle_until = 0
 			KEY_R:
@@ -458,7 +579,11 @@ func _input(event: InputEvent) -> void:
 			KEY_G:
 				if not pause.visible: _drop_held()
 			KEY_F:
-				if not pause.visible and not _paper_dragging: _flip_card()
+				if not pause.visible and not _paper_dragging:
+					if document_focus and not _desk_inspecting and (card_held or held_tool != null):
+						if _card_busy or _busy: _inspect_pending = true
+						else: _open_object_inspection()
+					else: _flip_card()
 	if pause.visible: return
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
@@ -470,7 +595,7 @@ func _input(event: InputEvent) -> void:
 			elif _desk_inspecting:
 				_desk_pan = mouse.pressed and not _stamp_charging and _cut_index < 0
 			else:
-				_inspecting = mouse.pressed and (card_held or _is_book(held_tool))
+				_inspecting = not document_focus and mouse.pressed and (card_held or _is_book(held_tool))
 				player.look_locked = _inspecting
 		elif mouse.pressed and mouse.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			var step: float = -1.0 if mouse.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
@@ -521,14 +646,24 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _physics_process(delta: float) -> void:
+	if _inspect_pending and not pause.visible and not _busy and not _card_busy:
+		_inspect_pending = false
+		_open_object_inspection()
+	if _object_inspector.active and Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO:
+		_close_object_inspection()
 	if not pause.visible and (_desk_inspecting or _stamp_charging or _stamp_animating or _cut_index >= 0) and Input.get_vector("move_left", "move_right", "move_forward", "move_back") != Vector2.ZERO:
 		_exit_desk_inspection()
-	player.can_move = not pause.visible and not _desk_inspecting and not _busy and _cut_index < 0 and not _stamp_charging
+	player.can_move = not pause.visible and not _desk_inspecting and not _object_inspector.active and not _busy and _cut_index < 0 and not _stamp_charging
 	player.sensitivity = 0.002
 	if pause.visible: return
-	crosshair.visible = not _desk_inspecting
-	subtitle.visible = not _desk_inspecting and _window_ready and Time.get_ticks_msec() < _subtitle_until and player.global_position.distance_to(customer_target.global_position) < 3.0 and -player.camera.global_basis.z.dot((customer_target.global_position - player.camera.global_position).normalized()) > 0.55
+	crosshair.visible = not _desk_inspecting and not _object_inspector.active
+	subtitle.visible = not _desk_inspecting and not _object_inspector.active and _window_ready and Time.get_ticks_msec() < _subtitle_until and player.global_position.distance_to(customer_target.global_position) < 3.0 and -player.camera.global_basis.z.dot((customer_target.global_position - player.camera.global_position).normalized()) > 0.55
 	message.visible = Time.get_ticks_msec() < _feedback_until
+	_update_placement_preview()
+	_update_stamp_guide()
+	if _object_inspector.active:
+		hint.text = "İNCELE · Sol sürükle: döndür · Tekerlek: yakınlaş · Sağ tık: ters yüz · R: düzelt · F / Esc / Q: geri"
+		return
 	if _paper_dragging: _update_paper_drag(delta)
 	elif _stamp_charging: _update_stamp(delta)
 	elif _cut_index >= 0: _update_cut(delta)
@@ -538,6 +673,7 @@ func _physics_process(delta: float) -> void:
 	hint.text = _hint(hit.get("collider") as Node)
 
 func _enter_desk_inspection() -> void:
+	_close_object_inspection()
 	if _desk_inspecting or card_held or not card.visible or RationDeskRules.desk(Game.state).get("placement") != "table": return
 	if player.camera.global_position.distance_to(card.global_position) > 1.5:
 		_message("Masaya yaklaş ve karneye E ile etkileş."); return
@@ -615,6 +751,7 @@ func _exit_desk_inspection(immediate: bool = false) -> void:
 		if immediate and _lean_tween != null and _lean_tween.is_valid():
 			_lean_tween.kill()
 			player.camera.transform = _eye_rest
+			player.camera.fov = _eye_fov
 		player.look_locked = false
 		return
 	_desk_inspecting = false
@@ -647,8 +784,9 @@ func _interact() -> void:
 	var target: Interactable = hit.get("collider") as Interactable
 	if target == null:
 		var surface: Node = hit.get("collider") as Node
-		if surface != null and surface.get_meta("surface", "") == "table" and not card_held:
-			_enter_desk_inspection()
+		if surface != null and surface.get_meta("surface", "") == "table":
+			if card_held: _place_card(hit["position"])
+			else: _enter_desk_inspection()
 		return
 	var kind: String = target.action
 	if target == card:
@@ -724,6 +862,9 @@ func _end_paper_drag(immediate: bool = false) -> void:
 
 
 func _receive_card() -> void:
+	if document_focus:
+		_hold_card()
+		return
 	card_held = false
 	card.set_held(false)
 	card.collision_layer = 0
@@ -773,7 +914,7 @@ func _hold_card() -> void:
 	_align_card_grip()
 	left_hand.visible = true
 	foley.play_sound("paper_pick")
-	_message("Kart elinde. Sağ tuşa basılı tutup fareyle eğ; F ile çevir. Masaya bakıp G ile bırak.")
+	_message("Kart elinde. F: yakından incele · Masaya bakıp E / G: bırak." if document_focus else "Kart elinde. Sağ tuşa basılı tutup fareyle eğ; F ile çevir. Masaya bakıp G ile bırak.")
 
 
 func _align_card_grip() -> void:
@@ -793,8 +934,9 @@ func _book_hold_position() -> Vector3:
 
 
 func _place_card(at: Vector3) -> void:
-	card.set_held(false)
 	if not _execute(rules.move_card(Game.state, "table")): return
+	card.set_held(false)
+	_placement_preview.visible = false
 	left_hand.visible = false
 	left_hand.reparent(player.camera)
 	card_held = false
@@ -804,13 +946,14 @@ func _place_card(at: Vector3) -> void:
 	var generation: int = _epoch
 	var placing: Tween = create_tween().set_parallel(true)
 	_tweens.append(placing)
-	placing.tween_property(card, "position", Vector3(clampf(at.x, -0.43, 0.01), 0.978, clampf(at.z, -2.32, -1.95)), 0.24).set_trans(Tween.TRANS_SINE)
+	placing.tween_property(card, "position", _card_placement(at), 0.24).set_trans(Tween.TRANS_SINE)
 	placing.tween_property(card, "quaternion", Quaternion(Vector3.UP, _table_yaw) * RationCard3D.table_orientation(card.front_showing), 0.24)
 	placing.chain().tween_callback(func() -> void:
 		if generation == _epoch:
 			card.collision_layer = 2
 			_card_busy = false
-			foley.play_sound("paper_place"))
+			foley.play_sound("paper_place")
+			if document_focus and not pause.visible: _enter_desk_inspection())
 	_inspecting = false
 	player.look_locked = false
 	_message("Kart masada. Makası veya bir karar damgasını fiziksel olarak al.")
@@ -926,7 +1069,11 @@ func _update_tool_hover() -> void:
 	var point: Vector3 = _table_point()
 	held_tool.global_position = point + Vector3(0, 0.11, 0)
 	held_tool.global_rotation = Vector3(0, _stamp_yaw, 0)
-	if held_tool.action == "scissors":
+	if held_tool.action.begins_with("stamp_"):
+		# Hold the handle beside the projected impression until lowering starts,
+		# so the physical tool/hand does not cover the player's alignment target.
+		held_tool.global_position += Vector3(0.10, 0, 0.035)
+	elif held_tool.action == "scissors":
 		held_tool.global_position = point + Vector3(-0.107, -0.0095, 0)
 		(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
 		(held_tool.get_node("Blade1") as Node3D).rotation.y = 0.48
@@ -1039,7 +1186,6 @@ func _begin_tool() -> void:
 	var pixel: Vector2 = _paper_pixel()
 	if not card.has_paper_at(pixel): return
 	if held_tool.action.begins_with("stamp_"):
-		if not RationCardView.DECISION_RECT.has_point(pixel): _message("Karar alanına yönelt."); return
 		_stamp_charging = true
 		_stamp_contacted = false
 		_stamp_lift_played = false
@@ -1102,12 +1248,32 @@ func _stamp_contact() -> void:
 	var marks: Array = RationDeskRules.desk(Game.state).get("marks", [])
 	_stamp_serial = int(marks[-1]["serial"])
 	foley.play_sound("stamp_down")
+	if not RationCardView.DECISION_RECT.has_point(_stamp_pixel):
+		_message("Baskı kâğıtta kaldı. Kararı kaydetmek için SATICI ONAYI alanına bas.")
 	_consume_severed_coupon()
 
 
 func _stamp_impression() -> Dictionary:
+	var angle: float = _stamp_ink_angle()
+	var local_offset: Vector3 = card.global_basis.inverse() * Vector3(_stamp_offset.x, 0, _stamp_offset.y)
+	# The renderer rotates the entire rubber face. Express smudge in its local
+	# axes so a world-space lateral slip keeps the same direction on the sheet.
+	var smear: Vector2 = Vector2(local_offset.x, -local_offset.y).rotated(-angle).normalized()
 	return {"speed": _stamp_impact_speed, "dwell": _stamp_dwell, "pressure": _stamp_pressure,
-		"angle": _stamp_yaw, "smudge": _stamp_offset.length(), "smudge_direction": [_stamp_offset.normalized().x, _stamp_offset.normalized().y]}
+		"angle": angle, "smudge": _stamp_offset.length(), "smudge_direction": [smear.x, smear.y]}
+
+
+func _stamp_ink_angle() -> float:
+	var local_direction: Vector3 = card.global_basis.inverse() * Basis(Vector3.UP, _stamp_yaw).x
+	return atan2(-local_direction.y, local_direction.x)
+
+
+func _update_stamp_guide() -> void:
+	_stamp_guide.visible = false
+	if not _desk_inspecting or pause.visible or not card.front_showing or card_held or held_tool == null or not held_tool.action.begins_with("stamp_"): return
+	var pixel: Vector2 = _paper_pixel()
+	if not card.has_paper_at(pixel): pixel = Vector2(INF, INF)
+	_stamp_guide.show_guide(held_tool.action.trim_prefix("stamp_"), pixel, _stamp_ink_angle(), _stamp_assistance and _index < 2, _stamp_charging or _stamp_animating)
 
 
 func _save_stamp_impression() -> void:
@@ -1131,8 +1297,7 @@ func _update_stamp(delta: float) -> void:
 		if _stamp_update_time >= 0.10:
 			_stamp_update_time = 0
 			_save_stamp_impression()
-	var offset_pixel: Vector2 = _stamp_offset * 640.0 / RationCard3D.WIDTH
-	held_tool.global_position = card.pixel_to_world(_stamp_pixel + offset_pixel) + Vector3(0, maxf(_stamp_height, 0), 0)
+	held_tool.global_position = card.pixel_to_world(_stamp_pixel) + Vector3(_stamp_offset.x, maxf(_stamp_height, 0), _stamp_offset.y)
 	held_tool.global_rotation = Vector3(0, _stamp_yaw, 0)
 
 func _start_tool_on_table(at: Vector3) -> void:
@@ -1237,6 +1402,12 @@ func _detach_coupon(index: int, _item: String) -> void:
 
 
 func _hint(target: Node) -> String:
+	if document_focus and card_held:
+		if target == customer_target: return "E · Karneyi iade et    F · Yakından incele"
+		if target == drawer: return "E · Karneyi alıkoy    F · Yakından incele"
+		return "F · Yakından incele    E / G · Masaya bırak"
+	if document_focus and held_tool != null and not _desk_inspecting:
+		return "F · Eldeki nesneyi incele    G · Yüzeye bırak    E · Etkileş"
 	if _desk_inspecting:
 		if _paper_dragging: return "Sol tuşu bırak: masaya koy · Sağ tuş + sürükle: kâğıdı döndür · Q: bırak ve ayrıl"
 		if _cut_index >= 0: return "%.1f cm kesildi · Fareyle makası ilerlet · Bırak/Q: kesik kâğıtta kalır" % (_cut_length_m * 100.0)
@@ -1246,7 +1417,7 @@ func _hint(target: Node) -> String:
 		if held_tool != null and held_tool.action.begins_with("stamp_"): return "Sol tuş basılı + fare aşağı: damga · Shift + tekerlek: açı · Q: ayrıl"
 	if target == null: return "WASD · Yürü    E · Al / ver    G · Yüzeye bırak    Esc · Menü"
 	if target == card:
-		if RationDeskRules.desk(Game.state).get("location") == "intake": return "E · Uzatılan karneyi masaya al"
+		if RationDeskRules.desk(Game.state).get("location") == "intake": return "E / Sol tık · Karneyi eline al" if document_focus else "E · Uzatılan karneyi masaya al"
 		var inspect: String = "Q / WASD · Ayrıl" if _desk_inspecting else "E · Üstten masa görünümü"
 		return inspect + "    Sol tut · Masada taşı    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "")
 	var kind: String = str(target.get("action")) if target is Interactable else ""
@@ -1267,6 +1438,8 @@ func _hint(target: Node) -> String:
 
 
 func _toggle_pause() -> void:
+	_close_object_inspection()
+	_inspect_pending = false
 	_exit_desk_inspection(true)
 	pause.visible = not pause.visible
 	_inspecting = false
@@ -1458,7 +1631,11 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/desk_direct_interaction_regressions.gd").new().run(self)
+		failures = await preload("res://tests/held_inspection_regressions.gd").new().run(self)
+		if "--inspection-only" in OS.get_cmdline_user_args():
+			get_tree().quit(0 if failures.is_empty() else 1)
+			return
+		failures.append_array(await preload("res://tests/desk_direct_interaction_regressions.gd").new().run(self))
 		failures.append_array(await preload("res://tests/document_review_regressions.gd").new().run(self))
 	else:
 		failures = await preload("res://tests/fps_ration_regressions.gd").new().run(self)
@@ -1483,6 +1660,10 @@ func _run_selftest() -> void:
 		_aim(card.global_position)
 		_key(KEY_E)
 		await _wait_hands()
+		if document_focus:
+			_aim(workmat.global_position)
+			_key(KEY_G)
+			await _wait_hands()
 		await _test_camera_settled()
 		if card_held or card.get_parent() != self or RationDeskRules.desk(Game.state).get("placement") != "table":
 			failures.append("world handoff failed: " + encounter["id"]); break
@@ -1506,7 +1687,12 @@ func _run_selftest() -> void:
 			await _wait_hands()
 			await _capture("02_held_front" if i == 0 else "07_tampered_front")
 			_key(KEY_F)
-			await _wait_hands()
+			if document_focus:
+				await get_tree().create_timer(0.24).timeout
+				_mouse(MOUSE_BUTTON_RIGHT, true)
+				_mouse(MOUSE_BUTTON_RIGHT, false)
+				await get_tree().create_timer(0.24).timeout
+			else: await _wait_hands()
 			await _capture("03_held_back" if i == 0 else "08_tampered_back")
 			_key(KEY_F)
 			await _wait_hands()

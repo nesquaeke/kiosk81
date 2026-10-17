@@ -67,9 +67,20 @@ func stamp(state: CampaignState, kind: String, position: Vector2, physical: bool
 		return _reject("Kartı masaya al ve bir karar damgası seç.")
 	if (work.get("parcel", {}) as Dictionary).get("delivered", false) and kind != "approve":
 		return _reject("Ürün teslim edildi; satışı kartı iade ederek tamamla.")
-	if not position.is_finite() or position.x < 460 or position.x > 620 or position.y < 135 or position.y > 225:
+	if not position.is_finite() or position.x < 0 or position.x >= 640 or position.y < 0 or position.y >= 400:
+		return _reject("Damgayı kâğıdın üzerine bas.")
+	if physical:
+		var available: Array = current(state).get("card", {}).get("available", [])
+		for index: int in PRODUCT_ORDER.size():
+			var rectangle: Rect2 = Rect2(30 + index * 195, 285, 180, 90)
+			if rectangle.has_point(position) and (not PRODUCT_ORDER[index] in available or PRODUCT_ORDER[index] in work.get("cuts", []) or PaperCutGeometry.coupon_is_severed(work.get("incisions", []), rectangle)):
+				return _reject("Bu kupon bölgesinde artık kâğıt yok.")
+	var in_decision_area: bool = Rect2(460, 135, 160, 90).has_point(position)
+	if not physical and not in_decision_area:
 		return _reject("Damgayı ön yüzdeki KARAR alanına bas.")
-	work["stamp"] = kind
+	# A physical misplaced contact is still permanent ink, but must not approve,
+	# reject or confiscate the document through an unrelated printed field.
+	if in_decision_area: work["stamp"] = kind
 	var mark: Dictionary = {"kind": kind, "x": position.x, "y": position.y,
 		"physical": physical, "serial": (work["marks"] as Array).size() + 1}
 	(work["marks"] as Array).append(_with_impression(mark, impression))

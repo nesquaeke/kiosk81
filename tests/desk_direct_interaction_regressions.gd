@@ -10,9 +10,13 @@ func run(desk: Node3D) -> PackedStringArray:
 	desk._mouse(MOUSE_BUTTON_LEFT, true)
 	desk._mouse(MOUSE_BUTTON_LEFT, false)
 	await desk._wait_hands()
+	if not desk.card_held: failures.append("one click did not take the offered document into the hand")
+	desk._aim(desk.workmat.global_position)
+	desk._key(KEY_G)
+	await desk._wait_hands()
 	await desk._test_camera_settled()
 	if not desk._desk_inspecting or (-desk.player.camera.global_basis.z).dot(Vector3.DOWN) < .995:
-		failures.append("one click did not hand off the card and enter a true overhead view")
+		failures.append("placing the held card did not enter a true overhead view")
 	var original: Vector3 = desk.card.global_position
 	desk._aim(original)
 	desk._mouse(MOUSE_BUTTON_LEFT, true)
@@ -45,6 +49,6 @@ func run(desk: Node3D) -> PackedStringArray:
 	desk._key(KEY_E)
 	await desk._test_camera_settled()
 	if not desk._desk_inspecting: failures.append("the broad tabletop could not reopen overhead inspection")
-	print("[direct desk regressions] %s" % ("PASS: single-click overhead, paper lift/drag/rotate/release, back flip and broad table interaction" if failures.is_empty() else "FAIL: " + "; ".join(failures)))
+	print("[direct desk regressions] %s" % ("PASS: single-click pickup, placement overhead, paper lift/drag/rotate/release, back flip and broad table interaction" if failures.is_empty() else "FAIL: " + "; ".join(failures)))
 	desk._restart()
 	return failures

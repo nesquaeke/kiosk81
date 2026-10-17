@@ -76,10 +76,10 @@ static func build_stamp(kind: String) -> Node3D:
 	wood.set_shader_parameter("grain_axis", 1)
 	var rubber: ShaderMaterial = _surface(Color("25221f"), 1, 0.87, 0.0, 0.18)
 	var accent: Color = {"approve": Color("3e5142"), "reject": Color("733c31"), "seize": Color("343c50")}.get(kind, Color("3e5142"))
-	var rim: MeshInstance3D = bevel_box(Vector3(0.094, 0.014, 0.059), 0.0032, steel)
+	var rim: MeshInstance3D = bevel_box(Vector3(0.082, 0.014, 0.034), 0.0032, steel)
 	rim.position.y = 0.014
 	root.add_child(rim)
-	var die: MeshInstance3D = bevel_box(Vector3(0.086, 0.006, 0.051), 0.0012, rubber)
+	var die: MeshInstance3D = bevel_box(Vector3(130, 0, 44) * (RationCard3D.WIDTH / 640.0) + Vector3(0, 0.006, 0), 0.0012, rubber)
 	die.position.y = 0.003
 	root.add_child(die)
 	# Lathed hardwood handle: flared shoulder, pinched neck and full palm grip.

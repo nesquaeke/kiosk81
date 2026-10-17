@@ -1,5 +1,32 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## Güncel dilim — tek tuşla elde inceleme ve damga kılavuzu
+
+[Yeni kontroller, hareketli normal pencere kaydı ve ayrıntılı rapor](CARD_INSPECTION_UPDATE.md).
+[Sıralı onaylanmış liste ve kalan işler](CARD_INTERACTION_BACKLOG.md).
+
+- **232 birim testi geçti, 0 başarısız.** Alan dışı fiziksel damga kalıcı iz
+  bırakır; karar alanı dışında karar değişmez; JSON korur ve geçersiz/kâğıt dışı
+  konumlar reddedilir.
+- **Headless ve pencereli odak koşuları geçti.** Yeni elde inceleme girdileri,
+  erken F, sınırlı zoom, serbest dönüş ve bırakınca durma, okunaklı arka yüz,
+  R düzeltme, Esc/Q/odak kaybı/restart, kalıcı hasar ve masa önizlemesi sınanır.
+- Hızlı Q → F geçişinde kamera ebeveyni ve FOV geri gelir. Dönen kâğıt/alet
+  için mürekkep açısı ve yanal bulaşma fiziksel hareketle aynı yöndedir.
+- Sekiz müşteri odak modunda tamamlandı; para/stok mutasyonu yok. Eski satış
+  sahnesinin headless kesinti ve sekiz müşteri koşusu da geçti.
+- Normal sahne kaydı `--selftest` olmadan geçti: E ile ele alma, F ile döndürme,
+  zoom/ters yüz/Esc, bırakma çerçevesi, G ile üstten masa, gerçek viewport
+  imleciyle damga izdüşümü, alan dışı ve karar alanındaki fiziksel baskı.
+- Yeni grafik kontrolleri aynı display üzerinde sırayla çalıştırıldı; son
+  pencereli koşuda GDScript/engine hatası yok, yazılım sürücüsünün V-Sync uyarısı var.
+- GL Compatibility/llvmpipe + Dummy ses kullanıldı. Forward+ alan derinliği
+  bağlandı fakat bu ortamda görsel olarak doğrulanmadı. İnsan oyuncu testi,
+  gerçek cihazla ses dinleme ve hedef GPU performansı bu sonuçlara dahil değil.
+
+Aşağıdaki bölümler önceki sürümlerin tarihli kayıtlarıdır; güncel E/F/masa
+kontrolleri yukarıdaki yeni raporda tanımlanır.
+
 ## 18 Ekim 2026 — doğrudan masa ve makas düzeltmeleri
 
 [Değişiklikler ve normal oyun penceresinden hareketli kayıt](DESK_ROOM_FIXES.md).

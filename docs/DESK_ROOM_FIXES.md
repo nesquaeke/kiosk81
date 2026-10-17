@@ -1,5 +1,8 @@
 # Masa etkileşimi düzeltmeleri — 18 Ekim 2026
 
+> Bu önceki sürümün raporudur. Güncel E ile ele alma, F ile elde inceleme ve
+> damga kılavuzu için [sonraki raporu](CARD_INSPECTION_UPDATE.md) oku.
+
 Kapsam masa ve oda içindeki mevcut etkileşimdir. Yeni erzak/ekonomi veya dış dünya
 mekaniği eklenmedi. Bu kayıt tamamlanmış AAA sanat üretimi iddiası değildir.
 

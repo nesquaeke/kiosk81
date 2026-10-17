@@ -1,5 +1,9 @@
 # Karne mekaniği: değerlendirme ve geliştirme yol haritası
 
+> Güncel uygulama: [tek tuşla elde inceleme ve damga kılavuzu](CARD_INSPECTION_UPDATE.md).
+> Kullanıcının son onayladığı ayrıntılı sıra ve ilerleme [bu listede](CARD_INTERACTION_BACKLOG.md).
+> Aşağıdaki değerlendirme, bu ilk iki dilimden önceki sürümün başlangıç analizidir.
+
 18 Ekim 2026 · İncelenen uygulama: `aeebe8b`.
 
 Bu belge bir tasarım değerlendirmesi ve önerilen çalışma sırasıdır. Buradaki yeni

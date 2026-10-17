@@ -81,6 +81,40 @@ func test_stamp_location_and_kind_are_validated() -> void:
 	assert_eq(RationDeskRules.desk(state)["marks"].size(), 1)
 
 
+func test_misplaced_physical_stamp_leaves_ink_without_deciding_or_replacing_decision() -> void:
+	assert_true(_apply(rules.take(state)))
+	assert_true(_apply(rules.move_card(state, "table")))
+	assert_true(_apply(rules.stamp(state, "seize", Vector2(100, 100), true)))
+	assert_eq(RationDeskRules.desk(state)["stamp"], "")
+	assert_eq(RationDeskRules.desk(state)["marks"].size(), 1)
+	assert_true(_apply(rules.stamp(state, "approve", Vector2(540, 180), true)))
+	assert_true(_apply(rules.stamp(state, "reject", Vector2(18, 390), true)))
+	assert_eq(RationDeskRules.desk(state)["stamp"], "approve")
+	assert_eq(RationDeskRules.desk(state)["marks"].size(), 3)
+	var restored: CampaignState = CampaignState.from_dict(JSON.parse_string(JSON.stringify(state.to_dict())))
+	assert_eq(RationDeskRules.desk(restored)["marks"], RationDeskRules.desk(state)["marks"])
+
+
+func test_physical_stamp_cannot_create_ink_outside_the_sheet() -> void:
+	assert_true(_apply(rules.take(state)))
+	assert_true(_apply(rules.move_card(state, "table")))
+	var before: Dictionary = state.to_dict()
+	for point: Vector2 in [Vector2(-1, 100), Vector2(640, 100), Vector2(100, 400), Vector2(NAN, 100), Vector2(100, INF)]:
+		assert_false(rules.stamp(state, "approve", point, true)["ok"])
+	assert_eq(state.to_dict(), before)
+
+
+func test_physical_stamp_cannot_create_ink_in_a_severed_coupon_hole() -> void:
+	assert_true(_apply(rules.take(state)))
+	assert_true(_apply(rules.move_card(state, "table")))
+	_incise_perimeter("meat")
+	var before: Dictionary = state.to_dict()
+	assert_false(rules.stamp(state, "seize", Vector2(120, 330), true)["ok"])
+	assert_eq(state.to_dict(), before)
+	assert_true(_apply(rules.stamp(state, "approve", Vector2(540, 180), true)))
+	assert_eq(RationDeskRules.desk(state)["marks"].size(), 1)
+
+
 func test_cut_precedes_goods_and_matches_request() -> void:
 	_stamp("approve")
 	assert_false(rules.prepare(state, "official", "meat", true)["ok"])

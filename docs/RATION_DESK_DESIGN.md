@@ -31,15 +31,21 @@ alıkoyma kuralları kurmacadır. Meslek veya yıpranmış kâğıt suçluluk ka
 
 ## Tek müşteri döngüsü
 
-1. Pencereye yaklaş; müşteri karneyi uzatsın. Tek sol tık/E ile aynı 3D belgeyi teslim al.
-2. Karne dünya uzayında masaya yerleşsin. Geri çekilince kameraya yapışmasın.
-3. Odak sahnesi teslimden sonra otomatik üstten çalışma açısına geçer; geri dönüşte kart veya geniş masa yüzeyiyle tık/E üzerinden etkileş.
+1. Pencereye yaklaş; müşteri karneyi uzatsın. E/tek tık ile aynı 3D belgeyi ele al.
+2. Elde F ile yakından incele: sol sürükle döndürür, tekerlek yakınlaşır,
+   sağ tık ters yüzü gösterir, R düzeltir. F/Esc/Q/WASD önceki tutuşa döner.
+3. Masaya bak; fiziksel bırakma çerçevesi görünür. E/G ile yerleştirince aynı
+   kamera otomatik üstten çalışma açısına geçer. Kart/geniş masa E ile yeniden açılır.
 4. Ön/arka yüz, tarih, sınıf, kurum, hak ve müdahale izlerini fiziksel kaynakla karşılaştır.
-5. Gerektiğinde karneyi R ile ele al, sağ tuşla eğ, F ile çevir ve G ile geri bırak.
-6. Karar aracını masadan al. Damgayı kâğıda hizala, indir, bastır ve kaldır.
-7. Satış onayında gereken kuponun sınırını gerçekten kes. Ret/alıkoymada bu adımı atla.
-8. Aracı uygun boş yüzeye bırak; Q ile masadan ayrıl. Karneyi ele alıp müşteriye
-   iade et veya alıkoyma bölmesine koy. Sonraki müşteriyi çağır.
+5. Masada F çevirir; R ele alır. Sonrasında elde F tekrar yakından inceleyebilir.
+6. Karar aracını masadan al. SATICI ONAYI / KARAR alanı basılıdır; geçici izdüşüm
+   damganın gerçek konum/açısını gösterir. İlk iki müşteride kapatılabilir hedef
+   çerçevesi vardır. Araç hedefin yanında bekler; basarken üstüne gelir.
+7. Damgayı indir/bastır/kaldır. Alan dışı fiziksel baskı kâğıtta kalır ama karar
+   kaydetmez. Gerçek mürekkep ile geçici kılavuz farklı render katmanlarındadır.
+8. Satış onayında gereken kuponun sınırını gerçekten kes. Ret/alıkoymada bu adımı atla.
+9. Aracı uygun boş yüzeye bırak; Q ile ayrıl. Karneyi ele alıp müşteriye iade et
+   veya alıkoyma bölmesine koy. Sonraki müşteriyi çağır.
 
 Bu modda son adım **belge incelemesinin tamamlanmasıdır**: ürün paketi gerekmez,
 stok düşmez ve ödeme alınmaz. Karne hakkı ile ürün satışı aynı işlem sayılmaz.
@@ -177,3 +183,12 @@ sürüm için kabul raporuna yazılır. Eski tam satış testleri odak sahnesini
 Daha önce kabul edilen erzak toplama, resmî/gizli kaynak seçimi, ödeme ve ürün
 getirme fikri korunur; bu görev bitince yeniden ele alınacak ayrı döngüdür.
 Yarı açık dünya, oda genişletme, terazi, para üstü ve kampanya bu göreve eklenmez.
+
+## Yeni dilimlerin takibi
+
+Kullanıcının ayrıntılı, sıralı listesi [burada](CARD_INTERACTION_BACKLOG.md).
+Güncel görsel kayıt ve doğrulama [elde inceleme raporunda](CARD_INSPECTION_UPDATE.md).
+Elde inceleme ekranında aynı 3D nesne kullanılır; dönüş/zoom işlemi kanıtı,
+kesikleri veya kararları değiştirmez. Kapatınca önceki tutuş ve kamera ayarları
+aynen geri gelir. Alan derinliği yalnız Forward+ yöntemiyle kullanılabilir;
+Compatibility görüntüsüne bulanıklık varmış gibi davranılmaz.

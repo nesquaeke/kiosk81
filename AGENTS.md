@@ -17,9 +17,12 @@ The game is 3D with first-person approach/handheld inspection. The latest desk
 interaction explicitly permits the SAME Camera3D to move above the physical
 desk: visible cursor, right-drag pan, wheel zoom, then Q/WASD return to walking.
 An old prohibition on moving the eye camera no longer describes this mode.
-Focus handoff now automatically enters overhead on one click/E; broad tabletop
-click/E reopens it. Empty-hand LMB lifts/drags paper; RMB while dragging rotates
-in place. ScissorStroke advances the blade only during its closing phase.
+Focus handoff now takes the same card into the hand with one click/E. F opens
+held-object inspection: LMB drag rotates, wheel zooms, RMB flips, R resets,
+F/Esc/Q/WASD exits. E/G on the desk places the card with a physical footprint
+preview and automatically enters overhead; broad tabletop click/E reopens it.
+On the table F still flips the paper. Empty-hand LMB lifts/drags paper; RMB
+while dragging rotates in place. ScissorStroke advances the blade only during its closing phase.
 Documents and tools remain world objects. Do not revive the rejected 2D
 dashboard; a Control/SubViewport may supply ink or optical rendering only.
 
@@ -58,3 +61,14 @@ test count as proof of new work. Procedural models/foley are prototypes, not
 finished AAA art or verified listening quality.
 Don't casually run `tools/setup_project.gd` or whole scene generators; they
 overwrite scenes. Fetch Git LFS assets before importing a fresh checkout.
+
+Current sequential feature list: `docs/CARD_INTERACTION_BACKLOG.md`. The original
+user list is preserved there; its first two slices are implemented and verified
+in this change. `HeldObjectInspector` works on the existing held card/tool and
+restores its exact pose on exit. Don't append marks/cuts during inspection.
+`StampPlacementGuide` is a transient mesh on the paper, outside the ink renderer
+and campaign state. Stamp preview and actual ink use the same paper-local angle.
+A physical stamp outside the decision field leaves ink without changing the
+logical decision; an invalid position outside paper is rejected. Forward+ has
+inspection depth of field; Compatibility does not. Check both first-person
+cancellation and existing physical damage after these changes.

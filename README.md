@@ -38,29 +38,34 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
-[18 Ekim masa düzeltmeleri ve hareketli kayıt](docs/DESK_ROOM_FIXES.md) ·
+[Güncel elde inceleme ve damga kaydı](docs/CARD_INSPECTION_UPDATE.md) ·
+[Sıralı geliştirme listesi](docs/CARD_INTERACTION_BACKLOG.md) ·
 [Bağımsız master prompt](docs/RATION_FPS_MASTER_PROMPT.md) ·
 [Etkileşim tasarımı](docs/RATION_DESK_DESIGN.md) ·
 [Tarihli kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
-18 Ekim doğrudan masa düzeltmeleri, hareketli kayıt ve doğrulama sonuçları bağlantılardadır.
+Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardadır.
 
 - **WASD / fare / Shift:** pencereye yürü, bak, hızlı yürü.
-- Müşterinin uzattığı karneye **tek sol tık / E**: aynı 3D kâğıdı masaya al;
-  kamera otomatik olarak üstten çalışma açısına gelir. Konuşma hareketi kilitlemez.
-- Masadaki karneye veya geniş masa yüzeyine **tık / E**: aynı kamera masanın üstüne gelir. Görünen imleçle
-  çalış; **sağ tuş sürükle** ile masayı kaydır, **tekerlek** ile yakınlaş.
-  Bu, dünyadaki kâğıda bakıştır; eski tam ekran belge arayüzü değildir.
-- Masada boş elle **sol tut + sürükle**: kâğıdı kaldır ve taşı.
-  Sol tutarken **sağ tuş + sürükle**: yerinde döndür. Bırakınca yüzeye oturur.
-- **Q / masadayken WASD:** çalışma açısından ayrıl. Kamera, FOV ve normal
-  FPS bakışı geri döner. **R** karneyi bilinçli olarak ele alır; **sağ tuş + fare**
-  elde eğmek, **F** çevirmek, **G** masaya bırakmak içindir.
+- Müşterinin uzattığı karneye **E / tek sol tık**: aynı 3D kartı eline al.
+- Eldeki karta veya alete **F**: yakından incele. **Sol sürükle:** serbest döndür;
+  **tekerlek:** zoom; **sağ tık:** ön/arka yüz; **R:** duruşu düzelt.
+  **F / Esc / Q / WASD:** incelemeden çık. Esc ilk basışta menü açmaz.
+- Masaya bakarken görünen çerçeve bırakılacak yeri gösterir. **E / G** ile
+  yerleştir; aynı kamera otomatik olarak üstten çalışma açısına gelir.
+- Masadaki karneye veya geniş masa yüzeyine **tık / E**: üstten çalışmaya geri dön.
+  **Sağ sürükle:** masayı kaydır; **tekerlek:** yaklaş; **Q / WASD:** yürümeye dön.
+- Masada boş elle **sol tut + sürükle:** kâğıdı kaldır ve taşı.
+  Sol tutarken **sağ tuş + sürükle:** yerinde döndür. Bırakınca yüzeye oturur.
+- Masada **F:** kâğıdı çevir; **R:** ele al. Elde tekrar **F** ile yakın incele.
+  Kesikler ve damgalar korunur. İade/alıkoyma için ilgili yere bakıp **E** kullan.
 - Ön/arka yüzdeki ay, sınıf, kurum, hak, mühür ve müdahale izlerini karşılaştır.
   Yıpranmış kâğıt tek başına sahte değildir; sistem cevabı önceden göstermez.
-- SATIŞ / RET / ALIKOY damgasını **E** ile al. İmleci karar alanına götür;
+- SATIŞ / RET / ALIKOY damgasını **E** ile al. İmleci **SATICI ONAYI / KARAR** alanına götür; geçici baskı önizlemesi yerini/açısını gösterir.
+  İlk iki müşterinin hedef yardımı Esc menüsünden kapatılabilir;
   **sol tuş basılı + fare aşağı** ile indir/bastır. Hız, bekleme ve basınç izi
   değiştirir. Bırakınca kaldır; **Shift + tekerlek** açıyı değiştirir.
-  Temas öncesi iptal iz bırakmaz; temas etmiş mürekkep kalır.
+  Temas öncesi iptal iz bırakmaz; temas etmiş mürekkep kalır. Alan dışı fiziksel
+  baskı kâğıtta kalır fakat işlem kararı kaydetmez.
 - Makası **tık / E** ile al; kamera kesim için yaklaşır. **Sol tuş + sürükleme**
   sırasında bıçaklar görünür biçimde açılıp kapanır; yalnızca kapanırken keser.
   **2 cm kesik, bıraktıktan veya Q'dan sonra da 2 cm hasar olarak kalır.**

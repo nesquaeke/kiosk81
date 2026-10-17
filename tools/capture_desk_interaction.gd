@@ -64,8 +64,12 @@ func run() -> void:
 	recording = true
 	button(MOUSE_BUTTON_LEFT, true)
 	button(MOUSE_BUTTON_LEFT, false)
+	await frames(14)
+	if not check(desk.card_held, "normal one-click handoff must take the same card into the hand"): return
+	await point(desk.workmat.global_position)
+	desk._key(KEY_G)
 	await frames(40)
-	if not check(desk._desk_inspecting, "normal one-click handoff must enter overhead without a second interaction"): return
+	if not check(desk._desk_inspecting, "placing the held card must enter overhead"): return
 	if not check((-desk.player.camera.global_basis.z).dot(Vector3.DOWN) > .995): return
 	if not check(not desk._selftest and not desk._desk_cursor_override.is_finite()): return
 	await shot("01_automatic_overhead")
@@ -102,12 +106,14 @@ func run() -> void:
 	await point(desk.card.global_position)
 	desk._key(KEY_R)
 	await frames(16)
-	button(MOUSE_BUTTON_RIGHT, true)
+	desk._key(KEY_F)
+	await frames(10)
+	button(MOUSE_BUTTON_LEFT, true)
 	motion(Vector2(65, -40))
-	button(MOUSE_BUTTON_RIGHT, false)
+	button(MOUSE_BUTTON_LEFT, false)
 	await frames(12)
 	await shot("06_physical_card")
 	await frames(25)
 	recording = false
-	print("[normal viewport capture] PASS: single-click overhead, lifted/rotated paper, real-pointer scissors and persistent incision; %d frames" % saved)
+	print("[normal viewport capture] PASS: single-click pickup, placement overhead, lifted/rotated paper, real-pointer scissors and persistent incision; %d frames" % saved)
 	quit()

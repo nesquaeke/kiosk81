@@ -10,8 +10,9 @@ kontroller ise tarihli [kabul raporunda](RATION_FPS_ACCEPTANCE.md) tutulur.
 
 Godot 4.7.2 ile geliştirilen KIOSK '81'de yalnızca şu etkileşimi çok iyi yap:
 
-**Müşteri karneyi uzatır → oyuncu teslim alıp masaya koyar → kâğıdı ve kanıtları
-inceler → damga basar / gerekli kuponu keser → karneyi iade eder veya alıkoyar.**
+**Müşteri karneyi uzatır → oyuncu E ile ele alır → F ile yakından döndürüp
+inceler → E/G ile masaya koyar → üstten çalışıp damga basar / kupon keser →
+karneyi iade eder veya alıkoyar.**
 
 Kullanıcı bu ana mekanik sıradan, ucuz görünen ve sıkıcı bir deneme olarak
 kalmamalı diyor. Kaliteyi yeni odalar, dekor listeleri veya ek sistemlerle
@@ -52,14 +53,18 @@ araçlar ekrandan kaybolduğunda oyuncunun onları bulabileceği anlaşılır ol
 ## 3. Tamamlanacak tek müşteri döngüsü
 
 1. Müşteri dışarıdan kartını uzatır ve kısa bir talep söyler.
-2. Oyuncu erişim içindeki karta E ile etkileşir. Aynı kart dünya uzayında teslim
-   alınır ve masaya yerleşir. Teslim alma bitince ekrana yapışıp oyuncuyu izlemez.
+2. Oyuncu erişim içindeki karta E/tek tık ile etkileşir. Aynı fiziksel kart ele
+   alınır. Elde F yakın incelemeyi açar: sol sürükle döndürür, tekerlek zoomlar,
+   sağ tık çevirir, R düzeltir; F/Esc/Q/WASD önceki tutuşa döner.
+   Masaya bakarken fiziksel çerçeve yerleştirilecek yeri gösterir. E/G bırakır;
+   kart masaya oturunca aynı kamera otomatik üstten çalışma açısına geçer.
 3. Oyuncu hemen uzaklaşabilir. Konuşmadan çıkmak ret kararı veya işlem sıfırlama değildir.
 4. Masadaki karta E ile etkileşip üstten çalışma açısına gelir; imleçle inceler.
 5. Ön/arka yüzü çevirir; tarih, sınıf, kurum, hak ve müdahale izlerini karşılaştırır.
    Kural/kurum örneği aynı masada fiziksel olarak görülebilir; optik büyüteç küçük
    baskı ve yama incelemesine yardım eder.
-6. İsterse R ile kâğıdı ele alır, eğip çevirir ve G ile tekrar masaya bırakır.
+6. İsterse R ile kâğıdı ele alır, F ile yakından inceleyip çıkışta E/G ile tekrar
+   masaya bırakır. Masada F kâğıdı çevirir.
 7. Karar aracını fiziksel olarak alır: SATIŞ, RET veya ALIKOY. Hedefe götürür,
    indirir, bastırır, kaldırır. Damga hareketinin niteliği mürekkepte görülebilir.
 8. SATIŞ kararında gereken kuponun dört kenarını keser; kısa kesikler ve devamları
@@ -164,13 +169,16 @@ rastgele bir damga üretmesin. Damga dokusu sahtecilik cevabı değildir.
 | Durum / girdi | Beklenen davranış |
 | --- | --- |
 | Serbest WASD / fare / Shift | Yürü / bak / hızlı yürü |
-| E, uzatılan karne | Teslim al ve masaya bırak |
+| E / tek tık, uzatılan karne | Aynı fiziksel karneyi ele al |
 | E, masadaki karne | Üstten 3D masa çalışma açısına geç |
 | Masada sağ tuş + sürükleme | Masayı kaydır |
 | Masada tekerlek | Yaklaş / uzaklaş |
 | R | Bakılan masadaki karneyi ele al |
-| Elde sağ tuş + fare | Belgeyi eğ; normal bakışı geçici durdur |
-| F | Kartı fiziksel olarak ters yüz et |
+| Elde F | Nesneyi yakından incelemeye gir/çık |
+| İncelemede sol sürükle / tekerlek | Serbestçe döndür / sınırlı zoom |
+| İncelemede sağ tık / R | Ters yüz / okunaklı başlangıç duruşu |
+| İncelemede Esc / Q / WASD | Önceki tutuşa dön; hareketi geri ver |
+| Masada F | Kâğıdı fiziksel olarak ters yüz et |
 | E, masadaki araç | Uygun eli boşsa al |
 | G, uygun yüzey | Tutulan nesneyi bırak |
 | Damga: sol tut + fare aşağı | İndir / bastır; bırakınca kaldır |
@@ -272,3 +280,13 @@ Bunları şimdiki karne masasını bitirmek için zorunlu işlere dönüştürme
 
 Her değişikliği şu soruyla denetle: **Oyuncu kâğıtta bir kanıtı bulabiliyor mu;
 yaptığı küçük fiziksel hareket, kâğıtta ve araçta beklediği sonucu bırakıyor mu?**
+
+## Güncel sıralı uygulama
+
+Kullanıcının onayladığı ayrıntılı görevler: [CARD_INTERACTION_BACKLOG.md](CARD_INTERACTION_BACKLOG.md).
+İlk dilim tek tuşla elde inceleme, ikinci dilim damga okunaklılığıdır.
+Satıcı karar alanı belirgin basılıdır; alet eldeyken gerçek boy/açıda geçici
+izdüşüm görünür. Bu kılavuz kalıcı mürekkebe veya kuponlara işlenmez.
+İlk iki müşteride isteğe bağlı hedef yardımı vardır. Alan dışına fiziksel basmak
+iz bırakır fakat karar kaydetmez; geçerli karar alanında oyuncu istediği kararı
+verebilir. Bunu sahtecilik cevabını engelleyen bir sisteme dönüştürme.
