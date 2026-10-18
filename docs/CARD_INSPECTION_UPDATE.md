@@ -1,5 +1,7 @@
 # Elde inceleme ve damga — ilk iki uygulama dilimi
 
+> Sonraki dilim: [kâğıt çeşitleri, T ile ışığa tutma ve fiziksel rehber](PAPER_INSPECTION_UPDATE.md).
+
 Dal: **`codex/ration-card-desk`**. Godot'ta bu checkout'un `project.godot`
 dosyasını açıp **F5** ile başlat. Ana sahne `ration_desk_focus.tscn`.
 GitHub Desktop'ta **Fetch origin → Current Branch → codex/ration-card-desk →

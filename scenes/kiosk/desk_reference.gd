@@ -6,9 +6,13 @@ extends Node3D
 
 const FOOTPRINT: Vector2 = Vector2(0.244, 0.229)
 const PAGE_SIZE: Vector2 = Vector2(0.231, 0.216)
+const FRONT_LEAF_POSITION: Vector3 = Vector3(0.003, 0.0085, 0)
+const BACK_LEAF_POSITION: Vector3 = Vector3(0.003, -0.0002, 0)
+const BACK_LEAF_ROTATION: Vector3 = Vector3(0, 0, PI)
 const CLOTH_SHADER: Shader = preload("res://assets/shaders/workbench_surface.gdshader")
 @export var valid_month: String = RationDeskRules.MONTH
 var page_viewport: SubViewport
+var evidence_viewport: SubViewport
 
 
 func _ready() -> void:
@@ -37,31 +41,40 @@ func _ready() -> void:
 
 
 func _build_print() -> void:
-	page_viewport = SubViewport.new()
-	page_viewport.name = "PrintedReferenceLeaf"
-	page_viewport.size = Vector2i(1536, 1440)
-	page_viewport.disable_3d = true
-	page_viewport.gui_disable_input = true
-	page_viewport.transparent_bg = false
-	page_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-	add_child(page_viewport)
-	var printing: ReferenceLeaf = ReferenceLeaf.new()
+	page_viewport = _build_leaf(ReferenceLeaf.new(), "ClassAndIssuer", FRONT_LEAF_POSITION)
+	evidence_viewport = _build_leaf(EvidenceLeaf.new(), "PaperEvidence", BACK_LEAF_POSITION, true)
+
+
+func _build_leaf(printing: ReferenceLeaf, title: String, at: Vector3, reverse: bool = false) -> SubViewport:
+	var viewport: SubViewport = SubViewport.new()
+	viewport.name = "Printed" + title + "Leaf"
+	viewport.size = Vector2i(1536, 1440)
+	viewport.disable_3d = true
+	viewport.gui_disable_input = true
+	viewport.transparent_bg = false
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(viewport)
 	printing.month = valid_month
 	printing.scale = Vector2.ONE * 2.4
 	printing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	page_viewport.add_child(printing)
+	viewport.add_child(printing)
 	var leaf: MeshInstance3D = MeshInstance3D.new()
-	leaf.name = "WorldPaperLeaf"
+	leaf.name = "World" + title + "Leaf"
 	var mesh: PlaneMesh = PlaneMesh.new()
 	mesh.size = PAGE_SIZE
 	leaf.mesh = mesh
-	leaf.position = Vector3(0.003, 0.0085, 0)
+	leaf.position = at
+	# The existing inspector flips in camera space: Ry(PI) * Rx(PI/2).
+	# A local Z half-turn makes this underside face outward with its print
+	# upright after that flip. An X half-turn would mirror the printed page.
+	if reverse: leaf.rotation = BACK_LEAF_ROTATION
 	var ink: StandardMaterial3D = _solid(Color.WHITE)
-	ink.albedo_texture = page_viewport.get_texture()
+	ink.albedo_texture = viewport.get_texture()
 	ink.roughness = 0.94
 	ink.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	leaf.material_override = ink
 	add_child(leaf)
+	return viewport
 
 
 func _box(dimensions: Vector3, at: Vector3, material: Material) -> void:
@@ -133,9 +146,10 @@ class ReferenceLeaf extends Control:
 		_rule(432, 0.5)
 		_text(Vector2(28, 453), "Kontrola: nazwisko, miesiąc, kategoria i pieczęć na odwrocie.", 12, SERIF)
 		_text(Vector2(28, 474), "Odłączyć wyłącznie odcinek wydawanego towaru.", 12, SERIF)
-		_text(Vector2(28, 495), "Przed odłączeniem sprawdzić dostępność towaru.", 12, SERIF)
+		_text(Vector2(28, 495), "Przed odłączeniem porównać normę i pieczęć instytucji.", 12, SERIF)
 		_text(Vector2(28, 523), "Zużycie papieru nie unieważnia karty. Nie niszczyć pól ewidencyjnych.", 10, ITALIC, FADED)
 		_text(Vector2(28, 548), "Karşılaştır: sınıf • et hakkı • arka yüz kurum kodu ve mühür.", 10, SERIF, FADED)
+		_text(Vector2(28, 560), "KÂĞIT REHBERİ ARKADA · E al / F incele / sağ tık çevir", 8, MONO, FADED)
 		_rule(565, 0.4)
 		_text(Vector2(28, 582), "PZ–81 / INSTRUKCJA WEWNĘTRZNA       EGZEMPLARZ SŁUŻBOWY", 7, MONO, FADED)
 		_text(Vector2(574, 582), "02 / 82", 7, MONO, FADED)
@@ -184,3 +198,105 @@ class ReferenceLeaf extends Control:
 		var names: Array[String] = ["STYCZEŃ", "LUTY", "MARZEC", "KWIECIEŃ", "MAJ", "CZERWIEC", "LIPIEC", "SIERPIEŃ", "WRZESIEŃ", "PAŹDZIERNIK", "LISTOPAD", "GRUDZIEŃ"]
 		var index: int = parts[1].to_int() - 1
 		return "%s %s" % [names[index], parts[0]] if index >= 0 and index < names.size() else month
+
+
+class EvidenceLeaf extends ReferenceLeaf:
+	## Fixed reference examples, never a renderer of the current customer's
+	## document. Ordinary wear and stock differences do not establish guilt.
+	const DIAGRAM_INK: Color = Color("71654d")
+	const PALE_INK: Color = Color("b1a381")
+
+	func _draw() -> void:
+		draw_rect(Rect2(0, 0, 640, 600), Color("e3d9bc"))
+		for index: int in 220:
+			var point: Vector2 = Vector2(8 + (index * 181) % 625, 5 + (index * 109) % 590)
+			draw_line(point, point + Vector2(1.6, 0.21), Color(0.35, 0.28, 0.14, 0.045), 0.4)
+		_text(Vector2(28, 27), "PZ–81 / PRÓBKI PORÓWNAWCZE", 9, MONO, FADED)
+		_text(Vector2(28, 56), "PAPIER I NADRUK", 28, BOLD)
+		_text(Vector2(28, 75), "Kâğıdı çevir, ışığa tut ve örnekle karşılaştır.", 13, SERIF, FADED)
+		_rule(88, 0.7)
+		_watermark_example()
+		_text(Vector2(221, 118), "01  IŞIKTAN GEÇEN DESEN", 16, BOLD)
+		_lines(Vector2(221, 142), [
+			"F ile yakından incele; T ile ışığa tut.",
+			"Ortadaki rozet ve dalı iki yüzden karşılaştır.",
+			"Kâğıt düz bakarken daha çok ışık geçirir.",
+			"Ek bir katman deseni örtebilir: kota alanını",
+			"eğerek kenarını da incele. Kalınlık farkı",
+			"tek başına kartı geçersiz yapmaz."
+		])
+		_rule(251, 0.4)
+		_patch_example()
+		_text(Vector2(221, 281), "02  KOTA ALANININ KENARI", 16, BOLD)
+		_lines(Vector2(221, 305), [
+			"Yandan bak: yüzey basamak yapıyor mu?",
+			"İnce bir tutkal çizgisi veya kesilmiş lif var mı?",
+			"Baskı çizgileri ek parçanın altında kesiliyor mu?",
+			"Büyüteçle sınırı, arka yüzde aynı yeri incele.",
+			"Miktarı ön yüzdeki sınıf tablosuyla karşılaştır."
+		])
+		_rule(400, 0.4)
+		_wear_example()
+		_text(Vector2(221, 430), "03  KULLANIM İZLERİ", 16, BOLD)
+		_lines(Vector2(221, 454), [
+			"Kat izi, dağınık leke ve aşınmış kenar olağandır.",
+			"İnce veya kalın kâğıt her sınıfta bulunabilir.",
+			"Yıpranma tek başına ret ya da alıkoyma nedeni",
+			"değildir. Tarih, kota ve kurumla birlikte incele."
+		])
+		_rule(542, 0.5)
+		_text(Vector2(28, 561), "Bu sayfa yöntem gösterir; elindeki belge hakkında karar vermez.", 12, ITALIC)
+		_text(Vector2(28, 583), "F: YAKIN İNCELEME   T: IŞIĞA TUT   SAĞ TIK: ÖN / ARKA", 8, MONO, FADED)
+		_text(Vector2(568, 583), "02 / 82", 7, MONO, FADED)
+
+
+	func _lines(at: Vector2, lines: Array[String]) -> void:
+		for index: int in lines.size():
+			_text(at + Vector2(0, index * 18), lines[index], 12, SERIF)
+
+
+	func _sample(rect: Rect2) -> void:
+		draw_rect(rect, Color("d7cdaf"))
+		draw_rect(rect, PALE_INK, false, 0.75)
+		for row: int in 5:
+			draw_line(rect.position + Vector2(8, 13 + row * 15), rect.position + Vector2(rect.size.x - 8, 13 + row * 15), Color(DIAGRAM_INK, 0.16), 0.5)
+
+
+	func _watermark_example() -> void:
+		_sample(Rect2(36, 112, 160, 96))
+		var center: Vector2 = Vector2(116, 158)
+		_rosette(center, 31, Color(DIAGRAM_INK, 0.43), 0.65)
+		draw_arc(center, 27, 0, TAU, 64, Color(DIAGRAM_INK, 0.26), 0.7, true)
+		draw_line(center + Vector2(0, 18), center + Vector2(0, -17), Color(DIAGRAM_INK, 0.5), 1.0, true)
+		for row: int in 3:
+			var stem: Vector2 = center + Vector2(0, 9 - row * 10)
+			draw_line(stem, stem + Vector2(-8, -6), Color(DIAGRAM_INK, 0.5), 1, true)
+			draw_line(stem + Vector2(0, -2), stem + Vector2(10, -9), Color(DIAGRAM_INK, 0.5), 1, true)
+		_center(Vector2(116, 228), "Şematik ışık görünümü", 10, ITALIC, FADED)
+
+
+	func _patch_example() -> void:
+		_sample(Rect2(36, 275, 160, 68))
+		var patch: Rect2 = Rect2(80, 294, 94, 25)
+		draw_rect(patch.grow(1.8), Color(DIAGRAM_INK, 0.22))
+		draw_rect(patch, Color("e7ddc2"))
+		draw_rect(patch, DIAGRAM_INK, false, 0.6)
+		_text(Vector2(87, 312), "750 g", 16, MONO)
+		# Cross section deliberately exaggerates the tiny raised lip so the
+		# paper/glue boundary has an understandable reference at desk scale.
+		draw_line(Vector2(38, 363), Vector2(194, 363), DIAGRAM_INK, 2.4)
+		draw_line(Vector2(82, 360), Vector2(172, 360), PALE_INK, 1.1)
+		draw_polyline(PackedVector2Array([Vector2(82, 357), Vector2(166, 357), Vector2(174, 354)]), DIAGRAM_INK, 1.5, true)
+		_center(Vector2(116, 385), "Katman kenarı · büyütülmüş kesit", 9, ITALIC, FADED)
+
+
+	func _wear_example() -> void:
+		_sample(Rect2(36, 425, 160, 86))
+		for ring: int in 5:
+			draw_circle(Vector2(169, 490), 9 + ring * 3, Color(DIAGRAM_INK, 0.018))
+		draw_line(Vector2(115, 426), Vector2(115, 510), Color(DIAGRAM_INK, 0.3), 1.3)
+		draw_line(Vector2(116.5, 426), Vector2(116.5, 510), Color("eee5d0"), 0.8)
+		for index: int in 9:
+			var x: float = 40 + index * 17
+			draw_line(Vector2(x, 508), Vector2(x + 3, 503 + index % 3), Color("b8a886"), 0.8, true)
+		_center(Vector2(116, 529), "Kat izi ve yayılmış leke", 10, ITALIC, FADED)

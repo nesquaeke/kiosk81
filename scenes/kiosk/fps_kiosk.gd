@@ -324,7 +324,7 @@ func _build_hud() -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	pause.add_child(rows)
 	var controls: Label = Label.new()
-	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlı yürü\nE: al / teslim et · G: yüzeye bırak\nE: üstten masa · R: karneyi eline al\nF: eldeki nesneyi yakından incele\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nTekerlek: yakınlaş · F/Esc: geri\nMasada F: kartı çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla gerçek kesim\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
+	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlı yürü\nE: al / teslim et · G: yüzeye bırak\nE: üstten masa · R: karneyi eline al\nF: eldeki nesneyi yakından incele\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut\nTekerlek: yakınlaş · F/Esc: geri\nMasada F: kartı çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla gerçek kesim\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
 	controls.add_theme_font_size_override("font_size", 20)
 	rows.add_child(controls)
 	var volume: HSlider = HSlider.new()
@@ -519,6 +519,7 @@ func _inspection_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match (event as InputEventKey).physical_keycode:
 			KEY_F, KEY_ESCAPE, KEY_Q: _close_object_inspection()
+			KEY_T: _object_inspector.toggle_backlight()
 			KEY_R:
 				_inspection_back = false
 				_object_inspector.reset_pose()
@@ -662,7 +663,9 @@ func _physics_process(delta: float) -> void:
 	_update_placement_preview()
 	_update_stamp_guide()
 	if _object_inspector.active:
-		hint.text = "İNCELE · Sol sürükle: döndür · Tekerlek: yakınlaş · Sağ tık: ters yüz · R: düzelt · F / Esc / Q: geri"
+		hint.text = "İNCELE · Sol sürükle: döndür · Tekerlek: yaklaş · Sağ tık: çevir · R: düzelt · F/Esc/Q: geri"
+		if _object_inspector.object == card:
+			hint.text += "\nT · Işığı kaldır" if _object_inspector.backlight_enabled else "\nT · Işığa tut — filigranı ve kâğıt liflerini incele"
 		return
 	if _paper_dragging: _update_paper_drag(delta)
 	elif _stamp_charging: _update_stamp(delta)
@@ -1631,7 +1634,11 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/held_inspection_regressions.gd").new().run(self)
+		failures = await preload("res://tests/paper_inspection_regressions.gd").new().run(self)
+		if "--paper-only" in OS.get_cmdline_user_args():
+			get_tree().quit(0 if failures.is_empty() else 1)
+			return
+		failures.append_array(await preload("res://tests/held_inspection_regressions.gd").new().run(self))
 		if "--inspection-only" in OS.get_cmdline_user_args():
 			get_tree().quit(0 if failures.is_empty() else 1)
 			return
@@ -1670,6 +1677,7 @@ func _run_selftest() -> void:
 		_aim(card.global_position)
 		_key(KEY_E)
 		await _test_camera_settled()
+		if document_focus and i in [1, 2]: await _capture("23_worn_thin_card" if i == 1 else "24_thick_stock_card")
 		if i == 0:
 			if document_focus:
 				var screen: Rect2 = get_viewport().get_visible_rect().grow(-12)
@@ -1689,6 +1697,10 @@ func _run_selftest() -> void:
 			_key(KEY_F)
 			if document_focus:
 				await get_tree().create_timer(0.24).timeout
+				if i == 5:
+					_key(KEY_T)
+					await _test_until(func() -> bool: return card.inspection_light_strength > .98)
+					await _capture("22_quota_patch_transmission")
 				_mouse(MOUSE_BUTTON_RIGHT, true)
 				_mouse(MOUSE_BUTTON_RIGHT, false)
 				await get_tree().create_timer(0.24).timeout

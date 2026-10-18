@@ -334,9 +334,11 @@ func test_card_3d_coordinates_match_printed_fields_and_flip() -> void:
 	world.add_child(paper)
 	world.transform = Transform3D(Basis.from_euler(Vector3(0.2, 0.7, 0)), Vector3(1, 2, 3))
 	for flipped: bool in [false, true]:
-		paper.rotation = Vector3(-PI / 2, PI if flipped else 0, 0)
+		paper.front_showing = not flipped
+		paper.quaternion = RationCard3D.table_orientation(not flipped)
 		# A quarter-width, quarter-height point corresponds to printed pixel 480,100.
-		var point: Vector3 = paper.global_transform * Vector3(RationCard3D.WIDTH * 0.25, RationCard3D.HEIGHT * 0.25, 0.001)
+		var visible_surface: float = (paper.half_thickness + 0.00003) * (-1.0 if flipped else 1.0)
+		var point: Vector3 = paper.global_transform * Vector3(RationCard3D.WIDTH * 0.25, RationCard3D.HEIGHT * 0.25, visible_surface)
 		var normal: Vector3 = paper.global_basis.z
 		var measured: Vector2 = paper.ray_pixel(point + normal, -normal)
 		assert_true(measured.distance_to(Vector2(480, 100)) < 0.001)

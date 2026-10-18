@@ -30,3 +30,10 @@ R düzeltir; F/Esc/Q/WASD çıkar. Masaya E/G bırakma önizlemesiyle yerleştir
 üstten kamera açar. Masada F kâğıdı çevirir. `docs/CARD_INTERACTION_BACKLOG.md`
 onaylanmış sıralı listedir; ilk iki dilim uygulanıp doğrulandı. Geçici damga kılavuzu
 kalıcı mürekkebe/kayda giremez. Alan dışına fiziksel baskı iz bırakır, karar vermez.
+
+Yeni kâğıt dilimi: `docs/PAPER_INSPECTION_UPDATE.md`. Üç stok gerçek 0,14/0,28/0,48
+mm kalınlıkta; stok/aşınma suçluluk cevabı değildir. F incelemede T geçirgen ışığı
+açar; eğince geliş açısı değişir. Kapatma/odak kaybı/restart ışığı temizler.
+Kopmuş kuponun baskısı, hasar snapshot'ı ve malzemesi korunur. Kitapçığın arka
+sayfası ışık/yama/aşınma karşılaştırmasını öğretir; fotoğraf/tarih/kimlik temelli
+yeni sahtecilik senaryoları henüz eklenmedi.

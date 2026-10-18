@@ -38,7 +38,8 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
-[Güncel elde inceleme ve damga kaydı](docs/CARD_INSPECTION_UPDATE.md) ·
+[Güncel kâğıt ve ışık incelemesi](docs/PAPER_INSPECTION_UPDATE.md) ·
+[Elde inceleme ve damga](docs/CARD_INSPECTION_UPDATE.md) ·
 [Sıralı geliştirme listesi](docs/CARD_INTERACTION_BACKLOG.md) ·
 [Bağımsız master prompt](docs/RATION_FPS_MASTER_PROMPT.md) ·
 [Etkileşim tasarımı](docs/RATION_DESK_DESIGN.md) ·
@@ -48,7 +49,7 @@ Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardad�
 - **WASD / fare / Shift:** pencereye yürü, bak, hızlı yürü.
 - Müşterinin uzattığı karneye **E / tek sol tık**: aynı 3D kartı eline al.
 - Eldeki karta veya alete **F**: yakından incele. **Sol sürükle:** serbest döndür;
-  **tekerlek:** zoom; **sağ tık:** ön/arka yüz; **R:** duruşu düzelt.
+  **tekerlek:** zoom; **sağ tık:** ön/arka yüz; **R:** duruşu düzelt. **T:** karneyi ışığa tut/kaldır.
   **F / Esc / Q / WASD:** incelemeden çık. Esc ilk basışta menü açmaz.
 - Masaya bakarken görünen çerçeve bırakılacak yeri gösterir. **E / G** ile
   yerleştir; aynı kamera otomatik olarak üstten çalışma açısına gelir.
@@ -78,7 +79,8 @@ Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardad�
 Masadaki bez ciltli referans sınıfları, miktarları ve örnek kurum mühürlerini
 birlikte gösterir. **Büyüteci E ile alıp kâğıt üzerinde gezdir**: altındaki gerçek
 3D baskıyı yaklaşık 2,4 kat büyütür. **G** ile bırak; Q ile ayrılınca optik
-render durur. Kâğıt iki yüzlü, ince kenarlı ve elde hafif bükülen bir 3D yüzeydir;
+render durur. Kitapçığı elde F ile inceleyip sağ tıkla arkasını çevir: resimli kâğıt/filigran/yama rehberi vardır.
+Kâğıt iki yüzlü, 0,14 / 0,28 / 0,48 mm stoklarda, elde kalınlığına göre bükülen bir 3D yüzeydir;
 yapıştırılmış kota değişikliğinin yükselen kenarı vardır.
 
 Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar**.

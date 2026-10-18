@@ -1,5 +1,26 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## 18 Ekim 2026 — kâğıt çeşitleri ve geçirgen ışık
+
+[Normal oyun kaydı, kart örnekleri ve rapor](PAPER_INSPECTION_UPDATE.md).
+
+- **237 birim testi geçti, 0 başarısız.** Üç gerçek kalınlık, stok/kanıt
+  bağımsızlığı, kalınlığa göre ön/arka yüz ve hedef koordinatları, kopan kuponun
+  kendi mürekkep/hasar snapshot'ı ve kitapçık arkasının fiziksel yönü sınandı.
+- **Headless ve pencereli odak akışları geçti:** T/açı/arka yüz, veri değiştirmeme,
+  Esc/odak kaybı/restart temizliği, mevcut inceleme/masa/ölçülü kesim/damga,
+  büyüteç ve sekiz müşteri. Odak akışı stok veya para değiştirmedi.
+- Eski satış sahnesinin headless kesinti ve sekiz müşteri koşusu geçti.
+- Son ışık ayarıyla normal pencerede (selftest ve fare override olmadan)
+  kartı ele alma, F/T, serbest eğme, çevirme, çıkış, masaya bırakma ve fiziksel
+  arka rehber akışı geçti. 77 kareden hareketli kayıt üretildi.
+- Pencereli kontrol GL Compatibility/llvmpipe, Dummy ses ve normal imleçle
+  yapıldı. Son günlüklerde GDScript/engine hatası yok; V-Sync sürücü uyarısı var.
+  İnsan oyuncu eğlence testi, gerçek ses aygıtı ve hedef GPU performansı bu
+  kontrollerden çıkarılamaz. Geçirgenlik bir oyun shader'ıdır, tam kâğıt fiziği değildir.
+- Yeni fotoğraf/tarih/kimlik sahteciliği ve ses cilası henüz eklenmedi;
+  [sıralı listede](CARD_INTERACTION_BACKLOG.md) ayrı kalan işlerdir.
+
 ## Güncel dilim — tek tuşla elde inceleme ve damga kılavuzu
 
 [Yeni kontroller, hareketli normal pencere kaydı ve ayrıntılı rapor](CARD_INSPECTION_UPDATE.md).

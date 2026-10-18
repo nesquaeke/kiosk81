@@ -63,8 +63,8 @@ Don't casually run `tools/setup_project.gd` or whole scene generators; they
 overwrite scenes. Fetch Git LFS assets before importing a fresh checkout.
 
 Current sequential feature list: `docs/CARD_INTERACTION_BACKLOG.md`. The original
-user list is preserved there; its first two slices are implemented and verified
-in this change. `HeldObjectInspector` works on the existing held card/tool and
+user list is preserved there; its first three slices and the initial physical comparison aid are implemented.
+New photo/date/identity forgery scenarios are still pending. `HeldObjectInspector` works on the existing held card/tool and
 restores its exact pose on exit. Don't append marks/cuts during inspection.
 `StampPlacementGuide` is a transient mesh on the paper, outside the ink renderer
 and campaign state. Stamp preview and actual ink use the same paper-local angle.
@@ -72,3 +72,14 @@ A physical stamp outside the decision field leaves ink without changing the
 logical decision; an invalid position outside paper is rejected. Forward+ has
 inspection depth of field; Compatibility does not. Check both first-person
 cancellation and existing physical damage after these changes.
+
+Paper inspection update: `docs/PAPER_INSPECTION_UPDATE.md`. `PaperStockProfile`
+resolves only serial/paper_stock/worn/paper_wear, never occupation or guilt.
+Three actual full thicknesses are 0.14/0.28/0.48 mm; faces sit at +/-half, edge
+shaders scale their base thickness. Do not scale edges twice. Print hit planes
+follow the visible face. Coupons keep canonical sheet_uv_rect, original stamp
+ink, their own incision texture snapshot and stock; new customers cannot alter
+old fragments. T in held F inspection enables directional simulated transmitted
+light. It changes rendering only, never campaign/evidence or a verdict. Close,
+focus loss and restart clear it. The physical book's underside teaches comparison;
+existing inspector Ry(PI)*Rx(PI/2) must show it upright. No fullscreen hint panel.

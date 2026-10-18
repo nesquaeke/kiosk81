@@ -290,3 +290,17 @@ izdüşüm görünür. Bu kılavuz kalıcı mürekkebe veya kuponlara işlenmez.
 İlk iki müşteride isteğe bağlı hedef yardımı vardır. Alan dışına fiziksel basmak
 iz bırakır fakat karar kaydetmez; geçerli karar alanında oyuncu istediği kararı
 verebilir. Bunu sahtecilik cevabını engelleyen bir sisteme dönüştürme.
+
+## Kâğıt diliminin güncel sözleşmesi
+
+`PaperStockProfile` yalnız seri, paper_stock, worn ve paper_wear alanlarından
+malzeme çıkarır; sınıf, kurum, kota, patch veya seal bir stok cevabı olamaz.
+Stok kalınlıkları gerçek 0,14 / 0,28 / 0,48 mm'dir. Aynı kâğıdın iki yüzü,
+kenarı ve kesilen parçası aynı profili paylaşır. Kuponun canonical sheet_uv_rect
+koordinatlarıyla lif/kesik örneklenir; bağımsız hasar snapshot'ı saklanır.
+
+F incelemede T geçirgen ışığı açar, eğim geliş açısını değiştirir. Bu yalnız
+bir görsel/inceleme aracıdır; kampanya kararını veya kanıt verisini değiştirmez.
+Kitapçığın fiziksel ters sayfası ışık/yama/aşınma karşılaştırmasını öğretir.
+Yeni fotoğraf/tarih/kimlik sahteciliği henüz uygulanmadı. Son rapor:
+[PAPER_INSPECTION_UPDATE.md](PAPER_INSPECTION_UPDATE.md).

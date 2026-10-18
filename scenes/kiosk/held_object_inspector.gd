@@ -18,6 +18,9 @@ var _radius: float = 0.22
 var _center: Vector3 = Vector3.ZERO
 var _turn: Tween
 var _light: OmniLight3D
+var backlight_enabled: bool = false
+var backlight_amount: float = 0.0
+var _backlight: SpotLight3D
 
 
 func open(target: Node3D, camera: Camera3D, readable: Quaternion, dimensions: Vector3, center: Vector3 = Vector3.ZERO) -> void:
@@ -40,10 +43,24 @@ func open(target: Node3D, camera: Camera3D, readable: Quaternion, dimensions: Ve
 	_light = OmniLight3D.new()
 	_light.position = Vector3(-0.18, 0.20, -0.12)
 	_light.light_color = Color("fff0d8")
-	_light.light_energy = 0.12
+	# Enough fill to read the reverse without clipping the high-albedo stock;
+	# raking room light should still reveal grain, folds and the pasted edge.
+	_light.light_energy = 0.035
 	_light.omni_range = 1.2
 	_light.shadow_enabled = false
 	camera.add_child(_light)
+	backlight_enabled = false
+	backlight_amount = 0.0
+	if target is RationCard3D:
+		_backlight = SpotLight3D.new()
+		_backlight.name = "InspectionTransmissionLight"
+		_backlight.light_color = Color("ffe8b9")
+		_backlight.light_energy = 0.0
+		_backlight.spot_range = 0.9
+		_backlight.spot_angle = 48.0
+		_backlight.shadow_enabled = false
+		camera.add_child(_backlight)
+		(target as RationCard3D).set_inspection_light(0.0)
 	# Compatibility rendering has no depth-of-field support. Keep its actual
 	# 3D background rather than substituting a static fake room image.
 	if RenderingServer.get_current_rendering_method() == "gl_compatibility":
@@ -86,10 +103,30 @@ func reset_pose() -> void:
 	_move_to(_base, 0.20)
 
 
+func toggle_backlight() -> void:
+	if active and object is RationCard3D:
+		backlight_enabled = not backlight_enabled
+
+
+func _process(delta: float) -> void:
+	if not active or not object is RationCard3D: return
+	backlight_amount = move_toward(backlight_amount, 1.0 if backlight_enabled else 0.0, delta * 5.0)
+	_backlight.position = Vector3(0.035, 0.075, -_distance - _radius - 0.12)
+	_backlight.look_at(object.global_position, _camera.global_basis.y)
+	_backlight.light_energy = backlight_amount * 0.32
+	var toward_light: Vector3 = object.global_basis.inverse() * (_backlight.global_position - object.global_position).normalized()
+	(object as RationCard3D).set_inspection_light(backlight_amount, toward_light)
+
+
 func close() -> void:
 	if not active: return
 	_stop_turn()
 	dragging = false
+	if object is RationCard3D: (object as RationCard3D).set_inspection_light(0.0)
+	backlight_enabled = false
+	backlight_amount = 0.0
+	if is_instance_valid(_backlight): _backlight.queue_free()
+	_backlight = null
 	object.transform = _rest
 	_camera.attributes = _rest_attributes
 	if is_instance_valid(_light): _light.queue_free()

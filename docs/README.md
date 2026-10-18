@@ -23,3 +23,5 @@ Kodla birlikte değişen belgeler burada, depoda durur.
 
 - [Elde inceleme ve damga: güncel sürüm](CARD_INSPECTION_UPDATE.md)
 - [Onaylanmış sıralı geliştirme listesi](CARD_INTERACTION_BACKLOG.md)
+
+- [Kâğıt çeşitleri, ışığa tutma ve fiziksel kanıt rehberi](PAPER_INSPECTION_UPDATE.md)

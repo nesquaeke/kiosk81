@@ -192,3 +192,24 @@ Elde inceleme ekranında aynı 3D nesne kullanılır; dönüş/zoom işlemi kan�
 kesikleri veya kararları değiştirmez. Kapatınca önceki tutuş ve kamera ayarları
 aynen geri gelir. Alan derinliği yalnız Forward+ yöntemiyle kullanılabilir;
 Compatibility görüntüsüne bulanıklık varmış gibi davranılmaz.
+
+## Kâğıt malzemesi ve ışıkla inceleme
+
+[Güncel kayıt](PAPER_INSPECTION_UPDATE.md). Üç stok 0,14 / 0,28 / 0,48 mm gerçek
+yüzey mesafesiyle çizilir; kalınlık ve yıpranma mesleği/suçluluğu göstermez.
+Seri ve açık stok seçimi lifleri, tonu, bükülmeyi ve aşınmayı sabit tutar.
+
+Elde F incelemede T, arkadan simüle edilmiş geçirgen ışığı açar/kapatır.
+Kâğıdın eğimi ışığın gelişini değiştirir. Filigran ön/arka yüzde aynı fiziksel
+konumdadır; arka yüzden aynalanır. Mevcut kota yamasının ek katmanı desenin
+geçişini keser; büyüteç ve yana yatırma tutkal/kâğıt kenarını gösterir.
+Oyuncuya doğru/sahte yazısı verilmez ve mevcut karar kuralları değiştirilmez.
+
+Kitapçığın önünde sınıf/kota/kurum örnekleri; arkasında çizimli kâğıt, filigran,
+yama ve normal aşınma karşılaştırması vardır. E ile al, Q ile masa açısından
+çık, F ve sağ tıkla arka sayfayı oku. Ayrı belge paneli açılmaz.
+
+Kopmuş kupon kendi stok, baskı, mürekkep ve kesiğinin snapshot'ını taşır;
+sonraki müşteri ona yeni hasar/desen yazamaz. Kamera/ışık, Esc/Q/odak kaybı ve
+yeniden başlatmada temizlenir. Fotoğraf, kazınmış tarih ve ayrı kimlik eşleme
+senaryoları bu dilimde eklenmedi; sıralı listedeki sonraki kanıt işleridir.

@@ -27,7 +27,10 @@ var _cut_index: int = -1
 var _cut_progress: float = 0.0
 var _snips: int = 0
 var _fibres: Array[Vector2] = []
+var _paper_profile: Dictionary = {}
+var _print_seed: int = 1982
 const StampInk: GDScript = preload("res://scenes/kiosk/stamp_impression_renderer.gd")
+const StockProfile: GDScript = preload("res://scenes/kiosk/paper_stock_profile.gd")
 const SERIF: Font = preload("res://assets/fonts/LiberationSerif-Regular.ttf")
 const SERIF_BOLD: Font = preload("res://assets/fonts/LiberationSerif-Bold.ttf")
 const SERIF_ITALIC: Font = preload("res://assets/fonts/LiberationSerif-Italic.ttf")
@@ -43,18 +46,26 @@ func _ready() -> void:
 	pivot_offset = PAPER_SIZE / 2
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = 1982
-	for i: int in 260:
-		_fibres.append(Vector2(rng.randf_range(8, 632), rng.randf_range(8, 392)))
+	_refresh_paper_profile()
 	queue_redraw()
 
 
 func show_card(document: Dictionary, state: Dictionary) -> void:
 	card = document
 	work = state
+	_refresh_paper_profile()
 	_sync_impressions()
 	queue_redraw()
+
+
+func _refresh_paper_profile() -> void:
+	_paper_profile = StockProfile.resolve(card)
+	_print_seed = StockProfile.stable_seed(str(card.get("serial", "")))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed
+	_fibres.clear()
+	for i: int in 300:
+		_fibres.append(Vector2(rng.randf_range(3, 637), rng.randf_range(3, 397)))
 
 
 func reset_pose() -> void:
@@ -270,7 +281,9 @@ func _sync_impressions() -> void:
 func _draw_heading(tint: Color) -> void:
 	# Offset relief and fine ornaments belong to the printed stock; they are
 	# deliberately small enough to leave the variable evidence clearly legible.
-	_draw_rosette(Vector2(56, 43), 22, Color(tint.darkened(0.28), 0.48))
+	draw_set_transform(_registration_offset())
+	_draw_family_emblem(Vector2(56, 43), tint)
+	draw_set_transform(Vector2.ZERO)
 	_center_text(Vector2(56, 39), "PZ", 14, Color(tint.darkened(0.32), 0.88), SERIF_BOLD)
 	_center_text(Vector2(56, 52), "81", 11, Color(tint.darkened(0.32), 0.88), SERIF_BOLD)
 	_text(Vector2(94, 24), "WARSZAWSKA SPÓŁDZIELNIA ZAOPATRZENIA", 9, INK)
@@ -280,7 +293,8 @@ func _draw_heading(tint: Color) -> void:
 	draw_line(Vector2(29, 75.2), Vector2(611, 75.2), Color(tint, 0.30), 0.4)
 	_text(Vector2(482, 23), "OKRES WAŻNOŚCI", 7, FADED_INK)
 	_center_text(Vector2(546, 42), _month_name(), 10, INK, SERIF_BOLD)
-	_center_text(Vector2(546, 59), "WZÓR  /  PZ–81–K", 7, FADED_INK)
+	var forms: Dictionary = {"worker": "PZ–81–R", "teacher": "PZ–81–N", "retired": "PZ–81–E"}
+	_center_text(Vector2(546, 59), "WZÓR  /  %s" % forms.get(str(card.get("class", "")), "PZ–81–K"), 7, FADED_INK)
 
 
 func _draw_front(spec: Dictionary) -> void:
@@ -302,10 +316,7 @@ func _draw_front(spec: Dictionary) -> void:
 	_text(Vector2(30, 224), "PRZYDZIAŁ MIĘSA / ET HAKKI", 9, INK)
 	_text(Vector2(30, 240), "Norma miesięczna; wydanie po odłączeniu odcinka.", 8, FADED_INK, SERIF_ITALIC)
 	if card.get("patch", false):
-		# This covers a changed quota, without announcing a forgery verdict.
-		draw_rect(Rect2(285, 208, 137, 34), Color("e3d9bd"))
-		draw_line(Vector2(285, 208.5), Vector2(421, 208), Color(0.44, 0.34, 0.20, 0.28), 0.5)
-		draw_line(Vector2(285, 241), Vector2(422, 242), Color(0.44, 0.34, 0.20, 0.24), 0.6)
+		_draw_quota_repair(false)
 	_typed(Vector2(307, 235), _document_amount("meat", int(card.get("meat", 0))), 24)
 	_draw_rosette(Vector2(540, 104), 21, Color(tint.darkened(0.15), 0.17))
 	_center_text(Vector2(540, 108), "PZ–81", 9, Color(tint.darkened(0.25), 0.72))
@@ -324,12 +335,18 @@ func _draw_front(spec: Dictionary) -> void:
 
 func _draw_back(spec: Dictionary) -> void:
 	var tint: Color = spec.get("color", Color.GRAY)
+	if card.get("patch", false):
+		# Reverse adhesive is beneath the original typing. It must not erase the
+		# month simply because that field crosses the repaired sheet position.
+		_draw_quota_repair(true)
 	_text(Vector2(30, 95), "POTWIERDZENIE ZAKŁADU PRACY LUB INSTYTUCJI", 11, tint.darkened(0.6), SERIF_BOLD)
 	_text(Vector2(30, 115), "KOD INSTYTUCJI / KURUM KODU", 8, FADED_INK)
 	_typed(Vector2(30, 149), str(card.get("institution", "")), 29)
 	draw_line(Vector2(30, 155), Vector2(391, 155), Color(tint, 0.35), 0.6)
 	_text(Vector2(30, 171), "NR KARTY / ÖN YÜZ SERİSİ", 8, FADED_INK)
 	_typed(Vector2(30, 194), str(card.get("serial", "")), 19)
+	_text(Vector2(280, 171), "PODPIS UPOWAŻNIONEGO", 7, FADED_INK)
+	_draw_hand_signature(Rect2(281, 177, 124, 24))
 	_text(Vector2(30, 217), "MIESIĄC  /  DÖNEM", 8, FADED_INK)
 	_typed(Vector2(163, 219), str(card.get("month", "")), 15)
 	var seal_at: Vector2 = Vector2(520, 166)
@@ -338,17 +355,9 @@ func _draw_back(spec: Dictionary) -> void:
 	_center_text(Vector2(520, 232), "PIECZĘĆ ZAKŁADU", 8, FADED_INK)
 	if card.get("seal", false):
 		_draw_institution_seal(seal_at)
-	if card.get("patch", false):
-		# Matching front/back paper position: x=640-(285+137).
-		var patch: Rect2 = Rect2(218, 208, 137, 34)
-		draw_rect(patch.grow(1.5), Color(0.50, 0.38, 0.18, 0.11))
-		draw_rect(patch, Color("e1d8be"))
-		draw_rect(patch, Color(0.48, 0.39, 0.24, 0.27), false, 0.6)
-		for y: int in range(211, 240, 4):
-			draw_line(Vector2(216, y), Vector2(223, y + 1.5), Color(0.50, 0.38, 0.21, 0.27), 0.5)
 	_text(Vector2(30, 255), "1. Karta jest imienna. Odcinki ważne wyłącznie z kartą macierzystą.", 9, INK)
 	_text(Vector2(30, 268), "2. Sprawdzić kategorię, okres ważności i potwierdzenie instytucji.", 9, INK)
-	_text(Vector2(30, 279), "Podpis osoby upoważnionej:  J. Kowalska", 8, FADED_INK, SERIF_ITALIC)
+	_text(Vector2(30, 279), "Potwierdzenie: podpis osoby upoważnionej i pieczęć instytucji.", 8, FADED_INK, SERIF_ITALIC)
 	for i: int in 3:
 		_draw_coupon(i, true, tint)
 
@@ -371,23 +380,199 @@ func _draw_paper(tint: Color) -> void:
 		draw_style_box(_paper_style(Color(0, 0, 0, 0.20), 2), Rect2(Vector2(5, 7), PAPER_SIZE))
 	# The mesh/shader owns thickness, ragged silhouette, roughness and light.
 	# There is no rounded screen frame or image border on a physical sheet.
-	draw_rect(Rect2(Vector2.ZERO, PAPER_SIZE), Color("e6dbc0"))
+	var substrate: Color = Color("e9e4d5")
+	# World paper applies this multiplier in its material, once. The archived
+	# Control has no 3D material and needs the same stock tint here instead.
+	if render_tools:
+		substrate *= Color(_paper_profile.get("stock_tint", Color.WHITE))
+	draw_rect(Rect2(Vector2.ZERO, PAPER_SIZE), substrate)
+	var fibre_strength: float = float(_paper_profile.get("fibre_strength", 1.0))
 	for fibre: Vector2 in _fibres:
-		draw_line(fibre, fibre + Vector2(1.6, 0.23), Color(0.33, 0.24, 0.13, 0.045), 0.35)
+		draw_line(_sheet_point(fibre), _sheet_point(fibre + Vector2(1.6, 0.23)), Color(0.33, 0.28, 0.20, 0.045 * fibre_strength), 0.35)
+	_draw_storage_wear()
+	# Registration varies by print run, and between sides. Only ornaments move:
+	# evidence fields, coupon boundaries and later rubber stamps stay canonical.
+	draw_set_transform(_registration_offset())
+	_draw_family_stationery(tint)
 	for strand: int in 13:
 		var points: PackedVector2Array = PackedVector2Array()
 		for i: int in 137:
 			var x: float = 26 + float(i) * 4.3
 			var y: float = 87 + float(strand) * 12.8 + sin(x * 0.046 + float(strand) * 0.34) * 4.0
 			points.append(Vector2(x, y))
-		draw_polyline(points, Color(tint.darkened(0.16), 0.065), 0.35, true)
+		draw_polyline(points, Color(tint.darkened(0.16), 0.045), 0.35, true)
 	_draw_rosette(Vector2(282, 166), 70, Color(tint.darkened(0.1), 0.055))
+	draw_set_transform(Vector2.ZERO)
+
+
+func _registration_offset() -> Vector2:
+	var run: int = _print_seed % 11
+	return Vector2(float(run % 5 - 2) * 0.17, float(run % 3 - 1) * 0.16) + (Vector2(0.48, -0.26) if front else Vector2(-0.39, 0.31))
+
+
+func _sheet_point(at: Vector2) -> Vector2:
+	return at if front else Vector2(PAPER_SIZE.x - at.x, at.y)
+
+
+func _draw_family_stationery(tint: Color) -> void:
+	var ink: Color = Color(tint.darkened(0.28), 0.45)
+	var faint: Color = Color(tint.darkened(0.15), 0.22)
+	var family: String = str(card.get("class", ""))
+	# Narrow marginal furniture leaves the entire working face unobstructed.
+	draw_line(Vector2(12, 14), Vector2(628, 14), ink, 0.8, true)
+	draw_line(Vector2(12, 382), Vector2(628, 382), faint, 0.6, true)
+	for x: float in [12.0, 628.0]:
+		draw_line(Vector2(x, 14), Vector2(x, 66), ink, 0.65, true)
+		draw_line(Vector2(x, 80), Vector2(x, 278), faint, 0.65, true)
+		draw_line(Vector2(x, 282), Vector2(x, 382), faint, 0.65, true)
+	match family:
+		"worker":
+			# A squared industrial form: narrow rules and repeated diagonal slugs.
+			draw_line(Vector2(17, 82), Vector2(17, 274), ink, 1.1, true)
+			draw_line(Vector2(22, 82), Vector2(22, 274), faint, 0.6, true)
+			for y: int in range(86, 272, 9):
+				draw_line(Vector2(13, y + 3), Vector2(17, y), ink, 0.65, true)
+			for x: int in range(26, 610, 13):
+				draw_rect(Rect2(x, 8.5, 5, 1.5), faint)
+		"teacher":
+			# A fine academic stationer's chain and double hairline header.
+			draw_line(Vector2(18, 18), Vector2(622, 18), faint, 0.45, true)
+			for y: int in range(89, 270, 16):
+				var diamond: PackedVector2Array = PackedVector2Array([Vector2(18, y - 4), Vector2(21, y), Vector2(18, y + 4), Vector2(15, y), Vector2(18, y - 4)])
+				draw_polyline(diamond, ink, 0.55, true)
+				draw_line(Vector2(18, y + 4), Vector2(18, y + 12), faint, 0.5, true)
+			for x: int in [27, 612]:
+				draw_circle(Vector2(x, 17.5), 1.5, ink, false, 0.5, true)
+		"retired":
+			# A quieter dotted frame with a restrained leaf ribbon at the margin.
+			for x: int in range(25, 617, 7):
+				draw_circle(Vector2(x, 10), 0.55, ink, true, -1, true)
+			for y: int in range(88, 271, 14):
+				draw_line(Vector2(18, y - 6), Vector2(18, y + 8), faint, 0.6, true)
+				draw_arc(Vector2(15, y), 3.4, -1.1, 1.1, 8, ink, 0.5, true)
+				draw_arc(Vector2(21, y + 6), 3.4, PI - 1.1, PI + 1.1, 8, ink, 0.5, true)
+		_:
+			draw_line(Vector2(18, 82), Vector2(18, 274), faint, 0.6, true)
+
+
+func _draw_family_emblem(at: Vector2, tint: Color) -> void:
+	var ink: Color = Color(tint.darkened(0.28), 0.58)
+	var family: String = str(card.get("class", ""))
+	if family == "worker":
+		draw_arc(at, 20, 0, TAU, 64, ink, 0.8, true)
+		draw_arc(at, 17.5, 0, TAU, 64, ink, 0.45, true)
+		for i: int in 16:
+			var direction: Vector2 = Vector2.from_angle(float(i) * TAU / 16.0)
+			draw_line(at + direction * 20.2, at + direction * 23.1, ink, 1.3, true)
+	elif family == "teacher":
+		for radius: float in [19.0, 22.5]:
+			var frame: PackedVector2Array = PackedVector2Array([at + Vector2(0, -radius), at + Vector2(radius, 0), at + Vector2(0, radius), at + Vector2(-radius, 0), at + Vector2(0, -radius)])
+			draw_polyline(frame, ink, 0.7, true)
+		draw_arc(at, 16.5, 0, TAU, 48, Color(ink, 0.30), 0.4, true)
+	elif family == "retired":
+		draw_arc(at, 19, 0, TAU, 64, ink, 0.65, true)
+		for side: float in [-1.0, 1.0]:
+			for i: int in 6:
+				var y: float = float(i) * 6.0 - 15.0
+				var x: float = sqrt(maxf(0, 22.5 * 22.5 - y * y)) * side
+				var leaf: Vector2 = at + Vector2(x, y)
+				draw_line(leaf - Vector2(2.1 * side, 1.2), leaf + Vector2(1.1 * side, -2.6), ink, 0.85, true)
+	else:
+		_draw_rosette(at, 22, ink)
+
+
+func _draw_storage_wear() -> void:
+	# Diffuse handling wear occurs on valid and invalid documents alike. The
+	# seed depends only on the physical sheet serial, never on its rule outcome.
+	var wear: float = clampf(float(_paper_profile.get("wear", 0.15)), 0, 1)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed + 6151
+	for i: int in 3:
+		var centre: Vector2 = Vector2(rng.randf_range(3, 19) if i % 2 == 0 else rng.randf_range(622, 638), rng.randf_range(80, 370))
+		var radius: Vector2 = Vector2(rng.randf_range(11, 20), rng.randf_range(14, 28))
+		for ring: int in range(5, 0, -1):
+			var contour: PackedVector2Array = PackedVector2Array()
+			for step: int in 33:
+				var angle: float = float(step) * TAU / 32.0
+				var ripple: float = 1.0 + sin(angle * 5 + float(i)) * 0.09
+				var point: Vector2 = centre + Vector2(cos(angle), sin(angle)) * radius * (0.55 + float(ring) * 0.09) * ripple
+				point = point.clamp(Vector2(0.5, 0.5), PAPER_SIZE - Vector2(0.5, 0.5))
+				contour.append(_sheet_point(point))
+			draw_colored_polygon(contour, Color(0.38, 0.31, 0.19, wear * 0.009))
+	if wear < 0.4:
+		return
+	for i: int in 42:
+		var at: Vector2 = Vector2(rng.randf_range(1, 8) if i % 2 == 0 else rng.randf_range(632, 639), rng.randf_range(17, 376))
+		var length: float = rng.randf_range(1.0, 4.2)
+		draw_line(_sheet_point(at), _sheet_point(at + Vector2(length if i % 2 == 0 else -length, rng.randf_range(-1, 1))), Color(0.99, 0.97, 0.89, wear * 0.34), 0.55, true)
+
+
+func _draw_quota_repair(reverse: bool) -> void:
+	# The front repair and reverse adhesive penetration occupy the SAME sheet
+	# position. This is observable material evidence, with no verdict annotation.
+	var patch: Rect2 = Rect2(218 if reverse else 285, 208, 137, 34)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed + 409
+	var glue: Color = Color(0.40, 0.32, 0.18, 0.11 if reverse else 0.16)
+	draw_rect(patch.grow(1.7), glue)
+	var repair: Color = Color("e5dfcb") if not reverse else Color("e5dfcf")
+	if render_tools:
+		repair *= Color(_paper_profile.get("stock_tint", Color.WHITE))
+	draw_rect(patch, Color(repair, 0.42) if reverse else repair)
+	draw_line(patch.position + Vector2(0, 0.5), patch.position + Vector2(patch.size.x, 0), Color(0.99, 0.98, 0.91, 0.74), 0.7, true)
+	draw_line(patch.position + Vector2(0, patch.size.y), patch.end + Vector2(0.5, 0.5), Color(0.39, 0.31, 0.19, 0.26), 0.8, true)
+	draw_line(patch.position + Vector2(patch.size.x, 0), patch.end + Vector2(0.5, 0), Color(0.39, 0.31, 0.19, 0.18), 0.65, true)
+	for i: int in 52:
+		var t: float = rng.randf_range(0.02, 0.98)
+		var horizontal: bool = i % 3 != 0
+		var at: Vector2
+		var direction: Vector2
+		if horizontal:
+			at = patch.position + Vector2(t * patch.size.x, 0 if i % 2 == 0 else patch.size.y)
+			direction = Vector2(rng.randf_range(-0.6, 0.6), -1 if i % 2 == 0 else 1)
+		else:
+			at = patch.position + Vector2(0 if i % 2 == 0 else patch.size.x, t * patch.size.y)
+			direction = Vector2(-1 if i % 2 == 0 else 1, rng.randf_range(-0.5, 0.5))
+		var length: float = rng.randf_range(1.0, 3.7)
+		draw_line(at - direction * 0.4, at + direction * length, Color(0.99, 0.98, 0.91, 0.64 if not reverse else 0.35), 0.45, true)
+		if i % 4 == 0:
+			draw_line(at + direction * 0.6, at + direction * (length + 0.7), Color(0.39, 0.31, 0.20, 0.20 if not reverse else 0.12), 0.35, true)
+	# A rubbed top margin exposes short fibres. Keep the quota digits clear.
+	if not reverse:
+		for i: int in 22:
+			var at: Vector2 = patch.position + Vector2(rng.randf_range(3, 133), rng.randf_range(0.7, 2.5))
+			draw_line(at, at + Vector2(rng.randf_range(1.0, 3.0), rng.randf_range(-0.4, 0.5)), Color(0.98, 0.96, 0.87, 0.57), 0.45, true)
+
+
+func _draw_hand_signature(rect: Rect2) -> void:
+	# Deliberately drawn pen strokes, separate from serif printer forms and
+	# typewriter fields. Signature shape follows issuer, never authenticity.
+	var issuer: String = str(card.get("institution", ""))
+	var signature_seed: int = StockProfile.stable_seed(issuer)
+	var paths: Array[PackedVector2Array] = [
+		PackedVector2Array([Vector2(0.03, 0.31), Vector2(0.18, 0.10), Vector2(0.14, 0.61), Vector2(0.09, 0.88), Vector2(0.02, 0.77), Vector2(0.06, 0.56)]),
+		PackedVector2Array([Vector2(0.21, 0.71), Vector2(0.26, 0.11), Vector2(0.24, 0.55), Vector2(0.35, 0.18), Vector2(0.27, 0.47), Vector2(0.34, 0.76), Vector2(0.39, 0.50), Vector2(0.43, 0.48), Vector2(0.42, 0.72), Vector2(0.38, 0.67), Vector2(0.44, 0.53), Vector2(0.46, 0.72), Vector2(0.49, 0.52), Vector2(0.51, 0.70), Vector2(0.54, 0.48), Vector2(0.57, 0.71), Vector2(0.61, 0.22), Vector2(0.58, 0.71), Vector2(0.64, 0.53), Vector2(0.66, 0.71), Vector2(0.68, 0.49), Vector2(0.72, 0.74), Vector2(0.76, 0.15), Vector2(0.73, 0.69), Vector2(0.78, 0.47), Vector2(0.76, 0.60), Vector2(0.80, 0.72), Vector2(0.84, 0.49), Vector2(0.87, 0.52), Vector2(0.84, 0.71), Vector2(0.91, 0.60), Vector2(0.96, 0.57)]),
+		PackedVector2Array([Vector2(0.17, 0.88), Vector2(0.44, 0.81), Vector2(0.72, 0.78), Vector2(0.98, 0.80)])
+	]
+	for stroke: int in paths.size():
+		var knots: PackedVector2Array = paths[stroke]
+		var curve: PackedVector2Array = PackedVector2Array()
+		for i: int in knots.size() - 1:
+			var previous: Vector2 = knots[maxi(0, i - 1)]
+			var following: Vector2 = knots[mini(knots.size() - 1, i + 2)]
+			for step: int in 6:
+				var point: Vector2 = knots[i].cubic_interpolate(knots[i + 1], previous, following, float(step) / 6.0)
+				point.y += sin(point.x * 8.0 + float(signature_seed % 17)) * 0.025
+				curve.append(rect.position + point * rect.size)
+		curve.append(rect.position + knots[knots.size() - 1] * rect.size)
+		draw_polyline(curve, Color(0.20, 0.24, 0.29, 0.83 if stroke < 2 else 0.65), 0.76 if stroke < 2 else 0.55, true)
 
 
 func _draw_bleedthrough() -> void:
 	# Thin uncoated stock shows a trace of reverse ink; it is mirrored through
 	# the same sheet rather than acting as another visible UI layer.
-	var ghost: Color = Color(0.31, 0.27, 0.23, 0.035)
+	var opacity: float = {"thin": 0.049, "medium": 0.026, "thick": 0.011}.get(str(_paper_profile.get("stock", "medium")), 0.026)
+	var ghost: Color = Color(0.31, 0.27, 0.23, opacity)
 	if front and card.get("seal", false):
 		draw_arc(Vector2(120, 166), 44, 0, TAU, 70, ghost, 1.4, true)
 		draw_arc(Vector2(120, 166), 39.5, 0, TAU, 70, ghost, 0.7, true)
@@ -395,17 +580,17 @@ func _draw_bleedthrough() -> void:
 		for mark: Dictionary in work.get("marks", []):
 			var at: Vector2 = Vector2(640 - float(mark.get("x", 540)), float(mark.get("y", 180)))
 			draw_set_transform(at, -float(mark.get("angle", 0)), Vector2(-1, 1))
-			draw_rect(Rect2(-65, -22, 130, 44), Color(0.29, 0.25, 0.22, 0.045), false, 1.5)
+			draw_rect(Rect2(-65, -22, 130, 44), Color(0.29, 0.25, 0.22, opacity * 1.25), false, 1.5)
 			draw_set_transform(Vector2.ZERO)
 
 
 func _draw_folds() -> void:
-	var worn: bool = card.get("worn", false)
-	var strength: float = 0.10 if worn else 0.028
+	var wear: float = clampf(float(_paper_profile.get("wear", 0.15)), 0, 1)
+	var strength: float = lerpf(0.018, 0.12, wear)
 	var x: float = 319.0 if front else 321.0
 	draw_line(Vector2(x, 4), Vector2(x + 1, 396), Color(0.30, 0.22, 0.14, strength), 0.9)
 	draw_line(Vector2(x + 1.2, 4), Vector2(x + 2.2, 396), Color(1.0, 0.97, 0.87, strength * 1.3), 0.65)
-	if not worn:
+	if wear < 0.4:
 		return
 	draw_line(Vector2(4, 243), Vector2(636, 246), Color(0.30, 0.22, 0.14, strength * 0.7), 1.0)
 	draw_line(Vector2(4, 245), Vector2(636, 248), Color(1.0, 0.97, 0.87, strength * 1.1), 0.7)
@@ -454,12 +639,12 @@ func _draw_rosette(at: Vector2, radius: float, tint: Color) -> void:
 func _dashed_rect(rect: Rect2, color: Color, dash: float) -> void:
 	for offset: int in range(0, int(rect.size.x), maxi(1, int(dash * 2))):
 		var width: float = minf(dash, rect.size.x - float(offset))
-		draw_line(rect.position + Vector2(offset, 0), rect.position + Vector2(offset + width, 0), color, 0.65)
-		draw_line(rect.position + Vector2(offset, rect.size.y), rect.position + Vector2(offset + width, rect.size.y), color, 0.55)
+		draw_line(rect.position + Vector2(offset, 0), rect.position + Vector2(offset + width, 0), color, 0.9, true)
+		draw_line(rect.position + Vector2(offset, rect.size.y), rect.position + Vector2(offset + width, rect.size.y), color, 0.8, true)
 	for offset: int in range(0, int(rect.size.y), maxi(1, int(dash * 2))):
 		var height: float = minf(dash, rect.size.y - float(offset))
-		draw_line(rect.position + Vector2(0, offset), rect.position + Vector2(0, offset + height), color, 0.55)
-		draw_line(rect.position + Vector2(rect.size.x, offset), rect.position + Vector2(rect.size.x, offset + height), color, 0.55)
+		draw_line(rect.position + Vector2(0, offset), rect.position + Vector2(0, offset + height), color, 0.8, true)
+		draw_line(rect.position + Vector2(rect.size.x, offset), rect.position + Vector2(rect.size.x, offset + height), color, 0.8, true)
 
 
 func _month_name() -> String:

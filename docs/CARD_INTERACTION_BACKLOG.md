@@ -10,8 +10,8 @@ Bu liste tamamlanmış özellik iddiası değildir; gerçek sonuçlar kabul rapo
 | --- | --- | --- |
 | 1 | E ile ele alma; F ile elde inceleme; sol sürükle döndürme; sağ tık çevirme; R düzeltme; zoom; F/Esc/Q/hareketle çıkış; bırakma önizlemesi; üstten masa | Uygulandı; otomatik ve pencereli kontroller geçti |
 | 2 | Basılı satıcı alanı; gerçek ölçü/açıda geçici damga izi; ilk iki müşteride kapatılabilir hedef yardımı; hedefi örtmeyen alet; alan dışı kalıcı mürekkep | Uygulandı; otomatik ve pencereli kontroller geçti |
-| 3 | Kâğıt aileleri, kalınlık, baskı/eskime çeşitleri, filigran ve lif ayrıntıları | Sırada |
-| 4 | Kademeli sahtecilik ipuçları ve karşılaştırma; otomatik suçluluk cevabı yok | Bekliyor |
+| 3 | Kâğıt aileleri, kalınlık, baskı/eskime çeşitleri, filigran ve lif ayrıntıları | Uygulandı; 237 birim testi, headless ve pencereli kontroller geçti |
+| 4 | Kademeli sahtecilik ipuçları ve karşılaştırma; otomatik suçluluk cevabı yok | Fiziksel rehber ve mevcut kota yamasında ışık/katman kanıtı eklendi; yeni fotoğraf/tarih/kimlik senaryoları bekliyor |
 | 5 | Kontrollü kesim hissi, bıçak ve el animasyonu, kupon toplama | Mevcut temel korunuyor; yeni iyileştirmeler bekliyor |
 | 6 | Damga basıncı/açısı, yaş mürekkep ve ped kullanımı | Basınç/hız/bekleme temeli mevcut; yeni ayrıntılar bekliyor |
 | 7 | Masa düzeni, yuvalar, otomatik yerleştirme ve alet geri koyma | Bekliyor |
@@ -26,6 +26,21 @@ Yeni kullanıcı akışı: **E al → F incele → F geri → masaya bakıp E/G 
 İnceleme nesnenin görsel duruşunu geçici değiştirir; kapatınca önceki tutuşa döner.
 Kesik, iz, hak, seri veya müşteri durumu değişmez. Forward+ render yönteminde
 arka plan için alan derinliği kullanılır; Compatibility yönteminde bu efekt yoktur.
+
+## Kâğıt ve kanıt dilimi
+
+Üç stok 0,14 / 0,28 / 0,48 mm gerçek yüzey kalınlığı, farklı lif/bükülme ve
+yıpranma kullanır. Stok meslek veya sahtelik cevabı değildir. Elde F incelemede
+T ışığı açar/kapatır; eğmek ışığın gelişini ve filigranı değiştirir. Sağ tıkta
+aynı desen arka yüzde aynalanır. Kota yamasındaki ek katman deseni örter.
+Referans kitapçığını E ile al, masa açısından Q ile ayrıl, F ve sağ tıkla
+arkadaki resimli inceleme rehberini oku. Eski karşılaştırma sayfası ön yüzde kalır.
+
+[Bu dilimin kaydı ve sınırları](PAPER_INSPECTION_UPDATE.md).
+Yeni fotoğraf değiştirme, kazınmış tarih ve ayrı kimlik eşleştirmesi henüz yoktur.
+Önceki sekiz müşterinin mevcut kanıtları korunur; bu güncelleme o kanıtları
+fiziksel inceleme araçlarıyla okunabilir kılar. Sonraki iş 4. dilimde yeni kanıt
+senaryoları, ardından 5. dilimde kontrollü makas/kupon toplama cilasıdır.
 
 ## Onaylanan ayrıntılı plan
 
