@@ -20,3 +20,8 @@ Kodla birlikte değişen belgeler burada, depoda durur.
 - [Koşul ve efekt dili](CONDITION_LANGUAGE.md): içerik dosyalarında "ne zaman olur" ve "olunca ne değişir" nasıl yazılır.
 - [ADR-001 Diyalog biçimi](adr/ADR-001-dialogue-format.md): diyaloglar neden JSON düğümleri.
 - [Varlık hattı](ASSET_PIPELINE.md): Blender'dan Godot'a dışa aktarma kuralları ve kontrol listesi.
+
+- [Elde inceleme ve damga: güncel sürüm](CARD_INSPECTION_UPDATE.md)
+- [Onaylanmış sıralı geliştirme listesi](CARD_INTERACTION_BACKLOG.md)
+
+- [Kâğıt çeşitleri, ışığa tutma ve fiziksel kanıt rehberi](PAPER_INSPECTION_UPDATE.md)

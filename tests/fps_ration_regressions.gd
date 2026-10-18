@@ -15,14 +15,16 @@ func run(desk: Node) -> PackedStringArray:
 	await _walking_handoff()
 	await _table_flip_faces_and_clearance()
 	await _lean_exits()
+	await _overhead_navigation()
 	await _held_inspection_recovery()
 	await _stamp_interruptions()
+	await _stamp_speed_and_dwell()
 	await _restart_during_stamp()
 	await _cut_interruptions_and_resume()
 	await _restart_during_tool_drop()
 	_release_inputs()
 	await _fresh_customer()
-	print("[fps regressions] %s" % ("PASS: occlusion, world handoff, physical table flip, lean exits, focus/pause, stamp cancellation/restart, cut resume, package surfaces, drop/restart" if _failures.is_empty() else "FAIL: " + "; ".join(_failures)))
+	print("[fps regressions] %s" % ("PASS: occlusion, world handoff, physical table flip, overhead cursor/pan/zoom and exits, focus/pause, stamp cancellation/restart, measured 2 cm cutting and persistent damage, perimeter severance, package surfaces, drop/restart" if _failures.is_empty() else "FAIL: " + "; ".join(_failures)))
 	return _failures
 
 
@@ -90,11 +92,18 @@ func _lean_exits() -> void:
 	eye = _desk.player.camera.transform
 	_desk._key(KEY_E)
 	await _camera_settled()
-	_check(_desk._desk_inspecting and _desk.player.camera.position.length() > 0.1, "E did not lean the existing eye camera over the desk")
+	_check(_desk._desk_inspecting and _desk.player.camera.position.length() > 0.1, "E did not move the existing camera above the desk")
+	_check((-_desk.player.camera.global_basis.z).dot(Vector3.DOWN) > 0.995, "inspection camera did not look vertically down at the tabletop")
+	_check(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "overhead inspection did not release a visible cursor")
 	_desk._key(KEY_Q)
 	await _camera_settled()
 	await _desk.get_tree().physics_frame
 	_check(not _desk._desk_inspecting and _desk.player.can_move and not _desk.player.look_locked, "Q left desk inspection movement/look locked")
+	# The headless DisplayServer exposes only visible mode even after a
+	# successful capture request. Keep the OS capture assertion on graphical
+	# runs; movement, look and camera restoration remain checked everywhere.
+	if DisplayServer.get_name() != "headless":
+		_check(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "Q did not restore normal FPS mouse capture")
 	_check(_desk.player.camera.transform.is_equal_approx(eye), "Q did not restore the pre-inspection eye pose")
 	_check(_desk.card.global_transform.is_equal_approx(paper), "Q moved the table card")
 	_desk._aim(_desk.card.global_position)
@@ -110,6 +119,32 @@ func _lean_exits() -> void:
 	await _camera_settled()
 	_check(_desk.player.position.distance_to(start) > 0.001, "WASD exited inspection without actually allowing walking")
 	_check(_desk.card.global_transform.is_equal_approx(paper), "walking out of inspection moved the card")
+
+
+func _overhead_navigation() -> void:
+	await _front()
+	if not await _enter_overhead(): return
+	var paper: Transform3D = _desk.card.global_transform
+	var before: Transform3D = _desk.player.camera.global_transform
+	_desk._mouse(MOUSE_BUTTON_RIGHT, true)
+	var drag: InputEventMouseMotion = InputEventMouseMotion.new()
+	drag.position = _desk.get_viewport().get_mouse_position() + Vector2(48, -28)
+	drag.relative = Vector2(48, -28)
+	drag.screen_relative = drag.relative
+	Input.parse_input_event(drag)
+	Input.flush_buffered_events()
+	await _desk.get_tree().physics_frame
+	_desk._mouse(MOUSE_BUTTON_RIGHT, false)
+	var panned: Transform3D = _desk.player.camera.global_transform
+	_check(panned.origin.distance_to(before.origin) > 0.005, "RMB drag did not pan the overhead camera")
+	_check(panned.basis.is_equal_approx(before.basis), "overhead panning tilted the vertical camera")
+	_desk._mouse(MOUSE_BUTTON_WHEEL_UP, true)
+	_desk._mouse(MOUSE_BUTTON_WHEEL_UP, false)
+	await _desk.get_tree().physics_frame
+	_check(_desk.player.camera.global_position.y < panned.origin.y - 0.005, "overhead wheel-up did not bring the camera closer to the paper")
+	_check(_desk.card.global_transform.is_equal_approx(paper), "overhead panning or zooming moved the world card")
+	_desk._key(KEY_Q)
+	await _camera_settled()
 
 
 func _table_flip_faces_and_clearance() -> void:
@@ -166,19 +201,22 @@ func _stamp_interruptions() -> void:
 	if not await _pickup_tool("stamp_approve"): return
 	var down: int = _sound_count("stamp_down")
 	var lift: int = _sound_count("stamp_lift")
-	if not await _release_stamp(): return
-	# No frame elapses between releasing the button and Q: contact cannot have
+	if not await _start_stamp(): return
+	# No frame elapses between arming the hover and Q: contact cannot have
 	# occurred, even when the graphical runner's frame rate is low.
 	_desk._key(KEY_Q)
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
 	await _idle_hands()
 	await _desk.get_tree().create_timer(0.40).timeout
 	_check((_work().get("marks", []) as Array).is_empty(), "Q before stamp contact still left a delayed ink mark")
 	_check(not _desk._busy and not _desk._stamp_animating and _desk.held_tool.get_parent() == _desk.player.camera, "pre-contact stamp cancellation stranded the tool or movement lock")
 	_check(_sound_count("stamp_down") == down and _sound_count("stamp_lift") == lift, "a cancelled pre-contact stamp emitted contact/lift sounds")
-	if not await _release_stamp(): return
-	await _until(func() -> bool: return _desk._stamp_contacted or not _desk._stamp_animating, "stamp never reached contact")
+	if not await _start_stamp(): return
+	_stamp_descent(180.0)
+	await _until(func() -> bool: return _desk._stamp_contacted, "stamp never reached contact while held")
 	_check((_work().get("marks", []) as Array).size() == 1, "stamp contact failed to create one mark")
 	_desk._key(KEY_Q)
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
 	await _idle_hands()
 	await _desk.get_tree().create_timer(0.40).timeout
 	_check((_work().get("marks", []) as Array).size() == 1, "cancelling after contact removed or duplicated the completed stamp")
@@ -189,8 +227,10 @@ func _restart_during_stamp() -> void:
 	if _desk.held_tool != _desk.props["stamp_approve"]:
 		_failures.append("restart-during-stamp setup lost its stamp")
 		return
-	if not await _release_stamp(): return
+	if not await _start_stamp(): return
+	_stamp_descent(180.0)
 	_desk._restart()
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
 	await _desk._wait_customer()
 	await _until(func() -> bool: return _desk._window_ready, "restart did not offer a fresh customer")
 	await _desk.get_tree().create_timer(0.40).timeout
@@ -198,11 +238,44 @@ func _restart_during_stamp() -> void:
 	_check(not _desk._busy and not _desk._stamp_animating and not _desk._stamp_charging, "restart retained stamp animation/control state")
 
 
+func _stamp_speed_and_dwell() -> void:
+	if not await _start_stamp(): return
+	var before: int = (_work().get("marks", []) as Array).size()
+	# The same physical downward travel, spread over multiple frames, must
+	# make a slower impact than one quick stroke. Holding at contact develops
+	# this impression; sideways movement smudges it without adding contacts.
+	for step: int in 22:
+		_stamp_descent(8.0)
+		await _desk.get_tree().create_timer(0.04).timeout
+		if _desk._stamp_contacted: break
+	if not await _until(func() -> bool: return _desk._stamp_contacted, "slow stamp never reached the paper"):
+		_desk._mouse(MOUSE_BUTTON_LEFT, false)
+		return
+	_stamp_motion(Vector2(12, 0))
+	await _desk.get_tree().create_timer(0.25).timeout
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
+	await _idle_hands()
+	var marks: Array = _work().get("marks", [])
+	_check(marks.size() == before + 1, "one held stamp contact generated repeated ink marks")
+	if marks.size() != before + 1: return
+	var slow: Dictionary = (marks[-1] as Dictionary).duplicate(true)
+	if not await _release_stamp(): return
+	await _idle_hands()
+	marks = _work().get("marks", [])
+	_check(marks.size() == before + 2, "quick stamp contact was lost or duplicated")
+	if marks.size() != before + 2: return
+	var quick: Dictionary = marks[-1]
+	_check(float(quick.get("speed", 0)) > float(slow.get("speed", 0)) + 0.04, "native fast and slow stamp strokes stored the same impact speed")
+	_check(float(slow.get("dwell", 0)) > float(quick.get("dwell", 0)) + 0.1, "holding a stamp on the paper did not persist contact dwell")
+	_check(float(slow.get("smudge", 0)) > 0, "sideways movement while touching the paper left no smudge metadata")
+
+
 func _cut_interruptions_and_resume() -> void:
 	await _front()
 	_desk._aim(_desk.card.global_position)
 	_desk._key(KEY_E)
 	await _idle_hands()
+	if not await _enter_overhead(): return
 	if not await _pickup_tool("stamp_approve"): return
 	if not await _release_stamp(): return
 	await _idle_hands()
@@ -210,36 +283,94 @@ func _cut_interruptions_and_resume() -> void:
 	await _drop_tool_on_table(Vector3(0.70, 0.966, -1.66))
 	if not await _pickup_tool("scissors"): return
 	var rect: Rect2 = RationCardView.coupon_rect(0)
-	_desk._aim(_desk.card.pixel_to_world(rect.position + Vector2(3, 0)))
-	_desk._mouse(MOUSE_BUTTON_LEFT, true)
-	_check(_desk._cut_index == 0, "coupon cut did not begin at its printed edge")
+	var start: Vector2 = rect.position
+	# Print space has a physical scale of 0.36 m / 640 px. The blade must
+	# travel 2 cm, rather than completing an entire coupon from a percentage.
+	var two_cm: Vector2 = start + Vector2(0.02 * 640.0 / 0.36, 0)
+	if not _start_cut(start): return
+	_desk._aim(_desk.card.pixel_to_world(two_cm))
+	await _desk.get_tree().physics_frame
+	var first_frame_m: float = ((_desk._cut_tip as Vector2) - start).length() * 0.36 / 640.0
+	_check(first_frame_m < 0.015, "a cursor jump teleported the physical blades through the entire 2 cm path")
+	if not await _trace_to(two_cm): return
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
+	await _desk.get_tree().physics_frame
+	var incisions: Array = _work().get("incisions", [])
+	_check(incisions.size() == 1, "a released physical stroke did not persist exactly one incision")
+	if incisions.is_empty(): return
+	var first_stroke: Dictionary = (incisions[0] as Dictionary).duplicate(true)
+	_check(absf(float(first_stroke.get("length_m", 0)) - 0.02) <= 0.0008, "2 cm blade travel did not leave a measured 2 cm cut")
+	_check((_work().get("cuts", []) as Array).is_empty(), "2 cm of damage detached an entire coupon")
+	_check(_desk._cut_index < 0, "releasing a partial incision retained cutting control")
+	var paper: Transform3D = _desk.card.global_transform
+	_desk._key(KEY_Q)
+	await _camera_settled()
+	_check(_work().get("incisions", []) == incisions, "leaving the desk healed a partial incision")
+	_check(not _desk._desk_inspecting and _desk.player.can_move, "partial incision prevented leaving the desk")
+	if not await _enter_overhead(): return
+	_check(_desk.held_tool == _desk.props["scissors"], "re-entering the desk lost the held scissors")
+	# Q saves the actual path already travelled. There is no all-or-nothing
+	# cancellation that restores paper which the blades have already cut.
+	var resumed: Vector2 = two_cm + Vector2(18, 0)
+	if not _start_cut(two_cm): return
+	if not await _trace_to(resumed): return
 	_desk._key(KEY_Q)
 	_desk._mouse(MOUSE_BUTTON_LEFT, false)
-	_check(_desk._cut_index < 0 and (_work().get("cuts", []) as Array).is_empty(), "Q consumed an unfinished coupon or retained the cutting state")
-	_desk._aim(_desk.card.pixel_to_world(rect.position + Vector2(3, 0)))
-	_desk._mouse(MOUSE_BUTTON_LEFT, true)
-	_desk._aim(_desk.card.pixel_to_world(rect.position + Vector2(60, 70)))
-	await _desk.get_tree().physics_frame
-	await _desk.get_tree().physics_frame
+	await _camera_settled()
+	var after_q: Array = _work().get("incisions", [])
+	_check(after_q.size() == 2 and after_q[0] == first_stroke, "Q lost, replaced or duplicated the previous physical incision")
+	_check((_work().get("cuts", []) as Array).is_empty(), "Q consumed the still-attached coupon")
+	if not await _enter_overhead(): return
+	# Escape before release must retain physical damage as well, and the
+	# returning cursor must remain usable after unpausing.
+	var paused_at: Vector2 = resumed + Vector2(18, 0)
+	if not _start_cut(resumed): return
+	if not await _trace_to(paused_at): return
+	_desk._key(KEY_ESCAPE)
 	_desk._mouse(MOUSE_BUTTON_LEFT, false)
-	_check(_desk._cut_index < 0 and (_work().get("cuts", []) as Array).is_empty(), "leaving the printed cut line consumed the coupon")
-	_desk._aim(_desk.card.pixel_to_world(rect.position + Vector2(3, 0)))
-	_desk._mouse(MOUSE_BUTTON_LEFT, true)
-	for step: int in range(1, 9):
-		_desk._aim(_desk.card.pixel_to_world(rect.position + Vector2(rect.size.x * step / 8.0, 0)))
-		await _desk.get_tree().physics_frame
+	_check(_desk.pause.visible and _desk._cut_index < 0, "Escape did not stop the live cutting gesture")
+	_check((_work().get("incisions", []) as Array).size() == 3, "Escape healed physical blade travel")
+	_desk._key(KEY_ESCAPE)
+	await _camera_settled()
+	if not await _enter_overhead(): return
+	# Complete only the rest of the top edge. Three uncut sides must still
+	# hold the coupon, regardless of apparent percentage progress.
+	if not _start_cut(paused_at): return
+	if not await _trace_to(rect.position + Vector2(rect.size.x, 0)): return
 	_desk._mouse(MOUSE_BUTTON_LEFT, false)
-	_check(_work().get("cuts", []) == ["meat"] and (_work().get("parcel", {}) as Dictionary).is_empty(), "completed paperwork required goods or failed to consume exactly one coupon")
-	var paper: Transform3D = _desk.card.global_transform
+	await _desk.get_tree().physics_frame
+	_check((_work().get("cuts", []) as Array).is_empty(), "a complete top edge detached three uncut coupon sides")
+	_check(_first_incision() == first_stroke, "resuming the cut rewrote the original 2 cm incision")
+	# A stray interior stroke is real damage too. It cannot become invisible
+	# merely because the player missed the dotted perimeter guide.
+	var interior: Vector2 = rect.position + Vector2(35, 35)
+	var before_interior: int = (_work().get("incisions", []) as Array).size()
+	if not _start_cut(interior): return
+	if not await _trace_to(interior + Vector2(18, 0)): return
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
+	await _desk.get_tree().physics_frame
+	_check((_work().get("incisions", []) as Array).size() == before_interior + 1, "cutting inside the coupon did not retain the actual paper damage")
+	_check((_work().get("cuts", []) as Array).is_empty(), "stray interior damage detached an attached coupon")
+	# Follow the three remaining edges with the actual scissors tip. Awaiting
+	# tip arrival respects the physical speed cap rather than jumping the
+	# pointer once per frame and forcing an entitlement change.
+	var top_right: Vector2 = rect.position + Vector2(rect.size.x, 0)
+	if not _start_cut(top_right): return
+	for corner: Vector2 in [rect.end, rect.position + Vector2(0, rect.size.y), rect.position]:
+		if not await _trace_to(corner): return
+	_desk._mouse(MOUSE_BUTTON_LEFT, false)
+	await _desk.get_tree().physics_frame
+	_check(_work().get("cuts", []) == ["meat"] and (_work().get("parcel", {}) as Dictionary).is_empty(), "four severed edges failed to consume exactly one coupon before goods preparation")
+	_check(_desk._tokens.size() == 1, "physical coupon severance did not create exactly one separate paper piece")
 	_desk._key_down(KEY_S, true)
 	for frame: int in 8:
 		await _desk.get_tree().physics_frame
 	_desk._key_down(KEY_S, false)
-	await _front()
-	_desk._aim(_desk.card.global_position)
-	_desk._key(KEY_E)
 	await _camera_settled()
-	_check(_desk._desk_inspecting and _work().get("cuts", []) == ["meat"] and _desk.card.global_transform.is_equal_approx(paper), "walking away and re-inspecting reset the completed coupon")
+	await _front()
+	if not await _enter_overhead(): return
+	_check(_work().get("cuts", []) == ["meat"] and _desk.card.global_transform.is_equal_approx(paper), "walking away and re-inspecting reset the detached coupon or moved its card")
+	_check(_first_incision() == first_stroke, "completed paperwork lost the original physical incision")
 	_desk._key(KEY_Q)
 	await _camera_settled()
 	await _drop_tool_on_table(Vector3(0.25, 0.966, -1.66))
@@ -307,17 +438,65 @@ func _drop_tool_on_table(at: Vector3) -> void:
 	_check(_desk.held_tool == null, "tool did not settle on the table")
 
 
-func _release_stamp() -> bool:
+func _enter_overhead() -> bool:
+	if not _desk._desk_inspecting:
+		# Under a slow software renderer, a wall-clock timer can expire before
+		# the returning camera has finished its tween. Await the actual pose
+		# before aiming and pressing E, just as the entering pose is awaited.
+		await _camera_settled()
+		_desk._aim(_desk.card.global_position)
+		_desk._key(KEY_E)
+		await _camera_settled()
+	var ok: bool = _desk._desk_inspecting
+	_check(ok, "could not enter overhead inspection for a physical tool action")
+	return ok
+
+
+func _start_cut(pixel: Vector2) -> bool:
+	_desk._aim(_desk.card.pixel_to_world(pixel))
+	_desk._mouse(MOUSE_BUTTON_LEFT, true)
+	var ok: bool = _desk._cut_index == 0
+	_check(ok, "actual-path cutting did not start at the scissors tip")
+	return ok
+
+
+func _trace_to(pixel: Vector2) -> bool:
+	_desk._aim(_desk.card.pixel_to_world(pixel))
+	var ok: bool = await _until(func() -> bool: return _desk._cut_index < 0 or (_desk._cut_tip as Vector2).distance_to(pixel) <= 0.12,
+		"physical scissors tip did not reach its requested print coordinate", 10000)
+	_check(_desk._cut_index == 0, "cutting stopped before the actual scissors tip reached its target")
+	return ok and _desk._cut_index == 0
+
+
+func _start_stamp() -> bool:
+	if not await _enter_overhead(): return false
 	_desk._aim(_desk.card.pixel_to_world(Vector2(540, 190)))
 	_desk._mouse(MOUSE_BUTTON_LEFT, true)
-	if not _desk._stamp_charging:
-		_failures.append("stamp press did not start charging")
-		_desk._mouse(MOUSE_BUTTON_LEFT, false)
-		return false
-	await _until(func() -> bool: return _desk._stamp_time >= 0.10 or not _desk._stamp_charging, "stamp charge did not advance")
+	var ok: bool = _desk._stamp_charging
+	_check(ok, "stamp press did not arm its physical hover gesture")
+	if not ok: _desk._mouse(MOUSE_BUTTON_LEFT, false)
+	return ok
+
+
+func _stamp_descent(pixels: float) -> void:
+	_stamp_motion(Vector2(0, pixels))
+
+
+func _stamp_motion(relative: Vector2) -> void:
+	var stroke: InputEventMouseMotion = InputEventMouseMotion.new()
+	stroke.position = _desk.get_viewport().get_mouse_position()
+	stroke.relative = relative
+	stroke.screen_relative = relative
+	Input.parse_input_event(stroke)
+	Input.flush_buffered_events()
+
+
+func _release_stamp() -> bool:
+	if not await _start_stamp(): return false
+	_stamp_descent(180.0)
+	var ok: bool = await _until(func() -> bool: return _desk._stamp_contacted, "native downward stamp motion never reached the paper")
 	_desk._mouse(MOUSE_BUTTON_LEFT, false)
-	var ok: bool = _desk._stamp_animating
-	_check(ok, "stamp release did not begin a physical contact animation")
+	_check(not ok or _desk._stamp_animating, "stamp release did not begin its physical lift")
 	return ok
 
 
@@ -348,6 +527,11 @@ func _sound_count(sound: String) -> int:
 func _work() -> Dictionary:
 	var game: Node = _desk.get_tree().root.get_node("Game")
 	return RationDeskRules.desk(game.get("state") as CampaignState)
+
+
+func _first_incision() -> Dictionary:
+	var incisions: Array = _work().get("incisions", [])
+	return incisions[0] if not incisions.is_empty() else {}
 
 
 func _check(ok: bool, failure: String) -> void:

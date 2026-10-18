@@ -47,5 +47,7 @@ func _physics_process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not look_locked:
 		var mouse: InputEventMouseMotion = event as InputEventMouseMotion
-		rotation.y -= mouse.relative.x * sensitivity
-		head.rotation.x = clampf(head.rotation.x - mouse.relative.y * sensitivity, -1.35, 1.35)
+		var movement: Vector2 = mouse.screen_relative
+		if movement == Vector2.ZERO: movement = mouse.relative * get_viewport().get_screen_transform().get_scale()
+		rotation.y -= movement.x * sensitivity
+		head.rotation.x = clampf(head.rotation.x - movement.y * sensitivity, -1.35, 1.35)
