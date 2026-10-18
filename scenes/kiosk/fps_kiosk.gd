@@ -2,10 +2,12 @@ extends Node3D
 ## Physical first-person workflow. The document UI is ink on a 3D object only.
 
 @export var document_focus: bool = false
+@export var review_day_only: bool = false
 
 const REACH: float = 2.5
 var player: KioskFPSPlayer
 var card: RationCard3D
+var identity_document: IdentityDocument3D
 var customer: CustomerPlaceholder
 var customer_target: Interactable
 var workmat: Interactable
@@ -91,6 +93,8 @@ var _inspect_pending: bool = false
 var _inspection_back: bool = false
 var _inspection_left_visible: bool = false
 var _inspection_right_visible: bool = false
+var _inspection_card_visible: bool = false
+var _comparison_views: Dictionary[int, Dictionary] = {}
 var _placement_preview: PaperPlacementPreview
 var _stamp_guide: StampPlacementGuide
 var _stamp_assistance: bool = true
@@ -100,7 +104,7 @@ func _ready() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg == "--selftest": _selftest = true
 		elif arg.begins_with("--capture="): _capture_dir = arg.trim_prefix("--capture=")
-	rules = RationDeskRules.new(ContentDB.all_of("ration_case"))
+	_load_cases()
 	foley = RationFoley.new()
 	add_child(foley)
 	_build_room()
@@ -117,6 +121,18 @@ func _ready() -> void:
 	if _selftest:
 		if document_focus: _run_document_selftest()
 		else: _run_selftest()
+
+
+func _load_cases() -> void:
+	var cases: Array = [] if document_focus and review_day_only else ContentDB.all_of("ration_case")
+	if document_focus: cases.append_array(ContentDB.all_of("ration_review_case"))
+	rules = RationDeskRules.new(cases)
+
+
+func _start_review_day() -> void:
+	review_day_only = true
+	_load_cases()
+	_restart()
 
 
 func _build_room() -> void:
@@ -207,7 +223,9 @@ func _build_station() -> void:
 	for z: float in [-0.08, 0.08]: _box(coupon_bin, Vector3(0.20, 0.055, 0.01), Vector3(0, 0.025, z), Color("967950"))
 	for i: int in 3:
 		var kind: String = ["approve", "reject", "seize"][i]
-		var stamp: Interactable = _prop("stamp_" + kind, Vector3(0.12 + i * 0.13, 0.968, -1.89), Vector3(0.105, 0.20, 0.07))
+		# Leave enough space for a perspective ray to each empty base. A tight
+		# row let the adjacent tall handle block G when returning a stamp.
+		var stamp: Interactable = _prop("stamp_" + kind, Vector3(-0.04 + i * 0.19, 0.968, -1.89), Vector3(0.105, 0.20, 0.07))
 		_adopt_visual(stamp, WorkbenchArt.build_stamp(kind))
 		var stamp_name: Label3D = _label(stamp, ["ONAY", "RET", "ALIKOY"][i], Vector3(0, 0.023, 0.022), 0.00032)
 		stamp_name.rotation.x = -PI / 2
@@ -272,6 +290,13 @@ func _build_station() -> void:
 	card = RationCard3D.new()
 	add_child(card)
 	card.visible = false
+	identity_document = IdentityDocument3D.new()
+	add_child(identity_document)
+	identity_document.position = Vector3(-0.22, 0.964, -2.42)
+	identity_document.quaternion = RationCard3D.table_orientation(true)
+	identity_document.visible = false
+	props["identity"] = identity_document
+	_remember(identity_document)
 
 
 func _crate(container: Interactable, item: String, wood: Color) -> void:
@@ -324,7 +349,7 @@ func _build_hud() -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	pause.add_child(rows)
 	var controls: Label = Label.new()
-	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlı yürü\nE: al / teslim et · G: yüzeye bırak\nE: üstten masa · R: karneyi eline al\nF: eldeki nesneyi yakından incele\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut\nTekerlek: yakınlaş · F/Esc: geri\nMasada F: kartı çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla gerçek kesim\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
+	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlan\nE: al / teslim et · G: yüzeye bırak\nMasada E: üstten bak · R: karneyi al\nElde F: yakından incele · F/Esc: geri\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut · Tekerlek: zoom\nİki belge eldeyken C: karşılaştır\nKitapçık incelemede Tab: rehber sayfası\nMasada F: çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla kes\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
 	controls.add_theme_font_size_override("font_size", 20)
 	rows.add_child(controls)
 	var volume: HSlider = HSlider.new()
@@ -343,6 +368,11 @@ func _build_hud() -> void:
 		button.text = entry[0]
 		button.pressed.connect(entry[1])
 		rows.add_child(button)
+	if document_focus:
+		var review_button: Button = Button.new()
+		review_button.text = "Belge karşılaştırma çalışma günü"
+		review_button.pressed.connect(_start_review_day)
+		rows.add_child(review_button)
 	pause.visible = false
 
 
@@ -371,6 +401,7 @@ func _restart() -> void:
 	for prop: Node3D in homes:
 		prop.global_transform = homes[prop]
 		if prop is CollisionObject3D: prop.collision_layer = 2
+	_clear_identity()
 	left_hand.visible = false
 	left_hand.reparent(player.camera)
 	right_hand.visible = false
@@ -401,6 +432,8 @@ func _refresh(state: CampaignState) -> void:
 	var index: int = int(work.get("index", 0))
 	if encounter.is_empty():
 		if index != _index:
+			_close_object_inspection()
+			_clear_identity()
 			_index = index
 			_window_ready = false
 			customer.leave()
@@ -409,6 +442,7 @@ func _refresh(state: CampaignState) -> void:
 		_write_ledger(work)
 	elif index != _index:
 		_close_object_inspection()
+		_clear_identity()
 		_inspect_pending = false
 		_index = index
 		_window_ready = false
@@ -421,6 +455,7 @@ func _refresh(state: CampaignState) -> void:
 		card.collision_layer = 0
 		card.visible = false
 		card.refresh(encounter["card"], work)
+		identity_document.configure(encounter.get("identity", {}))
 		_offer_card(index, _epoch)
 	else:
 		card.refresh(encounter["card"], work)
@@ -441,6 +476,30 @@ func _refresh(state: CampaignState) -> void:
 			held_tool = null
 	else:
 		parcel.configure(package["item"], int(package["amount"]), package["source"])
+
+
+func _clear_identity() -> void:
+	if held_tool == identity_document: _return_tool_home()
+	identity_document.reparent(self)
+	identity_document.global_transform = homes[identity_document]
+	identity_document.visible = false
+	identity_document.collision_layer = 0
+
+
+func _receive_identity() -> void:
+	if identity_document.identity.is_empty(): return
+	identity_document.visible = true
+	identity_document.collision_layer = 0
+	identity_document.global_position = Vector3(-0.10, 1.08, -2.79)
+	var generation: int = _epoch
+	var index: int = _index
+	var transfer: Tween = create_tween()
+	_tweens.append(transfer)
+	transfer.tween_property(identity_document, "global_position", homes[identity_document].origin, 0.36).set_trans(Tween.TRANS_SINE)
+	transfer.tween_callback(func() -> void:
+		if generation == _epoch and index == _index:
+			identity_document.collision_layer = 2
+			foley.play_sound("paper_place"))
 
 
 func _offer_card(index: int, generation: int) -> void:
@@ -466,23 +525,28 @@ func _offer_card(index: int, generation: int) -> void:
 	subtitle.text = "%s: %s (%s)" % [encounter["customer"], encounter["line"], RationDeskRules.amount_text(encounter["request"]["item"], int(encounter["request"]["amount"]))]
 
 
-func _open_object_inspection() -> void:
+func _open_object_inspection(target_override: Node3D = null, continuing_comparison: bool = false) -> void:
 	if _object_inspector.active or _busy or _card_busy or _paper_dragging or _stamp_charging or _cut_index >= 0: return
-	var target: Node3D = card if card_held else held_tool
+	var target: Node3D = target_override if target_override != null else (card if card_held else held_tool)
 	if target == null: return
+	if not continuing_comparison: _comparison_views.clear()
 	_exit_desk_inspection(true)
 	_inspecting = false
 	_inspection_back = false
 	_inspection_left_visible = left_hand.visible
 	_inspection_right_visible = right_hand.visible
+	_inspection_card_visible = card.visible
 	left_hand.visible = false
 	right_hand.visible = false
 	if held_tool != null: held_tool.visible = held_tool == target
+	if card_held: card.visible = target == card
 	var readable: Quaternion = Quaternion.IDENTITY
 	var dimensions: Vector3 = Vector3(RationCard3D.WIDTH, RationCard3D.HEIGHT, 0.01)
 	var center: Vector3 = Vector3.ZERO
 	if target == card:
 		readable = Quaternion(Vector3.UP, 0.0 if card.front_showing else PI)
+	elif target == identity_document:
+		dimensions = Vector3(IdentityDocument3D.WIDTH, IdentityDocument3D.HEIGHT, IdentityDocument3D.THICKNESS)
 	elif _is_book(held_tool):
 		readable = Quaternion(Vector3.RIGHT, PI / 2)
 		dimensions = Vector3(0.37, 0.025, 0.47) if held_tool.action == "ledger" else Vector3(0.28, 0.02, 0.23)
@@ -496,6 +560,10 @@ func _open_object_inspection() -> void:
 		readable = Quaternion(Vector3.RIGHT, PI / 2)
 		dimensions = Vector3(0.16, 0.04, 0.24)
 	_object_inspector.open(target, player.camera, readable, dimensions, center)
+	if continuing_comparison and _comparison_views.has(target.get_instance_id()):
+		var view: Dictionary = _comparison_views[target.get_instance_id()]
+		_inspection_back = view.get("back", false)
+		_object_inspector.restore_view(view)
 	player.look_locked = true
 	player.can_move = false
 	_placement_preview.visible = false
@@ -509,6 +577,7 @@ func _close_object_inspection() -> void:
 	_object_inspector.close()
 	left_hand.visible = _inspection_left_visible
 	right_hand.visible = _inspection_right_visible
+	card.visible = _inspection_card_visible
 	if held_tool != null: held_tool.visible = true
 	player.look_locked = false
 	player.can_move = not pause.visible
@@ -520,6 +589,21 @@ func _inspection_input(event: InputEvent) -> void:
 		match (event as InputEventKey).physical_keycode:
 			KEY_F, KEY_ESCAPE, KEY_Q: _close_object_inspection()
 			KEY_T: _object_inspector.toggle_backlight()
+			KEY_C:
+				if card_held and held_tool == identity_document:
+					var view: Dictionary = _object_inspector.capture_view()
+					view["back"] = _inspection_back
+					_comparison_views[_object_inspector.object.get_instance_id()] = view
+					var target: Node3D = identity_document if _object_inspector.object == card else card
+					_close_object_inspection()
+					_open_object_inspection(target, true)
+			KEY_TAB:
+				if _object_inspector.object == props["book"]:
+					var reference: RationDeskReference = props["book"].get_node("ClassAndIssuerReference")
+					reference.next_evidence_page()
+					_inspection_back = true
+					_object_inspector.readable_face(true)
+					foley.play_sound("paper_flip")
 			KEY_R:
 				_inspection_back = false
 				_object_inspector.reset_pose()
@@ -666,6 +750,8 @@ func _physics_process(delta: float) -> void:
 		hint.text = "İNCELE · Sol sürükle: döndür · Tekerlek: yaklaş · Sağ tık: çevir · R: düzelt · F/Esc/Q: geri"
 		if _object_inspector.object == card:
 			hint.text += "\nT · Işığı kaldır" if _object_inspector.backlight_enabled else "\nT · Işığa tut — filigranı ve kâğıt liflerini incele"
+		if card_held and held_tool == identity_document: hint.text += "\nC · Diğer belgeyi yakından karşılaştır"
+		if _object_inspector.object == props["book"]: hint.text += "\nTab · Kâğıt ve belge karşılaştırma rehberleri"
 		return
 	if _paper_dragging: _update_paper_drag(delta)
 	elif _stamp_charging: _update_stamp(delta)
@@ -816,7 +902,7 @@ func _interact() -> void:
 	elif kind == "parcel":
 		if held_tool != null: _message("Sağ elindeki nesneyi G ile bırak."); return
 		if _execute(rules.move_parcel(Game.state, "hand")): _equip(parcel)
-	elif kind.begins_with("stamp_") or kind in ["scissors", "book", "ledger", "order", "loupe"]:
+	elif kind.begins_with("stamp_") or kind in ["scissors", "book", "ledger", "order", "loupe", "identity"]:
 		if held_tool != null: _message("Sağ elindeki nesneyi G ile bir yüzeye bırak."); return
 		_equip(target)
 
@@ -865,6 +951,7 @@ func _end_paper_drag(immediate: bool = false) -> void:
 
 
 func _receive_card() -> void:
+	_receive_identity()
 	if document_focus:
 		_hold_card()
 		return
@@ -1003,6 +1090,7 @@ func _drop_held() -> void:
 
 
 func _support_height(tool: Interactable) -> float:
+	if tool == identity_document: return IdentityDocument3D.THICKNESS * 0.5 + 0.0001
 	if tool is InspectionLoupe: return 0.001
 	if tool.action == "scissors": return -0.0082
 	if tool.action.begins_with("stamp_"): return 0.0003
@@ -1044,6 +1132,7 @@ func _equip(tool: Interactable) -> void:
 	elif tool.action == "scissors": right_hand.position = Vector3(-0.065, 0.064, 0.025)
 	elif tool.action.begins_with("stamp_"): right_hand.position = Vector3(0.023, 0.13, 0.045)
 	elif _is_book(tool): right_hand.position = Vector3(0.208, 0.026, 0.11)
+	if tool == identity_document: right_hand.position = Vector3(0.137, -0.036, 0.009)
 	elif tool == parcel: right_hand.position = parcel.grip_position
 	right_hand.rotation = Vector3.ZERO
 	right_hand.visible = true
@@ -1058,7 +1147,10 @@ func _pose_tool() -> void:
 		return
 	held_tool.position = Vector3(0.19, -0.27, -0.46)
 	held_tool.rotation = Vector3(0.20, 0, -0.2)
-	if _is_book(held_tool):
+	if held_tool == identity_document:
+		held_tool.position = _book_hold_position()
+		held_tool.rotation = Vector3.ZERO
+	elif _is_book(held_tool):
 		held_tool.position = _book_hold_position()
 		held_tool.rotation = Vector3(PI / 2, 0, 0)
 	elif held_tool == parcel:
@@ -1080,7 +1172,9 @@ func _update_tool_hover() -> void:
 		held_tool.global_position = point + Vector3(-0.107, -0.0095, 0)
 		(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
 		(held_tool.get_node("Blade1") as Node3D).rotation.y = 0.48
-	elif _is_book(held_tool): held_tool.global_position = point + Vector3(0, 0.04, 0)
+	elif _is_book(held_tool):
+		held_tool.global_position = point + Vector3(0, 0.04, 0)
+		if held_tool == identity_document: held_tool.quaternion = RationCard3D.table_orientation(true)
 	elif held_tool is InspectionLoupe:
 		held_tool.global_position = point + Vector3(0, 0.022, 0)
 		held_tool.global_rotation = Vector3.ZERO
@@ -1137,6 +1231,20 @@ func _finish_card(destination: String) -> void:
 	if not card_held: return
 	var command: Dictionary = rules.finish_review(Game.state, destination) if document_focus else rules.finish(Game.state, destination, true)
 	if not _execute(command): return
+	if identity_document.visible:
+		if held_tool == identity_document:
+			identity_document.reparent(self)
+			right_hand.reparent(player.camera)
+			right_hand.visible = false
+			held_tool = null
+		identity_document.collision_layer = 0
+		var identity_return: Tween = create_tween()
+		_tweens.append(identity_return)
+		identity_return.tween_property(identity_document, "position", Vector3(-0.10, 1.08, -2.79), 0.28)
+		var identity_epoch: int = _epoch
+		var identity_index: int = _index
+		identity_return.tween_callback(func() -> void:
+			if identity_epoch == _epoch and identity_index == _index: identity_document.visible = false)
 	card_held = false
 	left_hand.reparent(player.camera)
 	left_hand.visible = false
@@ -1432,6 +1540,7 @@ func _hint(target: Node) -> String:
 		"parcel": return "E · Hazırlanmış ürünü al"
 		"bell": return "E · Sonraki müşteriyi çağır"
 		"book": return "E · Kural defterini al ve elde incele"
+		"identity": return "E · Kimliği eline al    F · İsim, numara ve fotoğrafı incele"
 		"order": return "E · Masadaki talep fişini al ve oku"
 		"ledger": return "E · Gün sonu defterini al"
 		"scissors": return "E · Makası al"
@@ -1515,7 +1624,7 @@ func _make_page(prop: Node3D, key: String, dimensions: Vector2, text: String) ->
 
 
 func _is_book(tool: Interactable) -> bool:
-	return tool != null and tool.action in ["book", "ledger", "order"]
+	return tool != null and tool.action in ["book", "ledger", "order", "identity"]
 
 
 func _remember(prop: Node3D) -> void:
@@ -1634,7 +1743,11 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/paper_inspection_regressions.gd").new().run(self)
+		failures = await preload("res://tests/evidence_review_regressions.gd").new().run(self)
+		if "--evidence-only" in OS.get_cmdline_user_args():
+			get_tree().quit(0 if failures.is_empty() else 1)
+			return
+		failures.append_array(await preload("res://tests/paper_inspection_regressions.gd").new().run(self))
 		if "--paper-only" in OS.get_cmdline_user_args():
 			get_tree().quit(0 if failures.is_empty() else 1)
 			return
@@ -1820,7 +1933,7 @@ func _run_selftest() -> void:
 		_aim(bell.global_position + Vector3(0, 0.03, 0))
 		_key(KEY_E)
 	var results: Array = RationDeskRules.desk(Game.state).get("results", [])
-	if results.size() != 8: failures.append("only %d/8 customers completed" % results.size())
+	if results.size() != rules.cases.size(): failures.append("only %d/%d customers completed" % [results.size(), rules.cases.size()])
 	for result: Dictionary in results:
 		if not result["correct"]: failures.append("incorrect audit: " + result["case"])
 		if document_focus and (not result.get("document_review", false) or int(result.get("revenue", -1)) != 0): failures.append("review invented a sale")
@@ -1831,7 +1944,7 @@ func _run_selftest() -> void:
 		await _capture("05_ledger")
 	if document_focus and (not RationDeskRules.desk(Game.state).get("parcel", {}).is_empty() or int(Game.state.money["till"]) != 2000): failures.append("paperwork changed stock or money")
 	foley.stop_all()
-	print("[fps selftest] %s" % (("PASS: document-only handoff, overhead workstation, measured cuts, physical stamp gestures, 8 customers, no product or money mutations" if document_focus else "PASS: overhead workstation, measured cuts, physical stamp gestures, provisions, 8 customers") if failures.is_empty() else "FAIL: " + "; ".join(failures)))
+	print("[fps selftest] %s" % (("PASS: document-only handoff, overhead workstation, measured cuts, physical stamp gestures, %d customers, no product or money mutations" % rules.cases.size() if document_focus else "PASS: overhead workstation, measured cuts, physical stamp gestures, provisions, 8 customers") if failures.is_empty() else "FAIL: " + "; ".join(failures)))
 	get_tree().quit(0 if failures.is_empty() else 1)
 
 

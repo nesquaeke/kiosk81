@@ -63,8 +63,9 @@ Don't casually run `tools/setup_project.gd` or whole scene generators; they
 overwrite scenes. Fetch Git LFS assets before importing a fresh checkout.
 
 Current sequential feature list: `docs/CARD_INTERACTION_BACKLOG.md`. The original
-user list is preserved there; its first three slices and the initial physical comparison aid are implemented.
-New photo/date/identity forgery scenarios are still pending. `HeldObjectInspector` works on the existing held card/tool and
+user list is preserved there; the first four slices now include physical identity,
+altered date/photo seal/coupon evidence and printed comparison guides.
+`HeldObjectInspector` works on the existing held card/tool and
 restores its exact pose on exit. Don't append marks/cuts during inspection.
 `StampPlacementGuide` is a transient mesh on the paper, outside the ink renderer
 and campaign state. Stamp preview and actual ink use the same paper-local angle.
@@ -83,3 +84,17 @@ old fragments. T in held F inspection enables directional simulated transmitted
 light. It changes rendering only, never campaign/evidence or a verdict. Close,
 focus loss and restart clear it. The physical book's underside teaches comparison;
 existing inspector Ry(PI)*Rx(PI/2) must show it upright. No fullscreen hint panel.
+
+Evidence review update: `docs/EVIDENCE_REVIEW_UPDATE.md`. F5 runs original8 +
+review8; the Esc comparison-day button or ration_review_day.tscn starts review8.
+The full-sale scene still uses original8 only. Companion identity is one physical
+two-sided object; after E receive it settles on the desk. E picks it up, Q leaves
+overhead, F inspects. With both documents held, C changes the inspector target,
+restoring both exact poses and clearing card-only transmission lighting.
+Tab during F book inspection changes only the static printed underside guide;
+it never reads the current encounter. RationEvidence derives findings from
+the same date/seal/identity/coupon fields that are printed. Portrait keys share
+one canonicalization function with DocumentPortrait. Cosmetic wear, ink, paste,
+stock and repeated matching date typing never establish guilt. Prior issuance
+of a requested coupon means reject, not confiscate. Wrong decisions remain
+possible and are audited after handback; no evidence renderer writes verdicts.

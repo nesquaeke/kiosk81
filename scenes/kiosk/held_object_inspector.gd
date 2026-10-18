@@ -103,6 +103,17 @@ func reset_pose() -> void:
 	_move_to(_base, 0.20)
 
 
+func capture_view() -> Dictionary:
+	return {"rotation": object.quaternion, "zoom": _zoom} if active else {}
+
+
+func restore_view(view: Dictionary) -> void:
+	if not active or view.is_empty(): return
+	_zoom = clampf(float(view.get("zoom", 1.0)), 0.60, 1.60)
+	_distance = maxf(_fit_distance * _zoom, _radius + _camera.near + 0.06)
+	_move_to(view.get("rotation", _base), 0.20)
+
+
 func toggle_backlight() -> void:
 	if active and object is RationCard3D:
 		backlight_enabled = not backlight_enabled

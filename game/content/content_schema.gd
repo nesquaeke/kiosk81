@@ -26,6 +26,10 @@ const TYPES: Dictionary = {
 		"prefix": "rc_",
 		"fields": {"id": "id", "customer": "text", "line": "text", "request": "dict", "card": "dict"},
 	},
+	"ration_review_case": {
+		"prefix": "rc_",
+		"fields": {"id": "id", "customer": "text", "line": "text", "request": "dict", "card": "dict", "identity": "dict"},
+	},
 	"item": {
 		"prefix": "itm_",
 		"fields": {

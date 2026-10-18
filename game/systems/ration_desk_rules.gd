@@ -388,13 +388,14 @@ static func issues(encounter: Dictionary) -> PackedStringArray:
 		out.append("İstenen ürünün kuponu kullanılmış")
 	if int(card.get(request["item"], 0)) < int(request["amount"]):
 		out.append("İstenen miktar kupon hakkını aşıyor")
+	out.append_array(RationEvidence.issues(encounter))
 	return out
 
 
 static func is_forged(encounter: Dictionary) -> bool:
 	var card: Dictionary = encounter["card"]
 	var spec: Dictionary = CLASSES.get(card.get("class", ""), {})
-	return spec.is_empty() or card.get("institution") != spec.get("institution") or int(card.get("meat", 0)) != int(spec.get("meat", 0))
+	return spec.is_empty() or card.get("institution") != spec.get("institution") or int(card.get("meat", 0)) != int(spec.get("meat", 0)) or RationEvidence.is_forged(encounter)
 
 
 static func _active(work: Dictionary) -> bool:

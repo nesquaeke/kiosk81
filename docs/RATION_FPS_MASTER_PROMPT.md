@@ -302,5 +302,22 @@ koordinatlarıyla lif/kesik örneklenir; bağımsız hasar snapshot'ı saklanır
 F incelemede T geçirgen ışığı açar, eğim geliş açısını değiştirir. Bu yalnız
 bir görsel/inceleme aracıdır; kampanya kararını veya kanıt verisini değiştirmez.
 Kitapçığın fiziksel ters sayfası ışık/yama/aşınma karşılaştırmasını öğretir.
-Yeni fotoğraf/tarih/kimlik sahteciliği henüz uygulanmadı. Son rapor:
-[PAPER_INSPECTION_UPDATE.md](PAPER_INSPECTION_UPDATE.md).
+Kâğıt dilimi raporu: [PAPER_INSPECTION_UPDATE.md](PAPER_INSPECTION_UPDATE.md).
+
+## Belge karşılaştırması diliminin güncel sözleşmesi
+
+[Yeni rapor](EVIDENCE_REVIEW_UPDATE.md). F5 eski sekiz ve yeni sekiz vakayı
+birleştirir; Esc → Belge karşılaştırma çalışma günü veya
+`ration_review_day.tscn` yeni vakalarla başlar. Yeni müşteriyle gelen kimlik,
+ayrı ön/arka yüzlü fiziksel nesnedir. E ile al, Q ile masadan ayrıl, F ile incele.
+İki belge eldeyken C aynı nesneler arasında geçer, önceki pozları geri getirir.
+Kitapçık F incelemede Tab ile iki sabit arka rehber sayfası arasında geçer.
+
+Tarih alt baskısı, fotoğraf kenarını geçen mührün devamı, kimlik adı/numarası/
+portresi ve kupon seri numarası basılı alanlardan karşılaştırılır. RationEvidence
+bu alanları denetler; görünmeyen forged bayrağı ekleme. Portre çizimi ve kanıt
+kuralı aynı portrait_key normalleştirmesini paylaşır. Yıpranma, yapışkan, kalınlık
+ve soluk mürekkep suç değildir. İstenen kuponda önceki WYDANO izi varsa yeniden
+ürün verilmez; başka sahtecilik yoksa ret seçilir, karne alıkonulmaz. Oyuncunun
+yanlış damga basması engellenmez; denetim işlem tamamlandıktan sonra kaydolur.
+Kimlik iade/alıkoyma işleminde sahibine döner; sonraki müşteriye taşınmaz.

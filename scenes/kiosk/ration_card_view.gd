@@ -31,6 +31,7 @@ var _paper_profile: Dictionary = {}
 var _print_seed: int = 1982
 const StampInk: GDScript = preload("res://scenes/kiosk/stamp_impression_renderer.gd")
 const StockProfile: GDScript = preload("res://scenes/kiosk/paper_stock_profile.gd")
+const PortraitInk: GDScript = preload("res://scenes/kiosk/document_portrait.gd")
 const SERIF: Font = preload("res://assets/fonts/LiberationSerif-Regular.ttf")
 const SERIF_BOLD: Font = preload("res://assets/fonts/LiberationSerif-Bold.ttf")
 const SERIF_ITALIC: Font = preload("res://assets/fonts/LiberationSerif-Italic.ttf")
@@ -311,7 +312,7 @@ func _draw_front(spec: Dictionary) -> void:
 	_text(Vector2(30, 177), "NUMER EWIDENCYJNY  /  SERİ", 8, FADED_INK)
 	_text(Vector2(263, 177), "MIESIĄC  /  GEÇERLİ AY", 8, FADED_INK)
 	_typed(Vector2(30, 199), str(card.get("serial", "")), 19)
-	_typed(Vector2(263, 199), str(card.get("month", "")), 18)
+	_draw_month_field(Vector2(263, 199))
 	draw_line(Vector2(30, 206), Vector2(434, 206), Color(tint, 0.36), 0.5)
 	_text(Vector2(30, 224), "PRZYDZIAŁ MIĘSA / ET HAKKI", 9, INK)
 	_text(Vector2(30, 240), "Norma miesięczna; wydanie po odłączeniu odcinka.", 8, FADED_INK, SERIF_ITALIC)
@@ -339,7 +340,7 @@ func _draw_back(spec: Dictionary) -> void:
 		# Reverse adhesive is beneath the original typing. It must not erase the
 		# month simply because that field crosses the repaired sheet position.
 		_draw_quota_repair(true)
-	_text(Vector2(30, 95), "POTWIERDZENIE ZAKŁADU PRACY LUB INSTYTUCJI", 11, tint.darkened(0.6), SERIF_BOLD)
+	_text(Vector2(30, 95), "POTWIERDZENIE INSTYTUCJI", 11, tint.darkened(0.6), SERIF_BOLD)
 	_text(Vector2(30, 115), "KOD INSTYTUCJI / KURUM KODU", 8, FADED_INK)
 	_typed(Vector2(30, 149), str(card.get("institution", "")), 29)
 	draw_line(Vector2(30, 155), Vector2(391, 155), Color(tint, 0.35), 0.6)
@@ -349,6 +350,11 @@ func _draw_back(spec: Dictionary) -> void:
 	_draw_hand_signature(Rect2(281, 177, 124, 24))
 	_text(Vector2(30, 217), "MIESIĄC  /  DÖNEM", 8, FADED_INK)
 	_typed(Vector2(163, 219), str(card.get("month", "")), 15)
+	_draw_date_reverse_scuff()
+	if card.has("identity_number"):
+		_text(Vector2(30, 237), "NR TOŻSAMOŚCI / KİMLİK:  %s" % str(card.get("identity_number", "")), 10, INK, TYPEWRITER)
+	if card.has("portrait_variant"):
+		_draw_portrait_attachment(tint)
 	var seal_at: Vector2 = Vector2(520, 166)
 	_draw_rosette(seal_at + Vector2(-0.5, 0.5), 53, Color(0.33, 0.29, 0.21, 0.13))
 	_draw_rosette(seal_at + Vector2(0.5, -0.5), 53, Color(0.98, 0.94, 0.81, 0.34))
@@ -364,15 +370,111 @@ func _draw_back(spec: Dictionary) -> void:
 
 func _draw_institution_seal(at: Vector2) -> void:
 	var ink: Color = Color("66506a")
+	var variation: Dictionary = _evidence_part("ink_variation")
+	var density: float = clampf(float(variation.get("density", 1.0)), 0.25, 1.15)
+	var unevenness: float = clampf(float(variation.get("unevenness", 0.0)), 0.0, 1.0)
 	for i: int in 54:
 		var angle: float = float(i) / 54.0 * TAU
 		if i not in [5, 16, 29, 42]:
-			draw_arc(at, 44, angle, angle + 0.099, 5, Color(ink, 0.58 + float(i % 4) * 0.08), 1.55, true)
-	draw_arc(at, 39.5, 0, TAU, 80, Color(ink, 0.59), 0.75, true)
-	_center_text(at + Vector2(0, -19), "WARSZAWA · WOLA", 8, Color(ink, 0.79), SERIF_BOLD)
-	_center_text(at + Vector2(0, 6), str(card.get("institution", "")), 25, Color(ink, 0.83), SERIF_BOLD)
-	draw_line(at + Vector2(-25, 12), at + Vector2(25, 12), Color(ink, 0.63), 0.65)
-	_center_text(at + Vector2(0, 24), "ZATWIERDZONO", 7, Color(ink, 0.72))
+			var contact_density: float = 1.0 - unevenness * (0.5 + 0.5 * sin(angle * 3.0 + 0.7)) * 0.62
+			draw_arc(at, 44, angle, angle + 0.099, 5, Color(ink, (0.58 + float(i % 4) * 0.08) * density * contact_density), 1.55, true)
+	draw_arc(at, 39.5, 0, TAU, 80, Color(ink, 0.59 * density), 0.75, true)
+	_center_text(at + Vector2(0, -19), "WARSZAWA · WOLA", 8, Color(ink, 0.79 * density), SERIF_BOLD)
+	_center_text(at + Vector2(0, 6), str(card.get("institution", "")), 25, Color(ink, 0.83 * density), SERIF_BOLD)
+	draw_line(at + Vector2(-25, 12), at + Vector2(25, 12), Color(ink, 0.63 * density), 0.65)
+	_center_text(at + Vector2(0, 24), "ZATWIERDZONO", 7, Color(ink, 0.72 * density))
+
+
+func _evidence_part(section: String) -> Dictionary:
+	var evidence: Variant = card.get("evidence", {})
+	if not evidence is Dictionary:
+		return {}
+	var part: Variant = evidence.get(section, {})
+	return part if part is Dictionary else {}
+
+
+func _draw_month_field(at: Vector2) -> void:
+	var evidence: Dictionary = _evidence_part("date")
+	if evidence.is_empty():
+		_typed(at, str(card.get("month", "")), 18)
+		return
+	var abrasion: float = clampf(float(evidence.get("abrasion", 0.0)), 0.0, 1.0)
+	var underprint: String = str(evidence.get("underprint_month", ""))
+	if abrasion <= 0 and (underprint.is_empty() or underprint == str(card.get("month", ""))):
+		_typed(at, str(card.get("month", "")), 18)
+		return
+	var patch: Rect2 = Rect2(at + Vector2(-3, -17), Vector2(95, 21))
+	# Scraping exposes the original stock and short fibres. Ordinary wear can
+	# produce the same abrasion: only comparing readable dates establishes a
+	# contradiction, never the brightness of the paper itself.
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed + 7813
+	for i: int in 4:
+		draw_rect(patch.grow(-float(i) * 0.7), Color(0.98, 0.96, 0.87, abrasion * 0.10))
+	if not underprint.is_empty():
+		# Abrasion changes fibres, never whether a recorded old date is visible.
+		# This also keeps author-created zero-abrasion alterations inspectable.
+		var density: float = lerpf(0.24, 0.46, abrasion)
+		_text(at + Vector2(-0.9, 4.5), underprint, 18, Color(0.30, 0.27, 0.23, density), TYPEWRITER)
+	for i: int in 57:
+		var fibre: Vector2 = patch.position + Vector2(rng.randf_range(0, patch.size.x), rng.randf_range(1, patch.size.y - 1))
+		var length: float = rng.randf_range(1.5, 5.0)
+		draw_line(fibre, fibre + Vector2(length, rng.randf_range(-0.6, 0.6)), Color(0.99, 0.98, 0.91, abrasion * 0.68), 0.55, true)
+		if i % 4 == 0:
+			draw_line(fibre + Vector2(0, 0.6), fibre + Vector2(length * 0.65, 0.9), Color(0.38, 0.32, 0.24, abrasion * 0.20), 0.35, true)
+	# The current entry sits above the rubbed original; its baseline and type
+	# size reveal that two impressions were made without a verdict annotation.
+	_text(at + Vector2(0.4, -3.5), str(card.get("month", "")), 19, Color(INK, 0.89), TYPEWRITER)
+
+
+func _draw_date_reverse_scuff() -> void:
+	var evidence: Dictionary = _evidence_part("date")
+	var abrasion: float = clampf(float(evidence.get("abrasion", 0.0)), 0.0, 1.0)
+	if abrasion <= 0.0:
+		return
+	# These fibres are behind the FRONT month, not the separately printed
+	# reverse month. Mirroring preserves the location on the physical sheet.
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed + 7813
+	for i: int in 31:
+		var at: Vector2 = Vector2(260 + rng.randf_range(0, 95), 182 + rng.randf_range(1, 20))
+		draw_line(_sheet_point(at), _sheet_point(at + Vector2(rng.randf_range(1.5, 4.0), 0.2)), Color(0.99, 0.98, 0.91, abrasion * 0.22), 0.45, true)
+
+
+func _draw_portrait_attachment(tint: Color) -> void:
+	var photo: Rect2 = Rect2(332, 95, 60, 64)
+	var evidence: Dictionary = _evidence_part("portrait")
+	_text(Vector2(332, 89), "WIZERUNEK / FOTO", 6, FADED_INK)
+	if bool(evidence.get("pasted", false)):
+		# A glued photograph is also found on authentic cards. Its paper edge is
+		# material evidence; the stamp crossing it is what must be compared.
+		draw_rect(photo.grow(1.8), Color(0.48, 0.39, 0.24, 0.15))
+		draw_rect(Rect2(photo.position + Vector2(0.8, 1.1), photo.size + Vector2(0.8, 0.4)), Color(0.26, 0.23, 0.19, 0.21))
+	PortraitInk.draw(self, photo, int(card.get("portrait_variant", 0)), false)
+	draw_rect(photo, Color(tint.darkened(0.45), 0.52), false, 0.65)
+	var values: Variant = evidence.get("seal_offset", [0.0, 0.0])
+	var offset: Vector2 = Vector2.ZERO
+	if values is Array and values.size() >= 2:
+		offset = Vector2(float(values[0]), float(values[1]))
+	var variation: Dictionary = _evidence_part("ink_variation")
+	var density: float = clampf(float(variation.get("density", 1.0)), 0.25, 1.15)
+	var ink: Color = Color(0.36, 0.29, 0.40, 0.76 * density)
+	var centre: Vector2 = Vector2(photo.end.x, 128)
+	for radius: float in [19.5, 16.8]:
+		# The desk-side stamp half is fixed. Its photograph-side half moves
+		# with the pasted photograph; [0,0] joins continuously at the border.
+		draw_arc(centre, radius, -PI * 0.5, PI * 0.5, 40, ink, 0.85, true)
+		for i: int in 40:
+			var a: Vector2 = centre + offset + Vector2.from_angle(PI * 0.5 + PI * float(i) / 40.0) * radius
+			var b: Vector2 = centre + offset + Vector2.from_angle(PI * 0.5 + PI * float(i + 1) / 40.0) * radius
+			if photo.has_point((a + b) * 0.5):
+				draw_line(a.clamp(photo.position, photo.end), b.clamp(photo.position, photo.end), ink, 0.85, true)
+	_text(centre + Vector2(-19, 3) + offset, "PZ", 8, ink, SERIF_BOLD)
+	_text(centre + Vector2(1, 3), "81", 8, ink, SERIF_BOLD)
+	var left: Vector2 = (centre + Vector2(-12, 7) + offset).clamp(photo.position, photo.end)
+	var join: Vector2 = (centre + Vector2(0, 7) + offset).clamp(photo.position, photo.end)
+	draw_line(left, join, ink, 0.65, true)
+	draw_line(centre + Vector2(0, 7), centre + Vector2(13, 7), ink, 0.65, true)
 
 
 func _draw_paper(tint: Color) -> void:
@@ -602,6 +704,8 @@ func _draw_folds() -> void:
 
 func _draw_coupon(index: int, reverse: bool, tint: Color) -> void:
 	var item: String = RationDeskRules.PRODUCT_ORDER[index]
+	var coupon_evidence: Dictionary = _coupon_evidence(item)
+	var coupon_serial: String = str(coupon_evidence.get("serial", card.get("serial", "")))
 	var rect: Rect2 = coupon_rect(index)
 	if reverse:
 		rect.position.x = PAPER_SIZE.x - rect.end.x
@@ -610,11 +714,13 @@ func _draw_coupon(index: int, reverse: bool, tint: Color) -> void:
 		if render_tools:
 			draw_rect(rect, Color("354844"))
 		return
+	if bool(coupon_evidence.get("reattached", false)):
+		_draw_coupon_join(index, reverse)
 	_dashed_rect(rect, Color(tint.darkened(0.2), 0.55), 3)
 	if reverse:
 		_draw_rosette(rect.get_center(), 28, Color(tint.darkened(0.12), 0.16))
 		_center_text(rect.position + Vector2(90, 20), "PZ–81 / ODCINEK %02d" % (index + 1), 9, FADED_INK)
-		_center_text(rect.position + Vector2(90, 48), str(card.get("serial", "")), 15, INK, TYPEWRITER)
+		_center_text(rect.position + Vector2(90, 48), coupon_serial, 15, INK, TYPEWRITER)
 		_center_text(rect.position + Vector2(90, 69), str(card.get("month", "")), 11, FADED_INK, TYPEWRITER)
 		_center_text(rect.position + Vector2(90, 82), "WARSZAWSKA SPÓŁDZIELNIA ZAOPATRZENIA", 5, FADED_INK)
 	else:
@@ -622,8 +728,64 @@ func _draw_coupon(index: int, reverse: bool, tint: Color) -> void:
 		_text(rect.position + Vector2(11, 20), goods.get(item, item), 14, tint.darkened(0.6), SERIF_BOLD)
 		_text(rect.position + Vector2(121, 18), "%02d / 82" % (index + 1), 7, FADED_INK, TYPEWRITER)
 		_typed(rect.position + Vector2(11, 51), _document_amount(item, int(card.get(item, 0))), 23)
-		_text(rect.position + Vector2(11, 67), "%s / %02d" % [str(card.get("serial", "")), index + 1], 8, FADED_INK, TYPEWRITER)
+		_text(rect.position + Vector2(11, 67), "%s / %02d" % [coupon_serial, index + 1], 8, FADED_INK, TYPEWRITER)
 		_text(rect.position + Vector2(11, 81), "Ważny z kartą macierzystą", 7, FADED_INK, SERIF_ITALIC)
+	var previous_issue: String = str(coupon_evidence.get("previous_issue", ""))
+	if not previous_issue.is_empty():
+		_draw_prior_issue(rect, previous_issue, reverse)
+
+
+func _coupon_evidence(item: String) -> Dictionary:
+	var coupons: Dictionary = _evidence_part("coupons")
+	var evidence: Variant = coupons.get(item, {})
+	return evidence if evidence is Dictionary else {}
+
+
+func _draw_coupon_join(index: int, reverse: bool) -> void:
+	# Adhesive penetrates the same boundary on both faces. This is printed
+	# material evidence; real incisions and later detachment still belong to
+	# the physical mesh and are not created, repaired or consumed here.
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = _print_seed + index * 391 + 113
+	var rect: Rect2 = coupon_rect(index)
+	if reverse:
+		draw_set_transform(Vector2(PAPER_SIZE.x, 0), 0, Vector2(-1, 1))
+	var glue: Color = Color(0.42, 0.33, 0.19, 0.16 if not reverse else 0.10)
+	for i: int in 4:
+		var from: Vector2 = rect.position
+		var to: Vector2 = rect.position
+		match i:
+			0:
+				to.x = rect.end.x
+			1:
+				from.x = rect.end.x
+				to = rect.end
+			2:
+				from = rect.end
+				to.y = rect.end.y
+			3:
+				from.y = rect.end.y
+		draw_line(from, to, glue, 3.4, true)
+		for step: int in 24:
+			var t: float = (float(step) + rng.randf_range(0.15, 0.85)) / 24.0
+			var at: Vector2 = from.lerp(to, t)
+			var normal: Vector2 = (to - from).normalized().orthogonal()
+			var fibre: Vector2 = normal * rng.randf_range(1.1, 3.1)
+			draw_line(at - fibre * 0.5, at + fibre, Color(0.99, 0.98, 0.90, 0.65 if not reverse else 0.34), 0.65, true)
+	draw_set_transform(Vector2.ZERO)
+
+
+func _draw_prior_issue(rect: Rect2, date: String, reverse: bool) -> void:
+	# The earlier shop's ink is on the coupon itself. It follows the coupon
+	# texture onto detached fragments; it is never a floating HUD warning.
+	var angle: float = -0.13 if not reverse else 0.13
+	draw_set_transform(rect.get_center() + Vector2(0, 1), angle)
+	var ink: Color = Color(0.36, 0.26, 0.39, 0.66)
+	draw_rect(Rect2(-63, -20, 126, 40), Color(ink, 0.48), false, 1.2)
+	draw_rect(Rect2(-60, -17, 120, 34), Color(ink, 0.36), false, 0.55)
+	_center_text(Vector2(0, -2), "WYDANO / WYD. 081", 10, ink, SERIF_BOLD)
+	_center_text(Vector2(0, 12), date, 11, ink, TYPEWRITER)
+	draw_set_transform(Vector2.ZERO)
 
 
 func _draw_rosette(at: Vector2, radius: float, tint: Color) -> void:

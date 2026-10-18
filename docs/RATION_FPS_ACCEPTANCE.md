@@ -1,5 +1,36 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## 18 Ekim 2026 — fiziksel kimlik ve yeni sahtecilik vakaları
+
+[Kontroller, vaka anahtarı, normal oyun kaydı ve görüntüler](EVIDENCE_REVIEW_UPDATE.md).
+
+- **251 birim testi geçti, 0 başarısız.** Yeni 14 kanıt testi; değiştirilen ay,
+  fotoğraf mührü, kimlik adı/numarası/portresi, kupon serisi ve önceki teslimi
+  denetler. Yıpranma ve soluk mürekkep suç sayılmaz; aynı görünen portreler
+  farklı ham kimlik değeri yüzünden gizlice suç sayılmaz.
+- Headless odak koşusunda **16 müşteri** tamamlandı; para/stok değişmedi.
+  Güncel fiziksel kimlik/F/C/Tab kontrolü; iki belgenin yüz/zoom hafızası,
+  önceki tutuşa tam dönüş, Q/WASD/odak/restart temizliği, eski teslim tween'inin
+  yeniden canlanmaması ve eldeki kimliğin ışınlanmadan geri verilmesini sınadı.
+- **Normal oyun penceresinde sekiz yeni vaka doğru tamamlandı.** Selftest ve
+  fare override olmadan E/F/C/Tab, gerçek imleçle damga, kupon çevresini kesme
+  ve iade/alıkoyma geçti. 109 kareden hareketli WebP üretildi.
+- Bu pencere kontrolü, damga saplarının boş geri bırakma noktasını perdelediğini
+  yakaladı. Aralık 19 cm oldu; bütün damgalar için gerçek fizik ışınıyla alıp
+  yerine bırakma kontrolü eklendi. Kimliğin ilk kadrajda dört köşesi de sınanır.
+- Eski tam satış sahnesinin güncel headless kesinti kontrolleri ve **sekiz
+  müşterilik** koşusu geçti; inceleme sahnesine ürün zorunluluğu eklenmedi.
+- Grafik kontrolleri 1600×1000, GL Compatibility/llvmpipe ve Dummy sesle yapıldı.
+  Son normal koşuda motor/GDScript hatası yok; V-Sync sürücü uyarısı var.
+  İnsan oyuncu eğlence testi, gerçek sesle dinleme ve hedef GPU performansı
+  otomatik olarak doğrulanmış sayılmaz. Portre ve el modelleri prototiptir.
+
+- **Pencereli birleşik 16 müşteri koşusu da geçti.** Kimlik/C/Tab/boş damga
+  yerleri ve önceki kâğıt/ışık/büyüteç/ölçülü kesim kontrolleri birlikte çalıştı.
+  Son pencereli koşuda motor/GDScript hatası yok; yalnız V-Sync uyarısı var.
+
+5–9. dilimler [sıralı listede](CARD_INTERACTION_BACKLOG.md) ayrı kalan işlerdir.
+
 ## 18 Ekim 2026 — kâğıt çeşitleri ve geçirgen ışık
 
 [Normal oyun kaydı, kart örnekleri ve rapor](PAPER_INSPECTION_UPDATE.md).

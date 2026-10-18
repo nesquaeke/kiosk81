@@ -1,0 +1,507 @@
+{
+  "type": "ration_review_case",
+  "records": [
+    {
+      "id": "rc_09",
+      "customer": "Irena Borkowska",
+      "line": "Kimliğimi de getirdim. Bir sabun, lütfen.",
+      "request": {
+        "item": "soap",
+        "amount": 1
+      },
+      "identity": {
+        "holder": "Irena Borkowska",
+        "number": "AB 450101",
+        "portrait_variant": 0
+      },
+      "card": {
+        "holder": "Irena Borkowska",
+        "class": "worker",
+        "serial": "W-14501",
+        "month": "1982-02",
+        "institution": "F14",
+        "seal": true,
+        "meat": 750,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "medium",
+        "identity_number": "AB 450101",
+        "portrait_variant": 0,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "W-14501",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "W-14501",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "W-14501",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_10",
+      "customer": "Tomasz Król",
+      "line": "Bu ayın şeker hakkını kullanacağım.",
+      "request": {
+        "item": "sugar",
+        "amount": 1000
+      },
+      "identity": {
+        "holder": "Tomasz Król",
+        "number": "AC 230176",
+        "portrait_variant": 1
+      },
+      "card": {
+        "holder": "Tomasz Król",
+        "class": "teacher",
+        "serial": "T-03411",
+        "month": "1982-02",
+        "institution": "S03",
+        "seal": true,
+        "meat": 500,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "thin",
+        "identity_number": "AC 230176",
+        "portrait_variant": 1,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-01",
+            "abrasion": 0.82
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "T-03411",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "T-03411",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "T-03411",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_11",
+      "customer": "Barbara Sikora",
+      "line": "Fotoğrafım geçen yıl yapıştırıldı. Bir sabun istiyorum.",
+      "request": {
+        "item": "soap",
+        "amount": 1
+      },
+      "identity": {
+        "holder": "Barbara Sikora",
+        "number": "AE 590117",
+        "portrait_variant": 2
+      },
+      "card": {
+        "holder": "Barbara Sikora",
+        "class": "retired",
+        "serial": "E-02302",
+        "month": "1982-02",
+        "institution": "E02",
+        "seal": true,
+        "meat": 250,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "thick",
+        "identity_number": "AE 590117",
+        "portrait_variant": 2,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              9,
+              -4
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "E-02302",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "E-02302",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "E-02302",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_12",
+      "customer": "Piotr Dudek",
+      "line": "Kartla kimlik burada. Şeker alacağım.",
+      "request": {
+        "item": "sugar",
+        "amount": 1000
+      },
+      "identity": {
+        "holder": "Piotr Duda",
+        "number": "AD 320668",
+        "portrait_variant": 3
+      },
+      "card": {
+        "holder": "Piotr Dudek",
+        "class": "worker",
+        "serial": "W-14512",
+        "month": "1982-02",
+        "institution": "F14",
+        "seal": true,
+        "meat": 750,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "medium",
+        "identity_number": "AD 320660",
+        "portrait_variant": 3,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "W-14512",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "W-14512",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "W-14512",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_13",
+      "customer": "Alicja Pawlak",
+      "line": "Et kuponum hâlâ yerinde. Hakkımı kullanacağım.",
+      "request": {
+        "item": "meat",
+        "amount": 500
+      },
+      "identity": {
+        "holder": "Alicja Pawlak",
+        "number": "AF 270894",
+        "portrait_variant": 4
+      },
+      "card": {
+        "holder": "Alicja Pawlak",
+        "class": "teacher",
+        "serial": "T-03426",
+        "month": "1982-02",
+        "institution": "S03",
+        "seal": true,
+        "meat": 500,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "thin",
+        "identity_number": "AF 270894",
+        "portrait_variant": 4,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "T-03106",
+              "previous_issue": "",
+              "reattached": true
+            },
+            "sugar": {
+              "serial": "T-03426",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "T-03426",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_14",
+      "customer": "Stefan Wrona",
+      "line": "Şeker kuponunu tekrar kontrol eder misiniz?",
+      "request": {
+        "item": "sugar",
+        "amount": 1000
+      },
+      "identity": {
+        "holder": "Stefan Wrona",
+        "number": "AG 184306",
+        "portrait_variant": 5
+      },
+      "card": {
+        "holder": "Stefan Wrona",
+        "class": "retired",
+        "serial": "E-02319",
+        "month": "1982-02",
+        "institution": "E02",
+        "seal": true,
+        "meat": 250,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "thick",
+        "identity_number": "AG 184306",
+        "portrait_variant": 5,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "E-02319",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "E-02319",
+              "previous_issue": "1982-02-08"
+            },
+            "soap": {
+              "serial": "E-02319",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "rc_15",
+      "customer": "Maria Górska",
+      "line": "Yağmurda ıslandı, sonra kuruttum. Bir sabun, lütfen.",
+      "request": {
+        "item": "soap",
+        "amount": 1
+      },
+      "identity": {
+        "holder": "Maria Górska",
+        "number": "AH 603421",
+        "portrait_variant": 6
+      },
+      "card": {
+        "holder": "Maria Górska",
+        "class": "teacher",
+        "serial": "T-03438",
+        "month": "1982-02",
+        "institution": "S03",
+        "seal": true,
+        "meat": 500,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": true,
+        "patch": true,
+        "paper_stock": "thin",
+        "identity_number": "AH 603421",
+        "portrait_variant": 6,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0.62
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "T-03438",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "T-03438",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "T-03438",
+              "previous_issue": ""
+            }
+          },
+          "ink_variation": {
+            "density": 0.55,
+            "unevenness": 0.72
+          }
+        },
+        "paper_wear": 0.91
+      }
+    },
+    {
+      "id": "rc_16",
+      "customer": "Andrzej Kaczmarek",
+      "line": "Bir sabun alacağım. Kimliğim de burada.",
+      "request": {
+        "item": "soap",
+        "amount": 1
+      },
+      "identity": {
+        "holder": "Andrzej Kaczmarek",
+        "number": "AK 741209",
+        "portrait_variant": 2
+      },
+      "card": {
+        "holder": "Andrzej Kaczmarek",
+        "class": "worker",
+        "serial": "W-14537",
+        "month": "1982-02",
+        "institution": "F14",
+        "seal": true,
+        "meat": 750,
+        "sugar": 1000,
+        "soap": 1,
+        "available": [
+          "meat",
+          "sugar",
+          "soap"
+        ],
+        "worn": false,
+        "patch": false,
+        "paper_stock": "medium",
+        "identity_number": "AK 741209",
+        "portrait_variant": 7,
+        "evidence": {
+          "date": {
+            "underprint_month": "1982-02",
+            "abrasion": 0
+          },
+          "portrait": {
+            "seal_offset": [
+              0,
+              0
+            ],
+            "pasted": true
+          },
+          "coupons": {
+            "meat": {
+              "serial": "W-14537",
+              "previous_issue": ""
+            },
+            "sugar": {
+              "serial": "W-14537",
+              "previous_issue": ""
+            },
+            "soap": {
+              "serial": "W-14537",
+              "previous_issue": ""
+            }
+          }
+        }
+      }
+    }
+  ]
+}
