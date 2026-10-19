@@ -3,6 +3,8 @@ extends Node
 ## Operates on the existing world object. No copy, inventory icon or card GUI.
 ## The owner restores hands, movement and pointer; this node restores exact pose.
 
+const NEAR_MARGIN: float = 0.015
+
 var active: bool = false
 var dragging: bool = false
 var object: Node3D
@@ -15,6 +17,7 @@ var _distance: float = 0.5
 var _fit_distance: float = 0.5
 var _zoom: float = 1.0
 var _radius: float = 0.22
+var _dimensions: Vector3 = Vector3.ONE
 var _center: Vector3 = Vector3.ZERO
 var _turn: Tween
 var _light: OmniLight3D
@@ -31,6 +34,7 @@ func open(target: Node3D, camera: Camera3D, readable: Quaternion, dimensions: Ve
 	_rest_attributes = camera.attributes
 	_base = readable
 	_center = center
+	_dimensions = dimensions.abs()
 	_radius = dimensions.length() * 0.5
 	var aspect: float = maxf(0.35, camera.get_viewport().get_visible_rect().size.aspect())
 	var half_fov: float = atan(tan(deg_to_rad(camera.fov * 0.5)) * minf(1.0, aspect))
@@ -87,7 +91,6 @@ func zoom(step: float) -> void:
 	if not active: return
 	_stop_turn()
 	_zoom = clampf(_zoom * pow(1.12, step), 0.60, 1.60)
-	_distance = maxf(_fit_distance * _zoom, _radius + _camera.near + 0.06)
 	_update_position()
 
 
@@ -101,6 +104,16 @@ func reset_pose() -> void:
 	_zoom = 1.0
 	_distance = _fit_distance
 	_move_to(_base, 0.20)
+
+
+func capture_view() -> Dictionary:
+	return {"rotation": object.quaternion, "zoom": _zoom} if active else {}
+
+
+func restore_view(view: Dictionary) -> void:
+	if not active or view.is_empty(): return
+	_zoom = clampf(float(view.get("zoom", 1.0)), 0.60, 1.60)
+	_move_to(view.get("rotation", _base), 0.20)
 
 
 func toggle_backlight() -> void:
@@ -136,17 +149,57 @@ func close() -> void:
 
 
 func _update_position() -> void:
+	_distance = maxf(_fit_distance * _zoom, _pose_clearance())
 	object.position = Vector3(0, 0.015, -_distance) - object.basis * _center
 	if _attributes != null: _attributes.dof_blur_far_distance = _distance + _radius + 0.05
 
 
 func _move_to(orientation: Quaternion, duration: float) -> void:
 	_stop_turn()
-	var position: Vector3 = Vector3(0, 0.015, -_distance) - Basis(orientation) * _center
-	_turn = create_tween().set_parallel(true)
-	_turn.tween_property(object, "position", position, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_turn.tween_property(object, "quaternion", orientation, duration).set_trans(Tween.TRANS_SINE)
+	var from_rotation: Quaternion = object.quaternion
+	var from_center: Vector3 = object.position + object.basis * _center
+	_turn = create_tween()
+	# Position and orientation cannot be independent tracks: a flat sheet can be
+	# closer than its edge-on depth permits halfway through the same flip.
+	_turn.tween_method(_turn_pose.bind(from_rotation, orientation.normalized(), from_center), 0.0, 1.0, duration)
+
+
+func _turn_pose(progress: float, from_rotation: Quaternion, to_rotation: Quaternion, from_center: Vector3) -> void:
+	if not active: return
+	var rotation_weight: float = (1.0 - cos(progress * PI)) * 0.5
+	object.quaternion = from_rotation.slerp(to_rotation, rotation_weight).normalized()
+	var clearance: float = _pose_clearance()
+	var requested: float = maxf(_fit_distance * _zoom, clearance)
+	var position_weight: float = 1.0 - pow(1.0 - progress, 3.0)
+	var optical_center: Vector3 = from_center.lerp(Vector3(0, 0.015, -requested), position_weight)
+	optical_center.z = minf(optical_center.z, -clearance)
+	_distance = -optical_center.z
+	object.position = optical_center - object.basis * _center
 	if _attributes != null: _attributes.dof_blur_far_distance = _distance + _radius + 0.05
+
+
+func _pose_clearance() -> float:
+	# Actual scale is retained by Node3D when its quaternion changes. Centering
+	# uses the same full basis above, including an off-origin stamp head.
+	var half: Vector3 = _dimensions * 0.5
+	var depth: float = absf(object.basis.x.z) * half.x + absf(object.basis.y.z) * half.y + absf(object.basis.z.z) * half.z
+	return _camera.near + NEAR_MARGIN + depth
+
+
+static func clearance_distance(dimensions: Vector3, orientation: Quaternion, near: float, margin: float = NEAR_MARGIN, center: Vector3 = Vector3.ZERO) -> float:
+	# Eight actual box corners are measured relative to their optical center.
+	# The center cancels after correct placement, rather than adding the object's
+	# origin offset to the needed clearance (which prevented small-paper zoom).
+	var basis: Basis = Basis(orientation.normalized())
+	var rotated_center: Vector3 = basis * center
+	var half: Vector3 = dimensions.abs() * 0.5
+	var closest: float = -INF
+	for x: float in [-1.0, 1.0]:
+		for y: float in [-1.0, 1.0]:
+			for z: float in [-1.0, 1.0]:
+				var corner: Vector3 = center + half * Vector3(x, y, z)
+				closest = maxf(closest, (basis * corner - rotated_center).z)
+	return maxf(0.0, near) + maxf(0.0, margin) + closest
 
 
 func _stop_turn() -> void:

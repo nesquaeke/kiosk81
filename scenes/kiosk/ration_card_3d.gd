@@ -215,16 +215,17 @@ func incision_openness_at(pixel: Vector2) -> float:
 	return _incision_mask.get_pixel(point.x, point.y).r
 
 
-func create_coupon(index: int) -> Node3D:
+func create_coupon(index: int) -> CouponFragment3D:
 	# A snapshot of this document's original ink; the parent card may already
 	# have been refreshed with the cut missing. No state or entitlement mutation.
 	assert(index >= 0 and index < 3)
-	var piece: Node3D = Node3D.new()
+	var piece: CouponFragment3D = CouponFragment3D.new()
 	piece.name = "DetachedCoupon_%d" % index
 	var rect: Rect2 = RationCardView.coupon_rect(index)
 	var piece_size: Vector2 = rect.size / RationCardView.PAPER_SIZE * Vector2(WIDTH, HEIGHT)
 	var original: Dictionary = _document.duplicate(true)
 	original["available"] = [RationDeskRules.PRODUCT_ORDER[index]]
+	piece.configure(rect, piece_size, half_thickness * 2.0, original, RationDeskRules.PRODUCT_ORDER[index])
 	var piece_work: Dictionary = _work.duplicate(true)
 	piece_work["cuts"] = []
 	# Detached paper keeps its stock, original ink and its own damage snapshot;

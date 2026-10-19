@@ -38,13 +38,19 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
-[Güncel kâğıt ve ışık incelemesi](docs/PAPER_INSPECTION_UPDATE.md) ·
+[Kontrollü makas ve elle kupon toplama](docs/COUPON_CUTTING_UPDATE.md) ·
+[Belge karşılaştırması ve sekiz vaka](docs/EVIDENCE_REVIEW_UPDATE.md) ·
+[Kâğıt ve ışık incelemesi](docs/PAPER_INSPECTION_UPDATE.md) ·
 [Elde inceleme ve damga](docs/CARD_INSPECTION_UPDATE.md) ·
 [Sıralı geliştirme listesi](docs/CARD_INTERACTION_BACKLOG.md) ·
 [Bağımsız master prompt](docs/RATION_FPS_MASTER_PROMPT.md) ·
 [Etkileşim tasarımı](docs/RATION_DESK_DESIGN.md) ·
 [Tarihli kabul raporu](docs/RATION_FPS_ACCEPTANCE.md).
 Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardadır.
+
+F5 günü önceki sekiz müşteriyi ve ardından sekiz yeni belge vakasını içerir.
+Yeni karşılaştırma vakalarıyla başlamak için **Esc → Belge karşılaştırma çalışma
+günü** seç veya `scenes/kiosk/ration_review_day.tscn` sahnesini **F6** ile aç.
 
 - **WASD / fare / Shift:** pencereye yürü, bak, hızlı yürü.
 - Müşterinin uzattığı karneye **E / tek sol tık**: aynı 3D kartı eline al.
@@ -61,6 +67,13 @@ Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardad�
   Kesikler ve damgalar korunur. İade/alıkoyma için ilgili yere bakıp **E** kullan.
 - Ön/arka yüzdeki ay, sınıf, kurum, hak, mühür ve müdahale izlerini karşılaştır.
   Yıpranmış kâğıt tek başına sahte değildir; sistem cevabı önceden göstermez.
+- Yeni müşteriler karneyle birlikte masaya fiziksel kimlik belgesi bırakır.
+  **E** ile kimliği al, masa görünümünden **Q** ile ayrılıp **F** ile incele.
+  İki belge de elindeyken F incelemede **C**, karne ve kimlik arasında geçer.
+  İsim, numara ve portreyi karşılaştır; kimlik işlem sonunda iade edilir.
+- Kazınmış ayı, fotoğrafın sınırını geçen mührün devamını ve ana karne/kupon
+  seri numaralarını incele. Önceki teslim tarihli `WYDANO` kuponu yeniden
+  verilmez; bu iz tek başına sahte belgeyi alıkoyma gerekçesi değildir.
 - SATIŞ / RET / ALIKOY damgasını **E** ile al. İmleci **SATICI ONAYI / KARAR** alanına götür; geçici baskı önizlemesi yerini/açısını gösterir.
   İlk iki müşterinin hedef yardımı Esc menüsünden kapatılabilir;
   **sol tuş basılı + fare aşağı** ile indir/bastır. Hız, bekleme ve basınç izi
@@ -69,8 +82,16 @@ Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardad�
   baskı kâğıtta kalır fakat işlem kararı kaydetmez.
 - Makası **tık / E** ile al; kamera kesim için yaklaşır. **Sol tuş + sürükleme**
   sırasında bıçaklar görünür biçimde açılıp kapanır; yalnızca kapanırken keser.
+  **Shift** daha ince ilerletir. Keskin köşede uç durur, makas açılıp yeni yöne
+  döner; bu sırada kâğıdı kesmez. Geçici sınır çizgileri bütün mevcut kuponları
+  eşit gösterir; doğru kuponu oyuncu seçer.
   **2 cm kesik, bıraktıktan veya Q'dan sonra da 2 cm hasar olarak kalır.**
   Bir kısa kesik bütün kuponu tüketmez; dört kenarı ayrılınca tek parça kopar.
+- Ayrılan kupon masaya düşer. Makası **G** ile bırak, parçayı **E / tık** ile al.
+  **Q → F** ile aynı parçayı döndürüp yakınlaştırabilir, arkasını görebilirsin.
+  Boş masaya/zemine **G** ile bırakıp tekrar alabilirsin. Kupon kabına bakıp
+  **E / G** ile koy; dosyalama yalnız gerçek temas anında bir kez kaydedilir.
+  Odak modunda onaylı işlem, istenen kuponun kutuya konmasını da gerektirir.
 - Aracı uygun boş yüzeye **G** ile bırak. Karneyi **R** ile alıp müşteriye
   **E** ile iade et veya ALIKOY kararında belge bölmesine koy.
   Odak modunda bu, belge işlemini tamamlar; raftan ürün almak gerekmez.
@@ -79,12 +100,13 @@ Güncel kontroller, hareketli kayıt ve doğrulama sonuçları bağlantılardad�
 Masadaki bez ciltli referans sınıfları, miktarları ve örnek kurum mühürlerini
 birlikte gösterir. **Büyüteci E ile alıp kâğıt üzerinde gezdir**: altındaki gerçek
 3D baskıyı yaklaşık 2,4 kat büyütür. **G** ile bırak; Q ile ayrılınca optik
-render durur. Kitapçığı elde F ile inceleyip sağ tıkla arkasını çevir: resimli kâğıt/filigran/yama rehberi vardır.
+render durur. Kitapçığı elde F ile incele; **Tab** ile resimli kâğıt/filigran/yama
+ve belge/kimlik karşılaştırma rehberleri arasında geç. Sağ tık ön/arka yüzü çevirir.
 Kâğıt iki yüzlü, 0,14 / 0,28 / 0,48 mm stoklarda, elde kalınlığına göre bükülen bir 3D yüzeydir;
 yapıştırılmış kota değişikliğinin yükselen kenarı vardır.
 
-Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar**.
-Bunun ardından onay basılırsa istenen hak ayrıca işlenir. Yanlış kuponu kesmek
+Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar** ve kaba
+konabilir. Bunun ardından onay basılırsa istenen hak ayrıca işlenir. Yanlış kuponu kesmek
 siparişi karşılamaz; tamamlanan incelemenin denetim kaydında hatalı hasar görünür.
 
 Doğrulama komutları:

@@ -13,6 +13,20 @@ const CLOTH_SHADER: Shader = preload("res://assets/shaders/workbench_surface.gds
 @export var valid_month: String = RationDeskRules.MONTH
 var page_viewport: SubViewport
 var evidence_viewport: SubViewport
+var evidence_page: int = 0
+var _evidence_leaf: EvidenceLeaf
+
+
+## Changes only a printed reference page. These fixed examples never read the
+## current encounter, its hidden expected decision, or campaign state.
+func next_evidence_page() -> int:
+	evidence_page = (evidence_page + 1) % 2
+	if is_instance_valid(_evidence_leaf):
+		_evidence_leaf.page = evidence_page
+		_evidence_leaf.queue_redraw()
+	if is_instance_valid(evidence_viewport):
+		evidence_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	return evidence_page
 
 
 func _ready() -> void:
@@ -42,7 +56,9 @@ func _ready() -> void:
 
 func _build_print() -> void:
 	page_viewport = _build_leaf(ReferenceLeaf.new(), "ClassAndIssuer", FRONT_LEAF_POSITION)
-	evidence_viewport = _build_leaf(EvidenceLeaf.new(), "PaperEvidence", BACK_LEAF_POSITION, true)
+	_evidence_leaf = EvidenceLeaf.new()
+	_evidence_leaf.page = evidence_page
+	evidence_viewport = _build_leaf(_evidence_leaf, "PaperEvidence", BACK_LEAF_POSITION, true)
 
 
 func _build_leaf(printing: ReferenceLeaf, title: String, at: Vector3, reverse: bool = false) -> SubViewport:
@@ -149,7 +165,7 @@ class ReferenceLeaf extends Control:
 		_text(Vector2(28, 495), "Przed odłączeniem porównać normę i pieczęć instytucji.", 12, SERIF)
 		_text(Vector2(28, 523), "Zużycie papieru nie unieważnia karty. Nie niszczyć pól ewidencyjnych.", 10, ITALIC, FADED)
 		_text(Vector2(28, 548), "Karşılaştır: sınıf • et hakkı • arka yüz kurum kodu ve mühür.", 10, SERIF, FADED)
-		_text(Vector2(28, 560), "KÂĞIT REHBERİ ARKADA · E al / F incele / sağ tık çevir", 8, MONO, FADED)
+		_text(Vector2(28, 560), "İKİ REHBER SAYFASI ARKADA · F incele / sağ tık çevir / Tab sayfa", 8, MONO, FADED)
 		_rule(565, 0.4)
 		_text(Vector2(28, 582), "PZ–81 / INSTRUKCJA WEWNĘTRZNA       EGZEMPLARZ SŁUŻBOWY", 7, MONO, FADED)
 		_text(Vector2(574, 582), "02 / 82", 7, MONO, FADED)
@@ -205,6 +221,7 @@ class EvidenceLeaf extends ReferenceLeaf:
 	## document. Ordinary wear and stock differences do not establish guilt.
 	const DIAGRAM_INK: Color = Color("71654d")
 	const PALE_INK: Color = Color("b1a381")
+	var page: int = 0
 
 	func _draw() -> void:
 		draw_rect(Rect2(0, 0, 640, 600), Color("e3d9bc"))
@@ -212,9 +229,13 @@ class EvidenceLeaf extends ReferenceLeaf:
 			var point: Vector2 = Vector2(8 + (index * 181) % 625, 5 + (index * 109) % 590)
 			draw_line(point, point + Vector2(1.6, 0.21), Color(0.35, 0.28, 0.14, 0.045), 0.4)
 		_text(Vector2(28, 27), "PZ–81 / PRÓBKI PORÓWNAWCZE", 9, MONO, FADED)
+		if page == 1:
+			_draw_document_guide()
+			return
 		_text(Vector2(28, 56), "PAPIER I NADRUK", 28, BOLD)
 		_text(Vector2(28, 75), "Kâğıdı çevir, ışığa tut ve örnekle karşılaştır.", 13, SERIF, FADED)
 		_rule(88, 0.7)
+		_page_tabs()
 		_watermark_example()
 		_text(Vector2(221, 118), "01  IŞIKTAN GEÇEN DESEN", 16, BOLD)
 		_lines(Vector2(221, 142), [
@@ -245,9 +266,128 @@ class EvidenceLeaf extends ReferenceLeaf:
 			"değildir. Tarih, kota ve kurumla birlikte incele."
 		])
 		_rule(542, 0.5)
-		_text(Vector2(28, 561), "Bu sayfa yöntem gösterir; elindeki belge hakkında karar vermez.", 12, ITALIC)
-		_text(Vector2(28, 583), "F: YAKIN İNCELEME   T: IŞIĞA TUT   SAĞ TIK: ÖN / ARKA", 8, MONO, FADED)
-		_text(Vector2(568, 583), "02 / 82", 7, MONO, FADED)
+		_guide_footer()
+
+
+	func _page_tabs() -> void:
+		# These are printed index tabs on the physical leaf, not clickable UI.
+		var names: Array[String] = ["01 · KÂĞIT VE BASKI", "02 · BELGE KONTROLÜ"]
+		for index: int in 2:
+			var area: Rect2 = Rect2(28 + index * 190, 92, 182, 13)
+			draw_rect(area, Color(DIAGRAM_INK, 0.13 if page == index else 0.035))
+			draw_line(area.position + Vector2(0, 12), area.position + Vector2(area.size.x, 12), DIAGRAM_INK, 0.85 if page == index else 0.25)
+			_text(area.position + Vector2(5, 10), names[index], 8, MONO, INK if page == index else FADED)
+
+
+	func _guide_footer() -> void:
+		_text(Vector2(28, 561), "Sabit örneklerdir; elindeki belge hakkında otomatik karar vermez.", 11, ITALIC)
+		_text(Vector2(28, 583), "Kitapçıkta Tab: rehber sayfası · Sağ tık: ön / arka", 9, MONO, FADED)
+		_text(Vector2(568, 583), "%02d / 02" % (page + 1), 7, MONO, FADED)
+
+
+	func _draw_document_guide() -> void:
+		_text(Vector2(28, 56), "DOKUMENT I ODCINKI", 28, BOLD)
+		_text(Vector2(28, 75), "Tek izi suç sayma; birbiriyle çelişen bilgiyi ara.", 13, SERIF, FADED)
+		_rule(88, 0.7)
+		_page_tabs()
+		_date_example()
+		_guide_section(123, "01  AY ALANININ ALTINDAKİ BASKI", [
+			"Silinmiş alanı büyüteçle ve eğerek incele.",
+			"Alttaki ay, görünen aydan farklı mı?",
+			"Yalnız kazınma izi değişiklik kanıtı değildir.",
+			"Geçmiş tarih ile değiştirilmiş tarihi ayır."
+		])
+		_rule(213, 0.4)
+		_portrait_example()
+		_guide_section(229, "02  FOTOĞRAFI KESEN KURUM MÜHRÜ", [
+			"Fotoğrafın sağ kenarındaki yarımları karşılaştır.",
+			"Halka ve çizgiler kâğıt üzerinde devam etmeli.",
+			"Kaymış iki yarı değiştirilmiş fotoğrafa işarettir.",
+			"Tutkal ve soluk mürekkep tek başına yeterli değil."
+		])
+		_rule(319, 0.4)
+		_coupon_example()
+		_guide_section(335, "03  KUPON SERİSİ VE ESKİ TESLİM İZİ", [
+			"Her kuponun serisi kartın serisiyle eşleşmeli.",
+			"Farklı seri başka karttan alınmış kupona işarettir.",
+			"WYDANO önceki teslim mührüdür.",
+			"Kullanılmış kupon: ret; tek başına sahtecilik değil."
+		])
+		_rule(425, 0.4)
+		_identity_example()
+		_guide_section(441, "04  KİMLİKLE YAN YANA KARŞILAŞTIR", [
+			"Karne ve ek kimlikte ad ile numarayı karşılaştır.",
+			"İki fotoğraf aynı kişiyi göstermeli.",
+			"Ad, numara veya fotoğraf çelişkisi önemlidir.",
+			"Meslek, yıpranma ve tavır kimlik kanıtı değildir."
+		])
+		_rule(542, 0.5)
+		_guide_footer()
+
+
+	func _guide_section(y: float, title: String, lines: Array[String]) -> void:
+		_text(Vector2(221, y), title, 15, BOLD)
+		for index: int in lines.size():
+			_text(Vector2(221, y + 20 + index * 17), lines[index], 13, SERIF)
+
+
+	func _date_example() -> void:
+		_sample(Rect2(36, 116, 160, 65))
+		_text(Vector2(45, 132), "MIESIĄC", 8, SERIF, FADED)
+		_text(Vector2(48, 160), "01 / 1982", 19, MONO, Color(DIAGRAM_INK, 0.32))
+		for index: int in 24:
+			var at: Vector2 = Vector2(50 + (index * 19) % 125, 139 + (index * 7) % 25)
+			draw_line(at, at + Vector2(8, -1), Color("eee5d0"), 0.8)
+		_text(Vector2(51, 163), "02 / 1982", 19, MONO, DIAGRAM_INK)
+		_center(Vector2(116, 199), "Örnek: altta 01, üstte 02", 9, ITALIC, FADED)
+
+
+	func _portrait_example() -> void:
+		_sample(Rect2(36, 222, 160, 65))
+		for index: int in 2:
+			var origin: Vector2 = Vector2(45 + index * 80, 229)
+			var photo: Rect2 = Rect2(origin, Vector2(39, 49))
+			draw_rect(photo, Color("c8bea3"))
+			draw_rect(photo, DIAGRAM_INK, false, 0.55)
+			draw_circle(origin + Vector2(19, 16), 7, Color(DIAGRAM_INK, 0.42))
+			draw_arc(origin + Vector2(19, 44), 14, PI, TAU, 24, Color(DIAGRAM_INK, 0.42), 5.5, true)
+			var center: Vector2 = origin + Vector2(39, 27)
+			var inside: Vector2 = center + Vector2(-5, 3) if index == 1 else center
+			var seal: Color = Color("75617a")
+			for radius: float in [11.0, 8.5]:
+				draw_arc(inside, radius, PI * 0.5, PI * 1.5, 24, seal, 0.8, true)
+				draw_arc(center, radius, -PI * 0.5, PI * 0.5, 24, seal, 0.8, true)
+		_center(Vector2(76, 305), "Sürekli", 9, ITALIC, FADED)
+		_center(Vector2(157, 305), "Kaymış", 9, ITALIC, FADED)
+
+
+	func _coupon_example() -> void:
+		_sample(Rect2(36, 328, 160, 65))
+		_text(Vector2(43, 342), "KARTA  W–82–0417", 9, MONO, DIAGRAM_INK)
+		var coupon: Rect2 = Rect2(44, 349, 143, 36)
+		draw_rect(coupon, Color("e5d9b9"))
+		draw_rect(coupon, DIAGRAM_INK, false, 0.65)
+		_text(Vector2(49, 363), "ODCINEK  W–82–0963", 9, MONO, DIAGRAM_INK)
+		for index: int in 17:
+			var x: float = 46 + index * 8
+			draw_line(Vector2(x, 348), Vector2(x + 2, 352 + index % 2), Color(DIAGRAM_INK, 0.7), 0.6, true)
+		_text(Vector2(103, 381), "WYDANO 09.02", 9, BOLD, Color("80657c"))
+		_center(Vector2(116, 411), "İki ayrı kontrol: seri / teslim izi", 9, ITALIC, FADED)
+
+
+	func _identity_example() -> void:
+		_sample(Rect2(36, 434, 160, 79))
+		for index: int in 2:
+			var origin: Vector2 = Vector2(43, 441 + index * 35)
+			_text(origin + Vector2(0, 8), "KARNE" if index == 0 else "KİMLİK", 7, MONO, FADED)
+			_text(origin + Vector2(37, 8), "ANNA KOWALSKA", 9, MONO)
+			_text(origin + Vector2(37, 22), "AB 241703" if index == 0 else "AB 241708", 10, MONO)
+			# A plain portrait placeholder marks the companion photograph field;
+			# the comparison is about the person, never class or paper colour.
+			draw_rect(Rect2(origin + Vector2(4, 12), Vector2(22, 17)), Color(DIAGRAM_INK, 0.13))
+			draw_circle(origin + Vector2(15, 17), 3, Color(DIAGRAM_INK, 0.5))
+			draw_arc(origin + Vector2(15, 28), 6, PI, TAU, 16, Color(DIAGRAM_INK, 0.5), 2.8, true)
+		_center(Vector2(116, 532), "Örnek: ad aynı, numara farklı", 9, ITALIC, FADED)
 
 
 	func _lines(at: Vector2, lines: Array[String]) -> void:
@@ -259,6 +399,7 @@ class EvidenceLeaf extends ReferenceLeaf:
 		draw_rect(rect, Color("d7cdaf"))
 		draw_rect(rect, PALE_INK, false, 0.75)
 		for row: int in 5:
+			if 13 + row * 15 > rect.size.y - 8: break
 			draw_line(rect.position + Vector2(8, 13 + row * 15), rect.position + Vector2(rect.size.x - 8, 13 + row * 15), Color(DIAGRAM_INK, 0.16), 0.5)
 
 

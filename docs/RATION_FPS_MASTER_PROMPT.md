@@ -69,7 +69,9 @@ araçlar ekrandan kaybolduğunda oyuncunun onları bulabileceği anlaşılır ol
    indirir, bastırır, kaldırır. Damga hareketinin niteliği mürekkepte görülebilir.
 8. SATIŞ kararında gereken kuponun dört kenarını keser; kısa kesikler ve devamları
    gerçek hasar olarak kalır. RET/ALIKOY bu satış adımını atlar.
-9. Aracı uygun boş yere bırakır. Karneyi müşteriye iade eder veya alıkoyma
+9. Makası uygun yere bırakır, ayrılan kuponu E ile alıp fiziksel kupon kabına
+   E/G ile koyar. Temasta dosyalama kaydolur; odak onayı bu adımı da gerektirir.
+   Karneyi müşteriye iade eder veya alıkoyma
    bölmesine koyar; **belge incelemesi burada tamamlanır**.
 10. Tek bir sonuç kaydı oluşur. Sonraki müşteri çağrılabilir; oyuncu serbesttir.
 
@@ -184,6 +186,9 @@ rastgele bir damga üretmesin. Damga dokusu sahtecilik cevabı değildir.
 | Damga: sol tut + fare aşağı | İndir / bastır; bırakınca kaldır |
 | Damga: Shift + tekerlek | Açıyı değiştir |
 | Makas: sol tut + sürükle | Gerçek kesik oluştur; bırakınca yapılan hasarı koru |
+| Makas: Shift | İlerlemeyi yavaşlat; fiziksel uzunluğu koru |
+| Ayrılan kupon: E / tık | Aynı parçayı ele al; Q ardından F ile incele |
+| Kupon elde, kaba bakıp E / G | Temasta tek kez dosyala |
 | Q veya masadayken WASD | Masa/araç etkileşiminden ayrıl |
 | E, müşteri / belge bölmesi | Eldeki karneyi uygun yere teslim et |
 | Esc / odak kaybı | Kontrolü güvenle bırak ve duraklat |
@@ -302,5 +307,38 @@ koordinatlarıyla lif/kesik örneklenir; bağımsız hasar snapshot'ı saklanır
 F incelemede T geçirgen ışığı açar, eğim geliş açısını değiştirir. Bu yalnız
 bir görsel/inceleme aracıdır; kampanya kararını veya kanıt verisini değiştirmez.
 Kitapçığın fiziksel ters sayfası ışık/yama/aşınma karşılaştırmasını öğretir.
-Yeni fotoğraf/tarih/kimlik sahteciliği henüz uygulanmadı. Son rapor:
-[PAPER_INSPECTION_UPDATE.md](PAPER_INSPECTION_UPDATE.md).
+Kâğıt dilimi raporu: [PAPER_INSPECTION_UPDATE.md](PAPER_INSPECTION_UPDATE.md).
+
+## Belge karşılaştırması diliminin güncel sözleşmesi
+
+[Yeni rapor](EVIDENCE_REVIEW_UPDATE.md). F5 eski sekiz ve yeni sekiz vakayı
+birleştirir; Esc → Belge karşılaştırma çalışma günü veya
+`ration_review_day.tscn` yeni vakalarla başlar. Yeni müşteriyle gelen kimlik,
+ayrı ön/arka yüzlü fiziksel nesnedir. E ile al, Q ile masadan ayrıl, F ile incele.
+İki belge eldeyken C aynı nesneler arasında geçer, önceki pozları geri getirir.
+Kitapçık F incelemede Tab ile iki sabit arka rehber sayfası arasında geçer.
+
+Tarih alt baskısı, fotoğraf kenarını geçen mührün devamı, kimlik adı/numarası/
+portresi ve kupon seri numarası basılı alanlardan karşılaştırılır. RationEvidence
+bu alanları denetler; görünmeyen forged bayrağı ekleme. Portre çizimi ve kanıt
+kuralı aynı portrait_key normalleştirmesini paylaşır. Yıpranma, yapışkan, kalınlık
+ve soluk mürekkep suç değildir. İstenen kuponda önceki WYDANO izi varsa yeniden
+ürün verilmez; başka sahtecilik yoksa ret seçilir, karne alıkonulmaz. Oyuncunun
+yanlış damga basması engellenmez; denetim işlem tamamlandıktan sonra kaydolur.
+Kimlik iade/alıkoyma işleminde sahibine döner; sonraki müşteriye taşınmaz.
+
+## Kontrollü kesim ve toplama diliminin güncel sözleşmesi
+
+[Rapor](COUPON_CUTTING_UPDATE.md). Makas köşede açılıp yönünü değiştirirken
+uç hareket etmez ve kâğıt kesilmez. Shift fiziksel zamanı yavaşlatır; rehber
+mesafeye ekleme veya otomatik kesim yapmaz. Dört kenarı ayrılan kuponun kendi
+baskı/kalınlık/hasar snapshot'ı korunur; masaya düşer, E ile ele alınır ve F
+incelemede yakınlaşır/döner. Masa/zemine G bırakmak toplama değildir.
+
+Odakta rules.opening(true), istenen kuponun fiziksel kaba konmasını onay
+tamamlamasının şartı yapar. rules.file_coupon yalnız temas anında çağrılır.
+Önce kesip dosyalamak, sonra damga basmak geçerlidir. Önceki müşteriden kalan
+parça arşivlenebilir; yeni müşterinin collected listesine giremez. Kısa kesik,
+hak işlemesi, parçanın varlığı ve dosyalama ayrı korunur. Restart eski düşme/
+aktarım callback'ini yeni güne taşıyamaz. Eski tam satış sahnesi kendi akışını
+korur. Genel masa düzenleme, mürekkep pedi ve NPC animasyonu sonraki dilimlerdir.

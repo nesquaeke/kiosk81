@@ -32,7 +32,12 @@ func run(desk: Node3D) -> PackedStringArray:
 	if not desk.card.quaternion.is_equal_approx(turned): failures.append("sheet drifted after releasing the rotate button")
 	if not desk.player.camera.transform.is_equal_approx(eye): failures.append("object rotation moved the first-person camera")
 	for step: int in 40: desk._mouse(MOUSE_BUTTON_WHEEL_UP, true)
-	if desk.card.position.length() < 0.29: failures.append("zoom pushed the document through the near plane")
+	for x: float in [-RationCard3D.WIDTH * .5, RationCard3D.WIDTH * .5]:
+		for y: float in [-RationCard3D.HEIGHT * .5, RationCard3D.HEIGHT * .5]:
+			for z: float in [-desk.card.half_thickness, desk.card.half_thickness]:
+				var camera_corner: Vector3 = desk.card.transform * Vector3(x, y, z)
+				if camera_corner.z > -desk.player.camera.near - .015 + .00001:
+					failures.append("zoom pushed a rotated document corner through the near-plane clearance")
 	var close_distance: float = desk.card.position.length()
 	for step: int in 40: desk._mouse(MOUSE_BUTTON_WHEEL_DOWN, true)
 	if desk.card.position.length() < close_distance + 0.15: failures.append("bounded zoom did not change inspection distance")

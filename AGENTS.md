@@ -63,8 +63,9 @@ Don't casually run `tools/setup_project.gd` or whole scene generators; they
 overwrite scenes. Fetch Git LFS assets before importing a fresh checkout.
 
 Current sequential feature list: `docs/CARD_INTERACTION_BACKLOG.md`. The original
-user list is preserved there; its first three slices and the initial physical comparison aid are implemented.
-New photo/date/identity forgery scenarios are still pending. `HeldObjectInspector` works on the existing held card/tool and
+user list is preserved there; the first five slices now include physical identity,
+printed evidence, controlled cutting and manual coupon collection.
+`HeldObjectInspector` works on the existing held card/tool and
 restores its exact pose on exit. Don't append marks/cuts during inspection.
 `StampPlacementGuide` is a transient mesh on the paper, outside the ink renderer
 and campaign state. Stamp preview and actual ink use the same paper-local angle.
@@ -83,3 +84,40 @@ old fragments. T in held F inspection enables directional simulated transmitted
 light. It changes rendering only, never campaign/evidence or a verdict. Close,
 focus loss and restart clear it. The physical book's underside teaches comparison;
 existing inspector Ry(PI)*Rx(PI/2) must show it upright. No fullscreen hint panel.
+
+Evidence review update: `docs/EVIDENCE_REVIEW_UPDATE.md`. F5 runs original8 +
+review8; the Esc comparison-day button or ration_review_day.tscn starts review8.
+The full-sale scene still uses original8 only. Companion identity is one physical
+two-sided object; after E receive it settles on the desk. E picks it up, Q leaves
+overhead, F inspects. With both documents held, C changes the inspector target,
+restoring both exact poses and clearing card-only transmission lighting.
+Tab during F book inspection changes only the static printed underside guide;
+it never reads the current encounter. RationEvidence derives findings from
+the same date/seal/identity/coupon fields that are printed. Portrait keys share
+one canonicalization function with DocumentPortrait. Cosmetic wear, ink, paste,
+stock and repeated matching date typing never establish guilt. Prior issuance
+of a requested coupon means reject, not confiscate. Wrong decisions remain
+possible and are audited after handback; no evidence renderer writes verdicts.
+
+Controlled cutting update: `docs/COUPON_CUTTING_UPDATE.md`. FPS uses
+ScissorCutController around the unchanged ScissorStroke; a sharp turn reopens
+and rotates without cutting or moving the tip. Shift slows physical progression,
+not canonical distance. ScissorCutGuide is transient, treats all remaining
+coupons equally and never snaps paths or writes ink/evidence. Clear it on exit.
+
+CouponFragment3D is the original detached print/stock/damage snapshot. In focus
+it settles on real support, is picked up with E/click, inspected with Q then F,
+and dropped with G. Only E/G at the physical coupon_bin starts filing; commit
+rules.file_coupon at tray contact, once. opening(document_focus) enables the
+focus collection requirement; approval needs the requested coupon in collected.
+Legacy full-sale keeps its automatic tray transfer and old completion contract.
+Do not mix cut damage, entitlement processing and collection. Old-case loose
+pieces may be archived visually but never credited to the new case: check both
+source_card_id and source_serial. Restart must kill transfer callbacks; only
+archived fragments have selection disabled. Whole-world save reconstruction is
+still outside this prototype; work.collected round-trips through CampaignState.
+
+HeldObjectInspector now guards actual rotated half-extents against camera.near
+plus 15 mm, including intermediate flip poses. Preserve initial fit framing,
+real close zoom for small coupons and exact cancellation transforms. A fixed
+radius-distance assertion can hide a broken zoom; test actual corner clearance.
