@@ -163,6 +163,19 @@ func finish_case(index: int) -> bool:
 		button(MOUSE_BUTTON_LEFT, false)
 		await frames(14)
 		if not await park_tool(): return false
+		var fragment: CouponFragment3D = desk._find_coupon(encounter["request"]["item"])
+		if not check(fragment != null, "approved cut must leave a physical coupon"): return false
+		for frame: int in 60:
+			if not fragment.get_meta("settling", false): break
+			await frames(1)
+		await point(fragment.global_position + Vector3.UP * .001)
+		desk._key(KEY_E)
+		await frames(12)
+		if not check(desk.held_tool == fragment, "the detached coupon must be picked up"): return false
+		await point(desk.coupon_bin.global_position + Vector3.UP * .04)
+		desk._key(KEY_E)
+		await frames(18)
+		if not check(fragment.archived, "the detached coupon must be filed by physical contact"): return false
 	desk._key(KEY_Q)
 	await frames(14)
 	await point(desk.card.global_position)

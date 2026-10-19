@@ -12,7 +12,7 @@ var customer: CustomerPlaceholder
 var customer_target: Interactable
 var workmat: Interactable
 var drawer: Interactable
-var coupon_bin: Node3D
+var coupon_bin: Interactable
 var bell: Interactable
 var parcel: RationParcel3D
 var props: Dictionary[String, Interactable] = {}
@@ -66,6 +66,10 @@ var _cut_points: PackedVector2Array = []
 var _cut_length_m: float = 0.0
 var _cut_direction: Vector2 = Vector2.RIGHT
 var _scissor_stroke: ScissorStroke
+var _cut_controller: ScissorCutController
+var _cut_guide: ScissorCutGuide
+var _fine_cut: bool = false
+var _archived_stack_height: float = 0.0
 var _last_snip_cycle: int = -1
 var _paper_dragging: bool = false
 var _paper_rotating: bool = false
@@ -115,6 +119,8 @@ func _ready() -> void:
 	add_child(_placement_preview)
 	_stamp_guide = StampPlacementGuide.new()
 	card.add_child(_stamp_guide)
+	_cut_guide = ScissorCutGuide.new()
+	card.add_child(_cut_guide)
 	_build_hud()
 	Game.state_changed.connect(_refresh)
 	_restart()
@@ -215,12 +221,14 @@ func _build_station() -> void:
 	drawer = _prop("drawer", Vector3(0.93, 0.96, -2.44), Vector3(0.34, 0.075, 0.32), true, Color("514c42"))
 	var drawer_tag: Label3D = _label(drawer, "ALIKONULAN BELGELER", Vector3(0, 0.077, 0), 0.00065)
 	drawer_tag.rotation.x = -PI / 2
-	coupon_bin = Node3D.new()
-	coupon_bin.position = Vector3(0.35, 0.96, -2.5)
-	add_child(coupon_bin)
+	coupon_bin = _prop("coupon_bin", Vector3(0.35, 0.96, -2.5), Vector3(0.20, 0.06, 0.16))
 	_box(coupon_bin, Vector3(0.20, 0.01, 0.16), Vector3.ZERO, Color("967950"))
 	for x: float in [-0.1, 0.1]: _box(coupon_bin, Vector3(0.01, 0.055, 0.16), Vector3(x, 0.025, 0), Color("967950"))
 	for z: float in [-0.08, 0.08]: _box(coupon_bin, Vector3(0.20, 0.055, 0.01), Vector3(0, 0.025, z), Color("967950"))
+	var coupon_tag: Label3D = _label(coupon_bin, "KUPONY / KUPON", Vector3(0, 0.025, 0.086), 0.00037)
+	coupon_tag.font = RationCardView.TYPEWRITER
+	coupon_tag.outline_size = 0
+	coupon_tag.modulate = Color("392c23")
 	for i: int in 3:
 		var kind: String = ["approve", "reject", "seize"][i]
 		# Leave enough space for a perspective ray to each empty base. A tight
@@ -349,7 +357,7 @@ func _build_hud() -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	pause.add_child(rows)
 	var controls: Label = Label.new()
-	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlan\nE: al / teslim et · G: yüzeye bırak\nMasada E: üstten bak · R: karneyi al\nElde F: yakından incele · F/Esc: geri\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut · Tekerlek: zoom\nİki belge eldeyken C: karşılaştır\nKitapçık incelemede Tab: rehber sayfası\nMasada F: çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: makasla kes\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
+	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlan\nE: al / teslim et · G: yüzeye bırak\nMasada E: üstten bak · R: karneyi al\nElde F: yakından incele · F/Esc: geri\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut · Tekerlek: zoom\nİki belge eldeyken C: karşılaştır\nKitapçık incelemede Tab: rehber sayfası\nMasada F: çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: kes · Shift: ince kesim\nKuponu E ile al → kaba bakıp E/G bırak\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
 	controls.add_theme_font_size_override("font_size", 20)
 	rows.add_child(controls)
 	var volume: HSlider = HSlider.new()
@@ -384,10 +392,17 @@ func _restart() -> void:
 	for tween: Tween in _tweens:
 		if tween.is_valid(): tween.kill()
 	_tweens.clear()
+	if held_tool is CouponFragment3D:
+		right_hand.reparent(player.camera)
+		right_hand.visible = false
+		held_tool = null
 	for token: Node3D in _tokens:
 		if is_instance_valid(token): token.queue_free()
 	_tokens.clear()
 	_cut_index = -1
+	_cut_controller = null
+	_fine_cut = false
+	_archived_stack_height = 0.0
 	_paper_dragging = false
 	_table_yaw = 0.0
 	_stamp_yaw = 0.0
@@ -422,7 +437,7 @@ func _restart() -> void:
 	customer.visible = false
 	pause.visible = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	Game.new_campaign(1982, rules.opening())
+	Game.new_campaign(1982, rules.opening(document_focus))
 	_message("Cama yaklaş. Müşterinin uzattığı karta bakıp E ile al.")
 
 
@@ -527,7 +542,7 @@ func _offer_card(index: int, generation: int) -> void:
 
 func _open_object_inspection(target_override: Node3D = null, continuing_comparison: bool = false) -> void:
 	if _object_inspector.active or _busy or _card_busy or _paper_dragging or _stamp_charging or _cut_index >= 0: return
-	var target: Node3D = target_override if target_override != null else (card if card_held else held_tool)
+	var target: Node3D = target_override if target_override != null else (held_tool if held_tool is CouponFragment3D else (card if card_held else held_tool))
 	if target == null: return
 	if not continuing_comparison: _comparison_views.clear()
 	_exit_desk_inspection(true)
@@ -547,6 +562,8 @@ func _open_object_inspection(target_override: Node3D = null, continuing_comparis
 		readable = Quaternion(Vector3.UP, 0.0 if card.front_showing else PI)
 	elif target == identity_document:
 		dimensions = Vector3(IdentityDocument3D.WIDTH, IdentityDocument3D.HEIGHT, IdentityDocument3D.THICKNESS)
+	elif target is CouponFragment3D:
+		dimensions = (target as CouponFragment3D).dimensions
 	elif _is_book(held_tool):
 		readable = Quaternion(Vector3.RIGHT, PI / 2)
 		dimensions = Vector3(0.37, 0.025, 0.47) if held_tool.action == "ledger" else Vector3(0.28, 0.02, 0.23)
@@ -643,6 +660,8 @@ func _update_placement_preview() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.physical_keycode == KEY_SHIFT:
+		_fine_cut = event.pressed
 	if _object_inspector.active:
 		_inspection_input(event)
 		get_viewport().set_input_as_handled()
@@ -746,6 +765,7 @@ func _physics_process(delta: float) -> void:
 	message.visible = Time.get_ticks_msec() < _feedback_until
 	_update_placement_preview()
 	_update_stamp_guide()
+	_update_cut_guide()
 	if _object_inspector.active:
 		hint.text = "İNCELE · Sol sürükle: döndür · Tekerlek: yaklaş · Sağ tık: çevir · R: düzelt · F/Esc/Q: geri"
 		if _object_inspector.object == card:
@@ -834,6 +854,7 @@ func _cancel_gesture() -> void:
 	if _desk_inspecting: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _exit_desk_inspection(immediate: bool = false) -> void:
+	if _cut_guide != null: _cut_guide.visible = false
 	if held_tool is InspectionLoupe: held_tool.set_active(false)
 	_cancel_gesture()
 	if not _desk_inspecting:
@@ -895,6 +916,14 @@ func _interact() -> void:
 		else: _subtitle_until = Time.get_ticks_msec() + 8000
 	elif kind == "drawer" and card_held:
 		_finish_card("seize")
+	elif kind == "coupon_bin":
+		if held_tool is CouponFragment3D: _file_held_coupon()
+		else: _message("Kesilmiş kuponu eline alıp bu kaba bırak.")
+	elif kind == "coupon":
+		if held_tool != null: _message("Önce sağ elindeki aracı G ile bırak."); return
+		if target.get_meta("settling", false) or target.get_meta("filing", false): return
+		if (target as CouponFragment3D).archived: return
+		_equip(target)
 	elif kind == "bell":
 		if _execute(rules.next(Game.state)): _message("Sonraki müşteri cama geliyor.")
 	elif kind == "storage":
@@ -1054,6 +1083,9 @@ func _drop_held() -> void:
 	var hit: Dictionary = _ray()
 	if hit.is_empty(): _message("Nesneyi bırakmak için yakındaki bir yüzeye bak."); return
 	var target: Node = hit["collider"]
+	if target == coupon_bin and held_tool is CouponFragment3D:
+		_file_held_coupon()
+		return
 	if card_held and (target == customer_target or target == drawer):
 		_finish_card("seize" if target == drawer else "return")
 		return
@@ -1072,13 +1104,17 @@ func _drop_held() -> void:
 		var generation: int = _epoch
 		var placing: Tween = create_tween().set_parallel(true)
 		_tweens.append(placing)
-		placing.tween_property(tool, "rotation", homes[tool].basis.get_euler() if homes.has(tool) else Vector3.ZERO, 0.16)
+		var rest_rotation: Vector3 = CouponFragment3D.table_orientation().get_euler() if tool is CouponFragment3D else (homes[tool].basis.get_euler() if homes.has(tool) else Vector3.ZERO)
+		placing.tween_property(tool, "rotation", rest_rotation, 0.16)
 		placing.tween_property(tool, "position", hit["position"] + Vector3(0, _support_height(tool), 0), 0.16).set_trans(Tween.TRANS_SINE)
 		placing.chain().tween_callback(func() -> void:
 			if generation == _epoch:
 				right_hand.visible = false
 				right_hand.reparent(player.camera)
 				tool.collision_layer = 2
+				if tool is CouponFragment3D:
+					tool.set_held(false)
+					tool.set_meta("rest_transform", tool.global_transform)
 				_busy = false
 				if tool == parcel: foley.play_package("place", parcel.item_id)
 				else: foley.play_sound("paper_place"))
@@ -1090,6 +1126,7 @@ func _drop_held() -> void:
 
 
 func _support_height(tool: Interactable) -> float:
+	if tool is CouponFragment3D: return tool.dimensions.z * 0.5 + 0.0002
 	if tool == identity_document: return IdentityDocument3D.THICKNESS * 0.5 + 0.0001
 	if tool is InspectionLoupe: return 0.001
 	if tool.action == "scissors": return -0.0082
@@ -1099,12 +1136,20 @@ func _support_height(tool: Interactable) -> float:
 
 func _equip(tool: Interactable) -> void:
 	held_tool = tool
+	if tool is CouponFragment3D: tool.set_held(true)
 	if _desk_inspecting and tool.action == "scissors":
 		_desk_center = card.global_position
 		_desk_distance = maxf(0.68, 0.75 / (2.0 * tan(deg_to_rad(25.0)) * maxf(0.8, get_viewport().get_visible_rect().size.aspect())))
 		_update_overhead_camera()
 		get_viewport().warp_mouse(player.camera.unproject_position(card.global_position))
 		if _selftest: _desk_cursor_override = player.camera.unproject_position(card.global_position)
+	elif _desk_inspecting and tool is CouponFragment3D:
+		# Pull back from the cutting close-up so the real tray is in reach.
+		_desk_center = Vector3(-0.12, 0.978, -2.15)
+		_desk_distance = maxf(0.98, 1.40 / (2.0 * tan(deg_to_rad(25.0)) * maxf(0.8, get_viewport().get_visible_rect().size.aspect())))
+		_update_overhead_camera()
+		get_viewport().warp_mouse(player.camera.unproject_position(tool.global_position))
+		if _selftest: _desk_cursor_override = player.camera.unproject_position(tool.global_position)
 	tool.collision_layer = 0
 	tool.reparent(player.camera)
 	var from: Transform3D = tool.transform
@@ -1133,10 +1178,12 @@ func _equip(tool: Interactable) -> void:
 	elif tool.action.begins_with("stamp_"): right_hand.position = Vector3(0.023, 0.13, 0.045)
 	elif _is_book(tool): right_hand.position = Vector3(0.208, 0.026, 0.11)
 	if tool == identity_document: right_hand.position = Vector3(0.137, -0.036, 0.009)
+	elif tool is CouponFragment3D: right_hand.position = Vector3(tool.world_size.x * 0.5 + 0.015, -0.005, 0.006)
 	elif tool == parcel: right_hand.position = parcel.grip_position
 	right_hand.rotation = Vector3.ZERO
 	right_hand.visible = true
 	_message("Nesne sağ elinde. G ile bir yüzeye bırakabilirsin.")
+	if tool is CouponFragment3D: _message("Kupon elinde. Q → F: yakından incele · Kaba bakıp E / G: biriktir · G: masaya bırak.")
 
 
 func _pose_tool() -> void:
@@ -1147,7 +1194,10 @@ func _pose_tool() -> void:
 		return
 	held_tool.position = Vector3(0.19, -0.27, -0.46)
 	held_tool.rotation = Vector3(0.20, 0, -0.2)
-	if held_tool == identity_document:
+	if held_tool is CouponFragment3D:
+		held_tool.position = Vector3(0.14, -0.14, -0.36)
+		held_tool.rotation = Vector3.ZERO
+	elif held_tool == identity_document:
 		held_tool.position = _book_hold_position()
 		held_tool.rotation = Vector3.ZERO
 	elif _is_book(held_tool):
@@ -1169,9 +1219,16 @@ func _update_tool_hover() -> void:
 		# so the physical tool/hand does not cover the player's alignment target.
 		held_tool.global_position += Vector3(0.10, 0, 0.035)
 	elif held_tool.action == "scissors":
-		held_tool.global_position = point + Vector3(-0.107, -0.0095, 0)
-		(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
-		(held_tool.get_node("Blade1") as Node3D).rotation.y = 0.48
+		var pixel: Vector2 = _paper_pixel()
+		if card.front_showing and card.has_paper_at(pixel):
+			_pose_scissors(pixel, _cut_direction, 0.48)
+		else:
+			held_tool.global_position = point + Vector3(-0.107, 0.015, 0)
+			(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
+			(held_tool.get_node("Blade1") as Node3D).rotation.y = 0.48
+	elif held_tool is CouponFragment3D:
+		held_tool.global_position = point + Vector3(0, 0.065, 0)
+		held_tool.quaternion = CouponFragment3D.table_orientation()
 	elif _is_book(held_tool):
 		held_tool.global_position = point + Vector3(0, 0.04, 0)
 		if held_tool == identity_document: held_tool.quaternion = RationCard3D.table_orientation(true)
@@ -1190,6 +1247,9 @@ func _return_tool_home() -> void:
 	right_hand.visible = false
 	tool.reparent(self)
 	if homes.has(tool): tool.global_transform = homes[tool]
+	elif tool is CouponFragment3D:
+		tool.global_transform = tool.get_meta("rest_transform", tool.global_transform)
+		tool.set_held(false)
 	tool.collision_layer = 2
 	held_tool = null
 
@@ -1322,7 +1382,9 @@ func _begin_tool() -> void:
 		_cut_points = PackedVector2Array([pixel])
 		_cut_length_m = 0
 		_snips = 0
-		_scissor_stroke = ScissorStroke.new()
+		_cut_controller = ScissorCutController.new()
+		_cut_controller.start(pixel, _cut_direction)
+		_scissor_stroke = _cut_controller.stroke
 		_last_snip_cycle = -1
 		held_tool.reparent(self)
 		_message("Makasın ucu kadar kesilir. Sol tuşla ilerle; bırakınca gerçek kesik kalır. Kuponun dört kenarını takip et.")
@@ -1424,32 +1486,23 @@ func _restore_tool_to_hand() -> void:
 	_pose_tool()
 
 func _update_cut(delta: float = 1.0 / 60.0) -> void:
-	if _cut_index < 0 or _scissor_stroke == null: return
+	if _cut_index < 0 or _cut_controller == null: return
 	var target: Vector2 = _paper_pixel()
 	if not target.is_finite(): return
 	target = target.clamp(Vector2.ZERO, Vector2(640, 400))
-	var difference: Vector2 = target - _cut_tip
-	var travel: float = _scissor_stroke.advance(delta, difference.length() > 0.01)
-	var step: Vector2 = difference.limit_length(travel * 640.0 / RationCard3D.WIDTH)
-	if step.length() > 0.01:
-		_cut_tip += step
-		_cut_direction = step.normalized()
-		_cut_length_m += step.length() * RationCard3D.WIDTH / 640.0
+	var travel: float = _cut_controller.advance(delta, target, _fine_cut)
+	_cut_tip = _cut_controller.tip
+	_cut_direction = _cut_controller.direction
+	if travel > 0.000001:
+		_cut_length_m += travel * RationCard3D.WIDTH / 640.0
 		_cut_points.append(_cut_tip)
 		card.cut_preview(_cut_points)
-		if _last_snip_cycle != _scissor_stroke.cycle():
-			_last_snip_cycle = _scissor_stroke.cycle()
+		if _last_snip_cycle != _cut_controller.cycle():
+			_last_snip_cycle = _cut_controller.cycle()
 			_snips += 1
 			foley.play_sound("snip")
-	var tangent: Vector3 = (card.global_basis * Vector3(_cut_direction.x, -_cut_direction.y, 0)).normalized()
-	var normal: Vector3 = card.global_basis.z.normalized()
-	held_tool.global_basis = Basis(tangent, normal, tangent.cross(normal))
-	# One blade passes underneath the sheet, the other closes over it.
-	# Previously both blades floated around a centimetre above their cut.
-	held_tool.global_position = card.pixel_to_world(_cut_tip) - tangent * 0.107 - normal * 0.0105
-	var jaw: float = _scissor_stroke.jaw_angle()
-	(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
-	(held_tool.get_node("Blade1") as Node3D).rotation.y = jaw
+	var jaw: float = _cut_controller.jaw_angle()
+	_pose_scissors(_cut_tip, _cut_direction, jaw)
 	right_hand.position = Basis(Vector3.UP, jaw * 0.7) * Vector3(-0.065, 0.064, 0.025)
 	right_hand.rotation.y = jaw * 0.5
 	left_hand.reparent(self)
@@ -1457,8 +1510,20 @@ func _update_cut(delta: float = 1.0 / 60.0) -> void:
 	left_hand.visible = true
 
 
+func _pose_scissors(pixel: Vector2, direction: Vector2, jaw: float) -> void:
+	var tangent: Vector3 = (card.global_basis * Vector3(direction.x, -direction.y, 0)).normalized()
+	var normal: Vector3 = card.global_basis.z.normalized()
+	held_tool.global_basis = Basis(tangent, normal, tangent.cross(normal))
+	# The lower blade sits under the actual sheet before and during closure;
+	# the upper blade and fingers pivot while the contact point stays fixed.
+	held_tool.global_position = card.pixel_to_world(pixel) - tangent * 0.107 - normal * 0.0105
+	(held_tool.get_node("Blade0") as Node3D).rotation.y = 0.0
+	(held_tool.get_node("Blade1") as Node3D).rotation.y = jaw
+
+
 func _commit_incision() -> void:
 	_cut_index = -1
+	if _cut_controller != null: _cut_controller.release()
 	left_hand.visible = false
 	left_hand.reparent(player.camera)
 	right_hand.rotation = Vector3.ZERO
@@ -1494,25 +1559,122 @@ func _consume_severed_coupon() -> void:
 	var index: int = RationDeskRules.PRODUCT_ORDER.find(item)
 	if item not in work.get("cuts", []) and PaperCutGeometry.coupon_is_severed(work.get("incisions", []), RationCardView.coupon_rect(index)):
 		if _execute(rules.cut(Game.state, item, true)):
-			_message("Kupon işlendi. Karneyi eline alıp müşteriye geri verebilirsin." if document_focus else "Kupon işlendi; ürünü raftan alabilirsin.")
+			_message("Kupon kesildi. Makası bırak, parçayı E ile al ve kupon kabına koy." if document_focus else "Kupon işlendi; ürünü raftan alabilirsin.")
 
 
-func _detach_coupon(index: int, _item: String) -> void:
-	var token: Node3D = card.create_coupon(index)
+func _update_cut_guide() -> void:
+	_cut_guide.visible = false
+	if not _desk_inspecting or _object_inspector.active or not card.front_showing or card_held or held_tool == null or held_tool.action != "scissors": return
+	var work: Dictionary = RationDeskRules.desk(Game.state)
+	var document: Dictionary = rules.current(Game.state).get("card", {})
+	_cut_guide.update_guide(card, _cut_tip if _cut_index >= 0 else _paper_pixel(), work.get("incisions", []), document.get("available", []))
+
+
+func _find_coupon(item: String) -> CouponFragment3D:
+	var case_id: String = str(rules.current(Game.state).get("id", ""))
+	for piece: Node3D in _tokens:
+		if is_instance_valid(piece) and piece is CouponFragment3D and piece.source_card_id == case_id and piece.item_id == item and not piece.archived:
+			return piece
+	return null
+
+
+func _coupon_support(at: Vector3, piece: CouponFragment3D) -> Vector3:
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(at + Vector3.UP * 0.7, at + Vector3.DOWN * 2, 3)
+	var excluded: Array[RID] = [card.get_rid()]
+	for other: Node3D in _tokens:
+		if is_instance_valid(other) and other is CollisionObject3D: excluded.append(other.get_rid())
+	query.exclude = excluded
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty(): at.y = hit["position"].y
+	else: at.y = 0.96
+	return at + Vector3.UP * (piece.dimensions.z * 0.5 + 0.0002)
+
+
+func _detach_coupon(index: int, item: String) -> void:
+	var token: CouponFragment3D = card.create_coupon(index)
+	token.source_card_id = str(rules.current(Game.state).get("id", ""))
+	token.set_meta("card_id", token.source_card_id)
 	add_child(token)
-	token.position = card.pixel_to_world(RationCardView.coupon_rect(index).get_center()) + Vector3(0, 0.02, 0)
+	token.collision_layer = 0
+	token.set_meta("settling", true)
+	token.position = card.pixel_to_world(RationCardView.coupon_rect(index).get_center()) + Vector3(0, 0.003, 0)
 	token.global_rotation = card.global_rotation
 	_tokens.append(token)
 	var generation: int = _epoch
 	var tween: Tween = create_tween()
 	_tweens.append(tween)
-	tween.tween_property(token, "position", coupon_bin.global_position + Vector3(0, 0.14, 0), 0.23)
-	tween.tween_property(token, "position", coupon_bin.global_position + Vector3(randf_range(-0.025, 0.025), 0.016 + _tokens.size() * 0.002, randf_range(-0.025, 0.025)), 0.18)
+	if document_focus:
+		# The last connection releases the real piece. A small slip clears the
+		# hole and lands on the actual support; it never files itself in the tray.
+		var landing: Vector3 = token.position + card.global_basis * Vector3(0, -0.065, 0)
+		landing.x = clampf(landing.x, -1.13, 1.13)
+		landing.z = clampf(landing.z, -2.60, -1.68)
+		landing = _coupon_support(landing, token)
+		tween.tween_property(token, "position", landing + Vector3.UP * 0.018, 0.14).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(token, "position", landing, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	else:
+		tween.tween_property(token, "position", coupon_bin.global_position + Vector3(0, 0.14, 0), 0.23)
+		tween.tween_property(token, "position", coupon_bin.global_position + Vector3(0, 0.016 + _tokens.size() * 0.002, 0), 0.18)
 	tween.tween_callback(func() -> void:
-		if generation == _epoch: foley.play_sound("coupon_drop"))
+		if generation != _epoch: return
+		token.set_meta("settling", false)
+		token.set_meta("rest_transform", token.global_transform)
+		token.set_archived(not document_focus)
+		token.collision_layer = 2 if document_focus else 0
+		foley.play_sound("coupon_drop"))
+	if document_focus: _message("Kupon ayrıldı. Makası G ile bırak; parçayı E ile alıp kupon kabına koy.")
+
+
+func _file_held_coupon() -> void:
+	if _busy or not held_tool is CouponFragment3D: return
+	var token: CouponFragment3D = held_tool
+	if token.archived or token.get_meta("settling", false): return
+	var encounter: Dictionary = rules.current(Game.state)
+	var current_piece: bool = not RationDeskRules.desk(Game.state).get("done", false) and token.source_card_id == str(encounter.get("id", "")) and token.source_serial == str(encounter.get("card", {}).get("serial", ""))
+	if current_piece and not rules.file_coupon(Game.state, token.item_id)["ok"]:
+		_message("Bu kupon bu işlem için yeniden kaydedilemez.")
+		return
+	# The rule probe above has no side effects. Filing is committed only when
+	# the same physical piece reaches the bottom of this actual tray.
+	held_tool = null
+	token.reparent(self)
+	token.set_held(false)
+	token.collision_layer = 0
+	token.set_meta("filing", true)
+	right_hand.reparent(player.camera)
+	right_hand.visible = false
+	if card_held: card.position = _card_hold_position()
+	_busy = true
+	var generation: int = _epoch
+	var case_index: int = _index
+	var target: Vector3 = coupon_bin.global_position + Vector3(0, 0.006 + _archived_stack_height + token.dimensions.z * 0.5, 0)
+	var transfer: Tween = create_tween()
+	_tweens.append(transfer)
+	transfer.tween_property(token, "global_position", target + Vector3.UP * 0.075, 0.18).set_trans(Tween.TRANS_SINE)
+	transfer.parallel().tween_property(token, "quaternion", CouponFragment3D.table_orientation(), 0.18)
+	transfer.tween_property(token, "global_position", target, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	transfer.tween_callback(func() -> void:
+		if generation != _epoch: return
+		token.set_meta("filing", false)
+		_busy = false
+		if current_piece and case_index != _index:
+			token.collision_layer = 2
+			return
+		if current_piece and not _execute(rules.file_coupon(Game.state, token.item_id)):
+			token.collision_layer = 2
+			return
+		token.set_archived(true)
+		token.collision_layer = 0
+		_archived_stack_height += token.dimensions.z + 0.00015
+		token.set_meta("rest_transform", token.global_transform)
+		foley.play_sound("coupon_drop")
+		_message("Kupon kaba bırakıldı." if current_piece else "Tamamlanmış işlemin kuponu arşive kondu; aktif karne hakkı değişmedi."))
 
 
 func _hint(target: Node) -> String:
+	if held_tool is CouponFragment3D:
+		if target == coupon_bin: return "E / G · Kuponu kaba bırak"
+		return "Q → F · Kuponu yakından incele    G · Yüzeye bırak    Kaba bakıp E / G · Biriktir" if _desk_inspecting else "F · Kuponu incele    G · Yüzeye bırak    Kaba bakıp E / G · Biriktir"
 	if document_focus and card_held:
 		if target == customer_target: return "E · Karneyi iade et    F · Yakından incele"
 		if target == drawer: return "E · Karneyi alıkoy    F · Yakından incele"
@@ -1521,7 +1683,8 @@ func _hint(target: Node) -> String:
 		return "F · Eldeki nesneyi incele    G · Yüzeye bırak    E · Etkileş"
 	if _desk_inspecting:
 		if _paper_dragging: return "Sol tuşu bırak: masaya koy · Sağ tuş + sürükle: kâğıdı döndür · Q: bırak ve ayrıl"
-		if _cut_index >= 0: return "%.1f cm kesildi · Fareyle makası ilerlet · Bırak/Q: kesik kâğıtta kalır" % (_cut_length_m * 100.0)
+		if _cut_index >= 0:
+			return "Makas açık: yön değiştiriyor · Kesik uzamıyor · Bırak/Q: hasar kalır" if _cut_controller != null and _cut_controller.aligning else "%.1f cm kesildi · Shift: ince kesim · Bırak/Q: kesik kâğıtta kalır" % (_cut_length_m * 100.0)
 		if _stamp_charging: return "Fare aşağı: indir/bastır · Basılı tut: mürekkep işlemesi · Bırak: kaldır"
 		if held_tool is InspectionLoupe: return "Büyüteci kâğıt üstünde gezdir · Tekerlek: yaklaş · G: bırak · Q: ayrıl"
 		if held_tool != null and held_tool.action == "scissors": return "Sol tuş + sürükle: gerçek kesim · Sağ tuş: masayı kaydır · Q: ayrıl"
@@ -1545,11 +1708,14 @@ func _hint(target: Node) -> String:
 		"ledger": return "E · Gün sonu defterini al"
 		"scissors": return "E · Makası al"
 		"loupe": return "E · Büyüteci al; masada belge üzerine getir"
+		"coupon": return "E / Tık · Ayrılan kuponu eline al"
+		"coupon_bin": return "Kesilmiş kuponu E ile alıp bu kaba bırak"
 	if kind.begins_with("stamp_"): return "E · %s damgasını al" % {"stamp_approve": "SATIŞ", "stamp_reject": "RET", "stamp_seize": "ALIKOY"}.get(kind, "")
 	return "G · Elindeki nesneyi bu yüzeye bırak"
 
 
 func _toggle_pause() -> void:
+	_fine_cut = false
 	_close_object_inspection()
 	_inspect_pending = false
 	_exit_desk_inspection(true)
@@ -1624,7 +1790,7 @@ func _make_page(prop: Node3D, key: String, dimensions: Vector2, text: String) ->
 
 
 func _is_book(tool: Interactable) -> bool:
-	return tool != null and tool.action in ["book", "ledger", "order", "identity"]
+	return tool != null and (tool.action in ["book", "ledger", "order", "identity"] or tool is CouponFragment3D)
 
 
 func _remember(prop: Node3D) -> void:
@@ -1743,7 +1909,11 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/evidence_review_regressions.gd").new().run(self)
+		failures = await preload("res://tests/coupon_cutting_regressions.gd").new().run(self)
+		if "--coupon-only" in OS.get_cmdline_user_args():
+			get_tree().quit(0 if failures.is_empty() else 1)
+			return
+		failures.append_array(await preload("res://tests/evidence_review_regressions.gd").new().run(self))
 		if "--evidence-only" in OS.get_cmdline_user_args():
 			get_tree().quit(0 if failures.is_empty() else 1)
 			return
@@ -1895,6 +2065,7 @@ func _run_selftest() -> void:
 			_aim(homes[held_tool].origin + Vector3(0, 0.003, 0))
 			_key(KEY_G)
 			await _wait_hands()
+			if document_focus and not await _test_file_coupon(item): failures.append("physical coupon filing failed: " + encounter["id"]); break
 			_key(KEY_Q)
 			await _test_camera_settled()
 			if not document_focus:
@@ -1971,6 +2142,20 @@ func _test_camera_settled() -> void:
 func _test_trace(pixel: Vector2) -> bool:
 	_aim(card.pixel_to_world(pixel))
 	return await _test_until(func() -> bool: return _cut_index >= 0 and _cut_tip.distance_to(pixel) < 0.05)
+
+
+func _test_file_coupon(item: String) -> bool:
+	var piece: CouponFragment3D = _find_coupon(item)
+	if piece == null or held_tool != null: return false
+	if not await _test_until(func() -> bool: return not piece.get_meta("settling", false)): return false
+	_aim(piece.global_position)
+	_key(KEY_E)
+	await _wait_hands()
+	if held_tool != piece: return false
+	_aim(coupon_bin.global_position + Vector3.UP * 0.04)
+	_key(KEY_E)
+	await _wait_hands()
+	return piece.archived and item in RationDeskRules.desk(Game.state).get("collected", [])
 
 func _wait_hands() -> void:
 	var deadline: int = Time.get_ticks_msec() + 5000

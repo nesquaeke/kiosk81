@@ -51,6 +51,7 @@ func run(desk: Node3D) -> PackedStringArray:
 			desk._aim(desk.homes[desk.held_tool].origin + Vector3.UP * .003)
 			desk._key(KEY_G)
 			await desk._wait_hands()
+			if not await desk._test_file_coupon("meat"): failures.append("cut-first physical coupon could not be filed")
 			desk._key(KEY_Q)
 			await desk._test_camera_settled()
 			desk._aim(desk.card.global_position)

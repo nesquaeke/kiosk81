@@ -1,5 +1,39 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## 19 Ekim 2026 — kontrollü makas ve fiziksel kupon toplama
+
+[Güncel kontroller, oynanış kaydı ve sınırlar](COUPON_CUTTING_UPDATE.md).
+
+- **286 birim testi geçti, 0 başarısız.** Yeni kontrolcü; kapanış dışı kesim
+  üretmeme, köşede uç sabitken açılma/dönme, Shift ince ilerleme, gerçek 2 cm ve
+  20/60 FPS tutarlılığını sınar. Yeni testler ayrıca kuponun baskı/hasar
+  snapshot'ını, dosyalama kurallarını ve incelemede dönen köşelerin güvenliğini kapsar.
+- **Headless odak döngüsünde 16 müşteri geçti.** Yeni kupon toplama ve önceki
+  kimlik/C/Tab, kâğıt, büyüteç, damga ve masa etkileşimleri birlikte çalıştı;
+  ürün veya para değişmedi. Eski tam satış sahnesinin kesinti kontrolleri ve
+  sekiz müşterilik koşusu da geçti.
+- Yeni kupon regresyonları; gerçek kesim, E/tıkla aynı parçayı alma, ilk F
+  pozundan gerçek zoom, ön/arka yüz, masa ve zemine bırakıp tekrar alma,
+  yalnız kap temasında tek dosyalama ve kesimden önce/sonra onay sırasını sınadı.
+  Eski müşterinin parçası yeni karta hak vermedi. RET sonrası zil çalmadan
+  arşivleme de tamamlanmış kampanya/denetim verisini değiştirmedi.
+- **Normal pencerede tam müşteri akışı geçti.** Native imlecin örneklediği
+  **1,97 cm** ince kesi kalıcı kaldı; köşede makas açıldı, kupon masaya düştü,
+  alındı/incelendi, boş masaya bırakılıp tekrar alındı, kaba temasla dosyalandı,
+  onay ve iade tamamlandı. 169 kareden hareketli WebP üretildi. Test imleci
+  override'ı veya hazırlanmış kampanya sonucu kullanılmadı.
+- GL Compatibility/llvmpipe, 1600×1000 ve Dummy ses kullanıldı. Son normal
+  koşuda motor/GDScript hatası yok; V-Sync sürücü uyarısı var. Fiziksel düşüş
+  kontrollü animasyondur; serbest kâğıt topolojisi, bitmiş el sanatı veya gerçek
+  cihazda ASMR dinlemesi bu sonuçlardan çıkarılamaz.
+
+- **Pencereli birleşik 16 müşteri koşusu da geçti.** Kuponun masada kalması,
+  ele alınması, yakınlaşması, tek dosyalama, biten müşteriden kalan parçanın
+  temizliği ve eski inceleme/kesim/damga kontrolleri birlikte doğrulandı.
+  Son günlükte motor/GDScript hatası yok; yalnız V-Sync uyarısı var.
+
+Sonraki kapsam 6. dilimde damga/mürekkep pedi; 6–9. dilimler henüz tamamlanmadı.
+
 ## 18 Ekim 2026 — fiziksel kimlik ve yeni sahtecilik vakaları
 
 [Kontroller, vaka anahtarı, normal oyun kaydı ve görüntüler](EVIDENCE_REVIEW_UPDATE.md).

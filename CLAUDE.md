@@ -28,7 +28,7 @@ Güncel kontroller: müşteri kartına E/tık aynı karneyi ele alır. Elde F in
 modunu açar; sol sürükle döndürür, sağ tık ters yüzü gösterir, tekerlek yakınlaşır,
 R düzeltir; F/Esc/Q/WASD çıkar. Masaya E/G bırakma önizlemesiyle yerleştirip
 üstten kamera açar. Masada F kâğıdı çevirir. `docs/CARD_INTERACTION_BACKLOG.md`
-onaylanmış sıralı listedir; ilk dört dilim uygulanmıştır. Geçici damga kılavuzu
+onaylanmış sıralı listedir; ilk beş dilim uygulanmıştır. Geçici damga kılavuzu
 kalıcı mürekkebe/kayda giremez. Alan dışına fiziksel baskı iz bırakır, karar vermez.
 
 Yeni kâğıt dilimi: `docs/PAPER_INSPECTION_UPDATE.md`. Üç stok gerçek 0,14/0,28/0,48
@@ -44,3 +44,13 @@ Tarih alt baskısı, fotoğraf mührü, kimlik adı/numarası/portresi ve kupon 
 gerçek basılı kanıttır. Aşınma/mürekkep/tutkal suç değildir; önceki WYDANO
 kuponu ret gerektirir, tek başına alıkoyma gerekçesi olmaz. Portre basımı ve
 kanıt kuralı aynı portrait_key işlevini kullanır; gizli görünmeyen fark üretme.
+
+5. dilim: `docs/COUPON_CUTTING_UPDATE.md`. Makas keskin dönüşte kesmeden açılır
+ve döner; Shift ince ilerletir, gerçek cm ölçeğini değiştirmez. Kupon kılavuzu
+geçicidir, tüm kuponlara eşittir; kesik veya doğruluk cevabı üretmez. Kopan
+CouponFragment3D masaya oturur, E/tıkla alınır, Q→F ile incelenir, G ile bırakılır.
+Kaba E/G ile koyma kaydı yalnız temasta rules.file_coupon üzerinden oluşur;
+odak modunun opening(true) sözleşmesi onayda istenen parçanın toplanmasını ister.
+Kesim, hak işleme ve toplama ayrı kalır. Eski parçanın case_id/serial bilgileri
+yeni karta hak kazandırmaz. Restart eski aktarımı öldürür. Küçük kupon zoom'u,
+ilk kadraj korunarak dönen köşelerin gerçek near-plane mesafesiyle sınırlandırılır.

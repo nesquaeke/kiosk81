@@ -21,9 +21,9 @@ func _init(records: Array) -> void:
 	cases.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["id"] < b["id"])
 
 
-func opening() -> Dictionary:
+func opening(require_coupon_collection: bool = false) -> Dictionary:
 	return {"calendar_date": "1982-02-15", "phase": "shift", "money": {"till": 2000}, "flags": {
-		KEY: {"index": 0, "location": "intake", "placement": "customer", "stamp": "", "marks": [], "cuts": [], "incisions": [], "parcel": {}, "done": false,
+		KEY: {"index": 0, "location": "intake", "placement": "customer", "stamp": "", "marks": [], "cuts": [], "incisions": [], "collected": [], "require_coupon_collection": require_coupon_collection, "parcel": {}, "done": false,
 			"official": {"meat": 750, "sugar": 3000, "soap": 4}, "hidden": {"meat": 500, "sugar": 0, "soap": 0}, "results": []}}}
 
 
@@ -208,6 +208,30 @@ func cut(state: CampaignState, item: String, physical: bool = false) -> Dictiona
 	return _commit(work)
 
 
+## Filing is a physical bookkeeping fact, separate from severing the paper and
+## consuming its entitlement. It can happen before the decision stamp, but only
+## after this encounter's actual coupon has been completely detached.
+func file_coupon(state: CampaignState, item: String, physical_contact: bool = true) -> Dictionary:
+	var work: Dictionary = desk(state).duplicate(true)
+	var encounter: Dictionary = current(state)
+	if not _active(work) or encounter.is_empty():
+		return _reject("Dosyalanacak aktif kupon yok.")
+	if not physical_contact:
+		return _reject("Kestiğin kuponu elinle kupon kutusuna bırak.")
+	var card: Dictionary = encounter.get("card", {})
+	if not item in PRODUCT_ORDER or not item in card.get("available", []):
+		return _reject("Bu karneye ait kullanılabilir kupon bulunamadı.")
+	var collected: Array = work.get("collected", [])
+	if item in collected:
+		return _reject("Bu kupon zaten dosyalandı.")
+	var index: int = PRODUCT_ORDER.find(item)
+	if not PaperCutGeometry.coupon_is_severed(work.get("incisions", []), Rect2(30 + index * 195, 285, 180, 90)):
+		return _reject("Kupon hâlâ karneye bağlı; önce dört kenarını tamamen kes.")
+	collected.append(item)
+	work["collected"] = collected
+	return _commit(work)
+
+
 ## Complete only the document exercise. This is deliberately separate from a
 ## sale: no invented parcel, delivery, register entry, stock loss or payment.
 ## Both outcomes are real handoffs: held paper goes to the customer or drawer.
@@ -240,6 +264,8 @@ func finish_review(state: CampaignState, destination: String) -> Dictionary:
 		var index: int = PRODUCT_ORDER.find(item)
 		if not PaperCutGeometry.coupon_is_severed(work.get("incisions", []), Rect2(30 + index * 195, 285, 180, 90)):
 			return _reject("Onay için kuponun dört kenarını fiziksel olarak tamamen kes.")
+		if work.get("require_coupon_collection", false) and not item in work.get("collected", []):
+			return _reject("Onay için kesilen kuponu elinle kupon kutusuna bırak.")
 	var problems: PackedStringArray = issues(encounter)
 	var forged: bool = is_forged(encounter)
 	var physical_detached: Array = []
@@ -266,7 +292,8 @@ func finish_review(state: CampaignState, destination: String) -> Dictionary:
 	var result: Dictionary = {"case": encounter["id"], "customer": encounter["customer"], "decision": kind,
 		"document_review": true, "correct": correct, "issues": Array(audit_issues), "forged": forged,
 		"source": "", "revenue": 0, "shortage": false, "cuts": cuts.duplicate(), "physical_detached": physical_detached,
-		"incisions": (work.get("incisions", []) as Array).duplicate(true), "marks": marks.duplicate(true)}
+		"incisions": (work.get("incisions", []) as Array).duplicate(true), "marks": marks.duplicate(true),
+		"collected": (work.get("collected", []) as Array).duplicate()}
 	(work["results"] as Array).append(result)
 	work["done"] = true
 	work["location"] = "seize" if kind == "seize" else "return"
@@ -355,6 +382,7 @@ func next(state: CampaignState) -> Dictionary:
 	work["marks"] = []
 	work["cuts"] = []
 	work["incisions"] = []
+	work["collected"] = []
 	work["parcel"] = {}
 	work["done"] = false
 	return _commit(work)

@@ -12,7 +12,7 @@ Bu liste tamamlanmış özellik iddiası değildir; gerçek sonuçlar kabul rapo
 | 2 | Basılı satıcı alanı; gerçek ölçü/açıda geçici damga izi; ilk iki müşteride kapatılabilir hedef yardımı; hedefi örtmeyen alet; alan dışı kalıcı mürekkep | Uygulandı; otomatik ve pencereli kontroller geçti |
 | 3 | Kâğıt aileleri, kalınlık, baskı/eskime çeşitleri, filigran ve lif ayrıntıları | Uygulandı; 237 birim testi, headless ve pencereli kontroller geçti |
 | 4 | Kademeli sahtecilik ipuçları ve karşılaştırma; otomatik suçluluk cevabı yok | Sekiz yeni kanıt vakası, ayrı fiziksel kimlik, yüz/zoom hatırlayan C karşılaştırması ve Tab rehberi eklendi. 251 birim testi, headless/pencereli 16 müşteri ve normal pencerede yeni sekiz vaka geçti; NPC görünüşü/soruları 8. dilimde kalıyor |
-| 5 | Kontrollü kesim hissi, bıçak ve el animasyonu, kupon toplama | Mevcut temel korunuyor; yeni iyileştirmeler bekliyor |
+| 5 | Kontrollü kesim hissi, bıçak ve el animasyonu, kupon toplama | Uygulandı: kontrollü açılma/dönüş, Shift ince kesim, geçici rehber, fiziksel kupon/E-F inceleme ve temasla dosyalama. 286 birim testi, headless/pencereli 16 müşteri ve normal imleç akışı geçti; prosedürel el/alet sanatı prototip |
 | 6 | Damga basıncı/açısı, yaş mürekkep ve ped kullanımı | Basınç/hız/bekleme temeli mevcut; yeni ayrıntılar bekliyor |
 | 7 | Masa düzeni, yuvalar, otomatik yerleştirme ve alet geri koyma | Bekliyor |
 | 8 | Müşteri teslim animasyonu, sorular, tepkiler ve anlaşılır işlem sonuçları | Bekliyor |
@@ -49,9 +49,11 @@ Bu araçlar otomatik doğruluk rengi veya suçluluk cevabı göstermez. Yıpranm
 aynı ayı yeniden yazılmış ve soluk mühürlü geçerli örnek de vardır.
 
 [Kanıt diliminin kullanım rehberi, vaka anahtarı ve güncel test durumu](EVIDENCE_REVIEW_UPDATE.md).
-Yeni kanıtların pencereli okunabilirlik ve C/Tab akış kontrolleri geçti. Sıradaki
-uygulama işi 5. dilimde kontrollü makas/kupon toplama cilasıdır. Sonraki damga,
-masa düzeni, müşteri tepkileri ve ses dilimleri bu güncellemeyle tamamlanmış sayılmaz.
+Yeni kanıtların pencereli okunabilirlik ve C/Tab akış kontrolleri geçti.
+[5. dilimdeki kontrollü makas ve elle kupon toplama](COUPON_CUTTING_UPDATE.md)
+da uygulandı: parça otomatik kutuya gitmez; E ile alınır, F ile incelenir,
+kaba E/G ile konur. Yalnız temas dosyalama sayılır. Sonraki iş 6. dilimde
+damga/mürekkep pedi; masa düzeni, müşteri tepkileri ve ses dilimleri bekliyor.
 
 ## Onaylanan ayrıntılı plan
 

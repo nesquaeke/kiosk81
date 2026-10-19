@@ -38,7 +38,8 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
-[Yeni belge karşılaştırması ve sekiz vaka](docs/EVIDENCE_REVIEW_UPDATE.md) ·
+[Kontrollü makas ve elle kupon toplama](docs/COUPON_CUTTING_UPDATE.md) ·
+[Belge karşılaştırması ve sekiz vaka](docs/EVIDENCE_REVIEW_UPDATE.md) ·
 [Kâğıt ve ışık incelemesi](docs/PAPER_INSPECTION_UPDATE.md) ·
 [Elde inceleme ve damga](docs/CARD_INSPECTION_UPDATE.md) ·
 [Sıralı geliştirme listesi](docs/CARD_INTERACTION_BACKLOG.md) ·
@@ -81,8 +82,16 @@ günü** seç veya `scenes/kiosk/ration_review_day.tscn` sahnesini **F6** ile a�
   baskı kâğıtta kalır fakat işlem kararı kaydetmez.
 - Makası **tık / E** ile al; kamera kesim için yaklaşır. **Sol tuş + sürükleme**
   sırasında bıçaklar görünür biçimde açılıp kapanır; yalnızca kapanırken keser.
+  **Shift** daha ince ilerletir. Keskin köşede uç durur, makas açılıp yeni yöne
+  döner; bu sırada kâğıdı kesmez. Geçici sınır çizgileri bütün mevcut kuponları
+  eşit gösterir; doğru kuponu oyuncu seçer.
   **2 cm kesik, bıraktıktan veya Q'dan sonra da 2 cm hasar olarak kalır.**
   Bir kısa kesik bütün kuponu tüketmez; dört kenarı ayrılınca tek parça kopar.
+- Ayrılan kupon masaya düşer. Makası **G** ile bırak, parçayı **E / tık** ile al.
+  **Q → F** ile aynı parçayı döndürüp yakınlaştırabilir, arkasını görebilirsin.
+  Boş masaya/zemine **G** ile bırakıp tekrar alabilirsin. Kupon kabına bakıp
+  **E / G** ile koy; dosyalama yalnız gerçek temas anında bir kez kaydedilir.
+  Odak modunda onaylı işlem, istenen kuponun kutuya konmasını da gerektirir.
 - Aracı uygun boş yüzeye **G** ile bırak. Karneyi **R** ile alıp müşteriye
   **E** ile iade et veya ALIKOY kararında belge bölmesine koy.
   Odak modunda bu, belge işlemini tamamlar; raftan ürün almak gerekmez.
@@ -96,8 +105,8 @@ ve belge/kimlik karşılaştırma rehberleri arasında geç. Sağ tık ön/arka 
 Kâğıt iki yüzlü, 0,14 / 0,28 / 0,48 mm stoklarda, elde kalınlığına göre bükülen bir 3D yüzeydir;
 yapıştırılmış kota değişikliğinin yükselen kenarı vardır.
 
-Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar**.
-Bunun ardından onay basılırsa istenen hak ayrıca işlenir. Yanlış kuponu kesmek
+Dört kenarı kesilen kupon, **damga öncesinde de fiziksel olarak kopar** ve kaba
+konabilir. Bunun ardından onay basılırsa istenen hak ayrıca işlenir. Yanlış kuponu kesmek
 siparişi karşılamaz; tamamlanan incelemenin denetim kaydında hatalı hasar görünür.
 
 Doğrulama komutları:
