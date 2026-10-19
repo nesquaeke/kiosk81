@@ -100,6 +100,9 @@ static func build_stamp(kind: String) -> Node3D:
 		slot.rotation.y = 0.35 if x < 0 else -0.54
 		root.add_child(slot)
 	_combine_static_meshes(root)
+	var printing_face: StampDieFace = StampDieFace.new()
+	printing_face.configure(kind)
+	root.add_child(printing_face)
 	return root
 
 
@@ -141,7 +144,7 @@ static func build_scissors() -> Node3D:
 	return root
 
 
-static func build_hand(gripping: bool = false) -> Node3D:
+static func build_hand(gripping: bool = false, pointing: bool = false) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.name = "WorkHand"
 	var skin: StandardMaterial3D = _solid(Color("ab8061"), 0.64)
@@ -162,12 +165,16 @@ static func build_hand(gripping: bool = false) -> Node3D:
 		var b: Vector3 = a + Vector3(spread * 0.4, -0.002, -length * 0.43)
 		var c: Vector3 = b + Vector3(spread * 0.35, -0.010, -length * 0.34)
 		var d: Vector3 = c + Vector3(spread * 0.25, -0.011, -length * 0.23)
-		if gripping:
+		if gripping or (pointing and i > 0):
 			# Proximal fingers bend down around the handle; the distal pads turn
 			# back towards the palm instead of leaving four open straight digits.
 			b = a + Vector3(spread * 0.4, -length * 0.20, -length * 0.30)
 			c = b + Vector3(spread * 0.35, -length * 0.39, length * 0.035)
 			d = c + Vector3(spread * 0.25, -length * 0.18, length * 0.24)
+			if pointing:
+				b.y += 0.015
+				c.y += 0.015
+				d.y += 0.015
 		_segment(root, a, b, radius, radius * 0.92, skin)
 		_segment(root, b, c, radius * 0.92, radius * 0.83, skin)
 		_segment(root, c, d, radius * 0.83, radius * 0.65, skin)
@@ -175,12 +182,12 @@ static func build_hand(gripping: bool = false) -> Node3D:
 		_ellipsoid(root, Vector3(radius * 0.80, radius * 0.85, radius * 0.80), c, skin)
 		_ellipsoid(root, Vector3(radius * 0.62, radius * 0.65, radius * 0.68), d, skin)
 		var nail_mesh: MeshInstance3D = _ellipsoid(root, Vector3(radius * 0.69, 0.0011, length * 0.080), c.lerp(d, 0.61) + Vector3(0, radius * 0.64, 0.001), nail)
-		nail_mesh.rotation.x = -1.85 if gripping else -0.45
+		nail_mesh.rotation.x = -1.85 if gripping or (pointing and i > 0) else -0.45
 	# Thumb bends across the side of a handle, with a fleshy base at the palm.
 	var thumb_a: Vector3 = Vector3(-0.029, -0.003, 0.009)
 	var thumb_b: Vector3 = Vector3(-0.045, -0.007, -0.012)
 	var thumb_c: Vector3 = Vector3(-0.047, -0.015, -0.036)
-	if gripping:
+	if gripping or pointing:
 		thumb_b = Vector3(-0.037, -0.016, -0.013)
 		thumb_c = Vector3(-0.011, -0.030, -0.029)
 	_segment(root, thumb_a, thumb_b, 0.010, 0.009, skin)

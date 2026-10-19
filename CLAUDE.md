@@ -28,7 +28,7 @@ Güncel kontroller: müşteri kartına E/tık aynı karneyi ele alır. Elde F in
 modunu açar; sol sürükle döndürür, sağ tık ters yüzü gösterir, tekerlek yakınlaşır,
 R düzeltir; F/Esc/Q/WASD çıkar. Masaya E/G bırakma önizlemesiyle yerleştirip
 üstten kamera açar. Masada F kâğıdı çevirir. `docs/CARD_INTERACTION_BACKLOG.md`
-onaylanmış sıralı listedir; ilk beş dilim uygulanmıştır. Geçici damga kılavuzu
+onaylanmış sıralı listedir; ilk altı dilim uygulanmıştır. Geçici damga kılavuzu
 kalıcı mürekkebe/kayda giremez. Alan dışına fiziksel baskı iz bırakır, karar vermez.
 
 Yeni kâğıt dilimi: `docs/PAPER_INSPECTION_UPDATE.md`. Üç stok gerçek 0,14/0,28/0,48
@@ -54,3 +54,17 @@ odak modunun opening(true) sözleşmesi onayda istenen parçanın toplanmasını
 Kesim, hak işleme ve toplama ayrı kalır. Eski parçanın case_id/serial bilgileri
 yeni karta hak kazandırmaz. Restart eski aktarımı öldürür. Küçük kupon zoom'u,
 ilk kadraj korunarak dönen köşelerin gerçek near-plane mesafesiyle sınırlandırılır.
+
+6. dilim: `docs/STAMP_INK_UPDATE.md`. Gerçek ped teması StampInkState yükünü
+artırır; hover artırmaz. Her kâğıt temasında tek tüketim; havada hareket leke
+üretmez. `_stamp_touching` güncel temas, `_stamp_contacted` hareket geçmişidir.
+Tuş tutulurken kaldırıp yeniden değmek ayrı baskıdır. Alt+tekerlek yana eğim,
+Shift+tekerlek yön; sol+sağ tutarak sürükleme iki eksende temas lekesidir.
+Damganın ters yazılı fiziksel lastik yüzünde yükten etkilenen kaplama vardır.
+Boş el Alt+sürükle kâğıdı kaldırmadan yaş mürekkebe dokunur. İz canlı temasta
+kaydedilir; bırakanı bekleme, kuruma önceki lekeyi silemez. Aynı düz hareket
+tek yola birleşir. İzler contact_time/dry_duration/ilk ink_load bilgisini korur.
+StampWetnessView yalnız basılı ön yüz izlerinde yerel parlaklık verir; duraklatma
+kurumayı durdurur. Görsel geçen süre fiziksel komutta Game ink_clock üzerinden
+kaydedilir; inceleme kendi başına kampanyaya yazmaz. Eski kupon maskesi bağımsızdır.
+Prosedürel ses/el sanatı ve tam dünya kayıt/yüklemesi sınırları raporda açıktır.

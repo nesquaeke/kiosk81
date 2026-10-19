@@ -342,3 +342,21 @@ parça arşivlenebilir; yeni müşterinin collected listesine giremez. Kısa kes
 hak işlemesi, parçanın varlığı ve dosyalama ayrı korunur. Restart eski düşme/
 aktarım callback'ini yeni güne taşıyamaz. Eski tam satış sahnesi kendi akışını
 korur. Genel masa düzenleme, mürekkep pedi ve NPC animasyonu sonraki dilimlerdir.
+
+## Uygulanan 6. dilimin devam sözleşmesi
+
+[Mürekkep pedi ve yaş baskı](STAMP_INK_UPDATE.md) mevcut fiziksel araçları kullanır.
+Pedden yük almak sol tut+aşağı indirme ile gerçek keçeye temasta olur. Her damga
+ayrı yük taşır; kâğıda her gerçek değme tek tüketimdir. Basılı beklemek tekrar
+baskı değildir; kaldırıp tekrar değmek yeni izdir. Havadaki yanal hareket kalıcı
+mürekkep değildir. İlk temasın yükü, eğimi, zamanı ve kuruma süresi sabit kalır.
+Shift+tekerlek yüzeyde yön, Alt+tekerlek yana eğim seçer; sol+sağ tutarak kaydırma
+iki eksende temas izi bırakır. F ile fiziksel lastiğin ters yazılı alt yüzü de
+incelenir; bu kaplama aynı yükten beslenir.
+
+Ön yüzde yaş izler yalnız kendi çizgilerinde yerel ışık yansıtır; 8–12 oyun
+saniyesinde kurur. Boş elde Alt+sol sürükle kâğıdı kaldırmadan parmak temasıdır.
+İz temas sırasında kaydedilir; basılı tutulup kurumasını beklemek önceki lekeyi
+silemez. Kuru baskı yeniden bulaşmaz. Kuruma zamanı duraklatmada durur, kayıtlı
+pigment izini silmez. Kuponların baskı/hasar/ıslaklık maskeleri bağımsız kalır.
+Bu işlemler belge kararını otomatik doğrulamaz; stok ve ödeme eklemez.

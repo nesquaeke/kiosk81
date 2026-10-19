@@ -179,6 +179,7 @@ func test_detached_piece_print_centre_matches_its_original_coupon_on_both_faces(
 			if not child is SubViewport: continue
 			var viewport: SubViewport = child as SubViewport
 			var printing: RationCardView = viewport.get_child(0) as RationCardView
+			if printing == null: continue # Ignore the independent liquid mask.
 			var sampled_print_point: Vector2 = printing.get_transform().affine_inverse() * (Vector2(viewport.size) / 2.0)
 			var expected: Vector2 = RationCardView.coupon_rect(index).get_center()
 			if not printing.front: expected.x = 640.0 - expected.x

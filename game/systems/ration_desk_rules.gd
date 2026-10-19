@@ -11,6 +11,10 @@ const CLASSES: Dictionary = {
 }
 const GOODS: Dictionary = {"meat": "ET / MIĘSO", "sugar": "ŞEKER / CUKIER", "soap": "SABUN / MYDŁO"}
 const PRODUCT_ORDER: PackedStringArray = ["meat", "sugar", "soap"]
+const MAX_INK_TIME_STEP: float = 60.0
+const MAX_INK_CLOCK: float = 1.0e12
+const MAX_INK_RUBS: int = 32
+const FINGER_RADIUS_PX: float = 6.0
 
 var cases: Array[Dictionary] = []
 
@@ -23,7 +27,7 @@ func _init(records: Array) -> void:
 
 func opening(require_coupon_collection: bool = false) -> Dictionary:
 	return {"calendar_date": "1982-02-15", "phase": "shift", "money": {"till": 2000}, "flags": {
-		KEY: {"index": 0, "location": "intake", "placement": "customer", "stamp": "", "marks": [], "cuts": [], "incisions": [], "collected": [], "require_coupon_collection": require_coupon_collection, "parcel": {}, "done": false,
+		KEY: {"index": 0, "location": "intake", "placement": "customer", "stamp": "", "marks": [], "cuts": [], "incisions": [], "collected": [], "require_coupon_collection": require_coupon_collection, "parcel": {}, "done": false, "ink_clock": 0,
 			"official": {"meat": 750, "sugar": 3000, "soap": 4}, "hidden": {"meat": 500, "sugar": 0, "soap": 0}, "results": []}}}
 
 
@@ -34,6 +38,20 @@ static func desk(state: CampaignState) -> Dictionary:
 func current(state: CampaignState) -> Dictionary:
 	var index: int = int(desk(state).get("index", 0))
 	return cases[index] if index >= 0 and index < cases.size() else {}
+
+
+## Elapsed physical time belongs to the shift, not to the current customer.
+## The view requests small ticks only while ink is wet; loading/switching a
+## customer cannot make a contact fresh again or modify its immutable timestamp.
+func advance_ink_time(state: CampaignState, delta: Variant) -> Dictionary:
+	if not _is_finite_number(delta) or float(delta) < 0.0:
+		return _reject("Mürekkep zamanı sonlu ve negatif olmayan bir değer olmalı.")
+	var work: Dictionary = desk(state).duplicate(true)
+	if work.is_empty():
+		return _reject("Mürekkep zamanı için açık bir vardiya gerekli.")
+	var clock: float = _bounded_number(work.get("ink_clock", 0.0), 0.0, 0.0, MAX_INK_CLOCK)
+	work["ink_clock"] = minf(clock + minf(float(delta), MAX_INK_TIME_STEP), MAX_INK_CLOCK)
+	return _commit(_stable_record(work))
 
 
 static func amount_text(item: String, amount: int) -> String:
@@ -78,12 +96,18 @@ func stamp(state: CampaignState, kind: String, position: Vector2, physical: bool
 	var in_decision_area: bool = Rect2(460, 135, 160, 90).has_point(position)
 	if not physical and not in_decision_area:
 		return _reject("Damgayı ön yüzdeki KARAR alanına bas.")
+	var mark: Dictionary = {"kind": kind, "x": position.x, "y": position.y,
+		"physical": physical, "serial": (work["marks"] as Array).size() + 1}
+	mark = _with_impression(mark, impression)
+	if float(mark["ink_load"]) <= 0.0:
+		return _reject("Damgada mürekkep kalmadı; mürekkep pedine bastır.")
+	if float(mark["contact_time"]) >= 0.0:
+		mark["contact_time"] = minf(float(mark["contact_time"]), _bounded_number(work.get("ink_clock", 0.0), 0.0, 0.0, MAX_INK_CLOCK))
+		mark = _stable_record(mark)
 	# A physical misplaced contact is still permanent ink, but must not approve,
 	# reject or confiscate the document through an unrelated printed field.
 	if in_decision_area: work["stamp"] = kind
-	var mark: Dictionary = {"kind": kind, "x": position.x, "y": position.y,
-		"physical": physical, "serial": (work["marks"] as Array).size() + 1}
-	(work["marks"] as Array).append(_with_impression(mark, impression))
+	(work["marks"] as Array).append(mark)
 	return _commit(work)
 
 
@@ -105,6 +129,68 @@ func update_impression(state: CampaignState, serial: int, impression: Dictionary
 			marks[index] = developed
 			return _commit(work)
 	return _reject("Geliştirilecek damga teması bulunamadı.")
+
+
+## A finger may lift still-wet ink after the rubber has been removed. Endpoints
+## are actual paper pixels; each saved rub stays in that impression's local
+## coordinates so rotating/moving the sheet never changes the drag direction.
+func smear_wet_ink(state: CampaignState, start: Vector2, end: Vector2, gesture_id: int = 0) -> Dictionary:
+	var work: Dictionary = desk(state).duplicate(true)
+	if not _active(work) or work.get("placement") != "table":
+		return _reject("Mürekkebe dokunmak için aktif kart masada olmalı.")
+	if gesture_id < 0 or gesture_id > 2147483647:
+		return _reject("Mürekkep hareketinin kimliği geçersiz.")
+	var sheet: Rect2 = Rect2(Vector2.ZERO, Vector2(640, 400))
+	if not start.is_finite() or not end.is_finite() or not sheet.has_point(start):
+		return _reject("Parmağın kâğıdın üzerinde başlamalı.")
+	if start.distance_to(end) < 0.1 or start.distance_to(end) > 4096.0:
+		return _reject("Mürekkep sürükleme yolu geçersiz.")
+	var paper_path: PackedVector2Array = _clip_ink_segment(start, end, sheet)
+	if paper_path.size() != 2 or paper_path[0].distance_to(paper_path[1]) < 0.1:
+		return _reject("Parmak kâğıt üzerinde ilerlemedi.")
+	var clock: float = _bounded_number(work.get("ink_clock", 0.0), 0.0, 0.0, MAX_INK_CLOCK)
+	var marks: Array = work.get("marks", [])
+	var changed: bool = false
+	for index: int in marks.size():
+		var mark: Dictionary = marks[index]
+		var wetness: float = _ink_wetness(mark, clock)
+		if wetness <= 0.0:
+			continue
+		var rubs: Array = (mark.get("rubs", []) as Array).duplicate(true)
+		var center: Vector2 = Vector2(float(mark.get("x", 0.0)), float(mark.get("y", 0.0)))
+		var angle: float = _bounded_number(mark.get("angle", 0.0), 0.0, -TAU * 100.0, TAU * 100.0)
+		var local_start: Vector2 = (paper_path[0] - center).rotated(-angle)
+		var local_end: Vector2 = (paper_path[1] - center).rotated(-angle)
+		if not rubs.is_empty() and _can_extend_ink_rub(rubs[-1], local_start, local_end, gesture_id):
+			var extended: Dictionary = (rubs[-1] as Dictionary).duplicate(true)
+			extended["to"] = [local_end.x, local_end.y]
+			rubs[-1] = _stable_record(extended)
+			mark["rubs"] = rubs
+			marks[index] = mark
+			changed = true
+			continue
+		if rubs.size() >= MAX_INK_RUBS:
+			continue
+		var contact: PackedVector2Array = _clip_ink_segment(local_start, local_end,
+			Rect2(-65, -22, 130, 44).grow(FINGER_RADIUS_PX))
+		if contact.size() != 2 or contact[0].distance_to(contact[1]) < 0.1:
+			continue
+		# Keep the actual pull after the first wet contact, including departure
+		# from the print. Rendering clips lifted fibres, never the whole stamp.
+		var rub: Dictionary = _stable_record({"from": [contact[0].x, contact[0].y],
+			"to": [local_end.x, local_end.y], "wetness": wetness})
+		if gesture_id > 0:
+			rub["gesture_id"] = gesture_id
+		if not rubs.is_empty() and rubs[-1] == rub:
+			continue # Replaying the same contact tick cannot double the damage.
+		rubs.append(rub)
+		mark["rubs"] = rubs
+		marks[index] = mark
+		changed = true
+	if not changed:
+		return _reject("Bu hareketin altında bulaşabilecek yaş mürekkep yok.")
+	work["marks"] = marks
+	return _commit(work)
 
 
 func prepare(state: CampaignState, source: String, item: String = "", physical: bool = false) -> Dictionary:
@@ -444,6 +530,10 @@ static func _bounded_number(value: Variant, fallback: float, minimum: float, max
 
 static func _with_impression(mark: Dictionary, impression: Dictionary) -> Dictionary:
 	var out: Dictionary = mark.duplicate(true)
+	out["ink_load"] = _bounded_number(impression.get("ink_load", out.get("ink_load", 1.0)), 1.0, 0.0, 1.0)
+	out["tilt"] = _bounded_number(impression.get("tilt", out.get("tilt", 0.0)), 0.0, -0.30, 0.30)
+	out["contact_time"] = _ink_timestamp(impression.get("contact_time", out.get("contact_time", -1.0)))
+	out["dry_duration"] = _bounded_number(impression.get("dry_duration", out.get("dry_duration", 10.0)), 10.0, 8.0, 12.0)
 	out["speed"] = _bounded_number(impression.get("speed", out.get("speed", 0.35)), float(out.get("speed", 0.35)), 0.0, 5.0)
 	out["dwell"] = _bounded_number(impression.get("dwell", out.get("dwell", 0.15)), float(out.get("dwell", 0.15)), 0.0, 15.0)
 	out["pressure"] = _bounded_number(impression.get("pressure", out.get("pressure", 0.65)), float(out.get("pressure", 0.65)), 0.0, 1.0)
@@ -458,6 +548,62 @@ static func _with_impression(mark: Dictionary, impression: Dictionary) -> Dictio
 		direction_vector = direction_vector.normalized() if direction_vector.is_finite() else Vector2.ZERO
 	out["smudge_direction"] = [direction_vector.x, direction_vector.y]
 	return _stable_record(out)
+
+
+## A missing/legacy timestamp is dry. Invalid negative values cannot create an
+## in-between sentinel, and non-finite input never reaches a save or renderer.
+static func _ink_timestamp(value: Variant) -> float:
+	return minf(float(value), MAX_INK_CLOCK) if _is_finite_number(value) and float(value) >= 0.0 else -1.0
+
+
+static func _ink_wetness(mark: Dictionary, clock: float) -> float:
+	var timestamp: float = _ink_timestamp(mark.get("contact_time", -1.0))
+	var load: float = _bounded_number(mark.get("ink_load", 1.0), 1.0, 0.0, 1.0)
+	if timestamp < 0.0 or load <= 0.0:
+		return 0.0
+	var duration: float = _bounded_number(mark.get("dry_duration", 10.0), 10.0, 8.0, 12.0)
+	return clampf(1.0 - maxf(clock - timestamp, 0.0) / duration, 0.0, 1.0)
+
+
+## Live finger samples extend only the latest straight stroke from that exact
+## gesture. A turn, reversal or another gesture keeps its own measured path.
+static func _can_extend_ink_rub(previous: Dictionary, start: Vector2, end: Vector2, gesture_id: int) -> bool:
+	if gesture_id <= 0 or int(previous.get("gesture_id", 0)) != gesture_id:
+		return false
+	var first_data: Array = previous.get("from", [])
+	var last_data: Array = previous.get("to", [])
+	if first_data.size() != 2 or last_data.size() != 2:
+		return false
+	var first: Vector2 = Vector2(float(first_data[0]), float(first_data[1]))
+	var last: Vector2 = Vector2(float(last_data[0]), float(last_data[1]))
+	var direction: Vector2 = last - first
+	var continuation: Vector2 = end - start
+	if direction.length_squared() < 0.01 or continuation.length_squared() < 0.01 or start.distance_to(last) >= 2.0:
+		return false
+	if direction.dot(continuation) <= 0.0:
+		return false
+	var unit: Vector2 = direction.normalized()
+	return absf(unit.cross(start - first)) < 0.75 and absf(unit.cross(end - first)) < 0.75
+
+
+## Slab clipping keeps the actual path; it neither projects onto a target nor
+## rotates a diagonal gesture into a guessed horizontal/vertical line.
+static func _clip_ink_segment(start: Vector2, end: Vector2, bounds: Rect2) -> PackedVector2Array:
+	var direction: Vector2 = end - start
+	var low: float = 0.0
+	var high: float = 1.0
+	for axis: int in 2:
+		if absf(direction[axis]) < 0.000001:
+			if start[axis] < bounds.position[axis] or start[axis] > bounds.end[axis]:
+				return PackedVector2Array()
+			continue
+		var first: float = (bounds.position[axis] - start[axis]) / direction[axis]
+		var last: float = (bounds.end[axis] - start[axis]) / direction[axis]
+		low = maxf(low, minf(first, last))
+		high = minf(high, maxf(first, last))
+		if low > high:
+			return PackedVector2Array()
+	return PackedVector2Array([start + direction * low, start + direction * high])
 
 
 ## Canonicalize new physical records once at the command boundary. CampaignState

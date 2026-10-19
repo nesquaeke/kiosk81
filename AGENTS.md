@@ -63,7 +63,7 @@ Don't casually run `tools/setup_project.gd` or whole scene generators; they
 overwrite scenes. Fetch Git LFS assets before importing a fresh checkout.
 
 Current sequential feature list: `docs/CARD_INTERACTION_BACKLOG.md`. The original
-user list is preserved there; the first five slices now include physical identity,
+user list is preserved there; the first six slices now include physical identity,
 printed evidence, controlled cutting and manual coupon collection.
 `HeldObjectInspector` works on the existing held card/tool and
 restores its exact pose on exit. Don't append marks/cuts during inspection.
@@ -121,3 +121,32 @@ HeldObjectInspector now guards actual rotated half-extents against camera.near
 plus 15 mm, including intermediate flip poses. Preserve initial fit framing,
 real close zoom for small coupons and exact cancellation transforms. A fixed
 radius-distance assertion can hide a broken zoom; test actual corner clearance.
+
+Stage 6: `docs/STAMP_INK_UPDATE.md`. StampInkState is per physical stamp:
+finite ink, pad absorption only while the rubber actually touches felt, one
+debit per real paper contact. `_stamp_contacted` is gesture history;
+`_stamp_touching` is current contact. Keep them separate: airborne movement
+never changes a prior mark, and a held-button recontact makes another impression.
+Precontact sideways travel changes the actual first-impact pixel, not smear.
+`_stamp_ink_offset` is only contact travel; `_stamp_offset` is tool positioning.
+Shift+wheel rotates yaw, Alt+wheel tilts. LMB+RMB permits both slide axes.
+
+StampDieFace is the mirrored physical underside, using the same glyph/frame
+layout. Load changes its coating; F inspection does not consume ink. Add this
+dynamic child after WorkbenchArt combines static stamp meshes. StampInkPad
+origin is base underside; its felt is 21 mm above that, compressing at contact.
+Do not refill from hover, interaction prompts, a stale tween or another stamp.
+
+Ink contact snapshots preserve ink_load/tilt/contact_time/dry_duration. Only
+RationDeskRules writes them through Game. Local visual elapsed time checkpoints
+ink_clock at later physical stamp/finger commands, so inspection never rewrites
+campaign data. Pause freezes the visual clock. No shader TIME for wetness.
+StampWetnessView owns a transparent canonical mask, front only; actual glyphs
+shine and dry, untouched paper stays matte. Each coupon owns its own mask/marks.
+
+Empty-hand Alt+LMB rubs paper without lifting it. Commit actual path samples
+while touching, not only at release: holding until dry must not erase an earlier
+wet stain. Positive gesture IDs coalesce continuous forward collinear samples;
+turns/reversals remain separate. `rubs` never alters a decision or entitlement.
+Wetness/ink quality cannot classify authenticity. Reservoir/world reconstruction
+from a save is not implemented; restart resets the physical tool reservoirs.

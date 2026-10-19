@@ -88,7 +88,10 @@ func run(desk: Node3D) -> PackedStringArray:
 	desk._stamp_yaw = .61
 	if absf(desk._stamp_ink_angle() - (.37 - .61)) > .001:
 		failures.append("stamp preview/ink angle ignored table rotation")
-	desk._stamp_offset = Vector2(.005, 0)
+	# Tool travel in air and the part transferred during paper contact are
+	# separate. Only contact travel may become a rotated, permanent smear.
+	desk._stamp_offset = Vector2(.009, .002)
+	desk._stamp_ink_offset = Vector2(.005, 0)
 	var impression: Dictionary = desk._stamp_impression()
 	var direction: Array = impression["smudge_direction"]
 	var paper_smear: Vector2 = Vector2(float(direction[0]), float(direction[1])).rotated(float(impression["angle"])) * float(impression["smudge"])
@@ -96,6 +99,7 @@ func run(desk: Node3D) -> PackedStringArray:
 	if world_smear.distance_to(Vector3(.005, 0, 0)) > .00001:
 		failures.append("rotated ink smudge did not follow the physical stamp slip")
 	desk._stamp_offset = Vector2.ZERO
+	desk._stamp_ink_offset = Vector2.ZERO
 	if RationDeskRules.desk(Game.state) != ink: failures.append("transient stamp preview became permanent ink")
 	desk._key(KEY_Q)
 	desk._key(KEY_F)

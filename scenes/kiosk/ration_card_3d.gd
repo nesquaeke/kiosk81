@@ -25,6 +25,7 @@ var half_thickness: float = HALF_THICKNESS
 var inspection_light_strength: float = 0.0
 var _faces: Array[MeshInstance3D] = []
 var _work: Dictionary = {}
+var wet_view: StampWetnessView
 
 
 static func table_orientation(front: bool) -> Quaternion:
@@ -74,6 +75,9 @@ func _ready() -> void:
 		materials.append(material)
 		_faces.append(instance)
 		add_child(instance)
+	wet_view = _make_wet_mask(self, [])
+	materials[0].set_shader_parameter("wet_ink_texture", (wet_view.get_parent() as SubViewport).get_texture())
+	materials[0].set_shader_parameter("has_wet_ink", true)
 	add_child(_paper_rim(Rect2(0, 0, 640, 400)))
 	_build_binding_staple()
 	for i: int in 3:
@@ -136,6 +140,7 @@ func refresh(document: Dictionary, work: Dictionary) -> void:
 		_preview.clear()
 	_document = document.duplicate(true)
 	_work = work.duplicate(true)
+	wet_view.set_marks(work.get("marks", []))
 	paper_profile = PaperStockProfile.resolve(document)
 	half_thickness = float(paper_profile["sheet_half_thickness"])
 	for index: int in _faces.size():
@@ -233,6 +238,8 @@ func create_coupon(index: int) -> CouponFragment3D:
 	var incision_snapshot: ImageTexture = ImageTexture.create_from_image(_incision_mask)
 	piece.set_meta("paper_stock", str(paper_profile.get("stock", "medium")))
 	piece.set_meta("paper_thickness", half_thickness * 2.0)
+	var piece_wet: StampWetnessView = _make_wet_mask(piece, piece_work.get("marks", []))
+	piece_wet.set_game_time(wet_view._game_time)
 	for back: bool in [false, true]:
 		var crop: Rect2 = rect
 		if back:
@@ -267,6 +274,9 @@ func create_coupon(index: int) -> CouponFragment3D:
 		material.shader = preload("res://assets/shaders/ration_paper.gdshader")
 		material.set_shader_parameter("paper_texture", viewport.get_texture())
 		material.set_shader_parameter("back_face", back)
+		if not back:
+			material.set_shader_parameter("wet_ink_texture", (piece_wet.get_parent() as SubViewport).get_texture())
+			material.set_shader_parameter("has_wet_ink", true)
 		material.set_shader_parameter("physical_size", piece_size)
 		material.set_shader_parameter("sheet_uv_rect", Vector4(rect.position.x / 640.0, rect.position.y / 400.0, rect.size.x / 640.0, rect.size.y / 400.0))
 		material.set_shader_parameter("incision_texture", incision_snapshot)
@@ -280,6 +290,23 @@ func create_coupon(index: int) -> CouponFragment3D:
 	rim.position = -Vector3((rect.get_center().x / 640.0 - 0.5) * WIDTH, (0.5 - rect.get_center().y / 400.0) * HEIGHT, 0)
 	piece.add_child(rim)
 	return piece
+
+
+func _make_wet_mask(owner_node: Node, marks: Array) -> StampWetnessView:
+	# This is only the liquid coating on the same ink. Detached paper owns an
+	# independent mask/record snapshot; the next customer cannot repaint it.
+	var viewport: SubViewport = SubViewport.new()
+	viewport.name = "WetInkMask"
+	viewport.size = Vector2i(RationCardView.PAPER_SIZE)
+	viewport.disable_3d = true
+	viewport.transparent_bg = true
+	viewport.gui_disable_input = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	owner_node.add_child(viewport)
+	var coating: StampWetnessView = StampWetnessView.new()
+	viewport.add_child(coating)
+	coating.set_marks(marks)
+	return coating
 
 
 func _paper_rim(rect: Rect2, follows_sheet: bool = true) -> MeshInstance3D:

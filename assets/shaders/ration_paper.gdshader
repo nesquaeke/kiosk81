@@ -3,6 +3,10 @@ render_mode cull_back;
 
 uniform sampler2D paper_texture : source_color, filter_linear;
 uniform sampler2D incision_texture : filter_linear, repeat_disable;
+// A transparent mask of actual rubber/finger-transfer strokes. It has no
+// background and stays in canonical FRONT sheet coordinates after cropping.
+uniform sampler2D wet_ink_texture : filter_linear, repeat_disable;
+uniform bool has_wet_ink = false;
 uniform vec3 missing = vec3(0.0);
 uniform bool back_face = false;
 uniform bool has_incisions = false;
@@ -169,10 +173,18 @@ void fragment() {
 	vec3 lit_paper = paper * (1.0 - transmission * mark * 0.26 - extra_layer * transmission * 0.13);
 	ALBEDO = mix(lit_paper, vec3(0.74, 0.67, 0.52) * stock_tint, lip * 0.22);
 	ROUGHNESS = clamp(0.89 + grain * 0.065 + fibres * fibre_strength * 0.025 - moisture * 0.025, 0.0, 1.0);
-	SPECULAR = 0.18;
+	// Only freshly transferred ink reflects the existing room lights. The
+	// back and untouched fibres keep their dry paper response; no emissive
+	// glow or full-card gloss advertises the mark or its meaning.
+	float wet_ink = (!back_face && has_wet_ink) ? texture(wet_ink_texture, sheet_p).a : 0.0;
+	wet_ink = clamp(wet_ink, 0.0, 1.0);
+	ROUGHNESS = mix(ROUGHNESS, 0.29 + grain * 0.05, wet_ink * 0.90);
+	SPECULAR = mix(0.18, 0.43, wet_ink);
 	NORMAL_MAP = vec3(0.5 + (grain - 0.5) * 0.10 + sign(sheet_p.x - 0.5) * fold * 0.10,
 		0.5 + (fibres - 0.5) * fibre_strength * 0.10 + sign(sheet_p.y - 0.612) * cross_fold * 0.075, 1.0);
-	NORMAL_MAP_DEPTH = 0.22;
+	// Smoother liquid follows the paper's true directional surface normal,
+	// so sheen moves with lamp/view direction rather than a painted flash.
+	NORMAL_MAP_DEPTH = mix(0.22, 0.075, wet_ink);
 	BACKLIGHT = paper * (0.025 + thinness * 0.025);
 	EMISSION = paper * transmission * 0.15 * (1.0 - mark * 0.62) * (1.0 - extra_layer * 0.78);
 }

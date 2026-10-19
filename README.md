@@ -38,6 +38,7 @@ Ana sahne: `scenes/kiosk/ration_desk_focus.tscn` (`document_focus = true`).
 sahtecilik karşılaştırması, kesim ve damga**. Bu mod ürün toplamayı, stok
 harcamayı veya ödeme almayı gerektirmez; oda/ekonomi genişletme kapsam dışıdır.
 
+[Mürekkep pedi ve yaş baskı](docs/STAMP_INK_UPDATE.md) ·
 [Kontrollü makas ve elle kupon toplama](docs/COUPON_CUTTING_UPDATE.md) ·
 [Belge karşılaştırması ve sekiz vaka](docs/EVIDENCE_REVIEW_UPDATE.md) ·
 [Kâğıt ve ışık incelemesi](docs/PAPER_INSPECTION_UPDATE.md) ·
@@ -77,9 +78,16 @@ günü** seç veya `scenes/kiosk/ration_review_day.tscn` sahnesini **F6** ile a�
 - SATIŞ / RET / ALIKOY damgasını **E** ile al. İmleci **SATICI ONAYI / KARAR** alanına götür; geçici baskı önizlemesi yerini/açısını gösterir.
   İlk iki müşterinin hedef yardımı Esc menüsünden kapatılabilir;
   **sol tuş basılı + fare aşağı** ile indir/bastır. Hız, bekleme ve basınç izi
-  değiştirir. Bırakınca kaldır; **Shift + tekerlek** açıyı değiştirir.
+  değiştirir. Bırakınca kaldır; **Shift + tekerlek** yönü, **Alt + tekerlek**
+  yana eğimi değiştirir. Temasta **sol + sağ tutup sürüklemek** iki eksende leke bırakır.
   Temas öncesi iptal iz bırakmaz; temas etmiş mürekkep kalır. Alan dışı fiziksel
   baskı kâğıtta kalır fakat işlem kararı kaydetmez.
+- Damgayı açık pedin keçesine aynı indirme hareketiyle değdirerek mürekkep al.
+  Hover doldurmaz; her damga kendi yükünü taşır, her müşteride ped gerekmez.
+  **Q → F** ile aynı damganın ters yazılı, mürekkepli lastik yüzünü inceleyebilirsin.
+- Yeni izler 8–12 oyun saniyesinde kurur; boş elle **Alt + sol sürükle** yaş
+  mürekkebe parmakla dokunur. Leke temas sırasında oluşur, karar değişmez;
+  kuru baskı bulaşmaz. Duraklatma kurumayı durdurur.
 - Makası **tık / E** ile al; kamera kesim için yaklaşır. **Sol tuş + sürükleme**
   sırasında bıçaklar görünür biçimde açılıp kapanır; yalnızca kapanırken keser.
   **Shift** daha ince ilerletir. Keskin köşede uç durur, makas açılıp yeni yöne

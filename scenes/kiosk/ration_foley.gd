@@ -17,10 +17,37 @@ func _ready() -> void:
 	_silent_output = DisplayServer.get_name() == "headless" or (driver >= 0 and driver + 1 < args.size() and args[driver + 1].to_lower() == "dummy")
 	for name: String in NAMES:
 		streams[name] = load("res://assets/audio/ration/%s.wav" % name) as AudioStream
+	# Distinct, deterministic placeholder contacts: felt gives a soft low thud,
+	# the rubber peels on lift, and a fingertip brushes paper only after transfer.
+	streams["ink_pad_down"] = _felt_contact(0.12, 0.20, 90.0, 11)
+	streams["ink_pad_lift"] = _felt_contact(0.10, 0.10, 190.0, 29)
+	streams["ink_rub"] = _felt_contact(0.21, 0.08, 0.0, 47)
 	for i: int in 4:
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		add_child(player)
 		players.append(player)
+
+
+static func _felt_contact(duration: float, volume: float, frequency: float, seed_value: int) -> AudioStreamWAV:
+	var pcm: PackedByteArray = PackedByteArray()
+	var rate: int = 22050
+	var count: int = int(duration * rate)
+	pcm.resize(count * 2)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var filtered: float = 0.0
+	for sample: int in count:
+		var t: float = float(sample) / float(rate)
+		var envelope: float = minf(t / 0.008, 1.0) * exp(-t / (duration * 0.24))
+		filtered = lerpf(filtered, rng.randf_range(-1, 1), 0.18)
+		var tone: float = sin(TAU * frequency * t) * exp(-t * 55.0) if frequency > 0 else 0.0
+		var value: int = int(clampf((filtered * 0.7 + tone * 0.3) * volume * envelope, -1, 1) * 32767)
+		pcm.encode_s16(sample * 2, value)
+	var sound: AudioStreamWAV = AudioStreamWAV.new()
+	sound.format = AudioStreamWAV.FORMAT_16_BITS
+	sound.mix_rate = rate
+	sound.data = pcm
+	return sound
 
 
 func play_sound(name: String) -> void:

@@ -51,10 +51,14 @@ func test_hand_archive_and_next_document_preserve_the_same_fragment_and_print() 
 	assert_eq(piece.source_serial, original_serial)
 	assert_eq(piece.get_meta("serial"), original_serial)
 	assert_eq(piece.dimensions, original_dimensions)
+	var printed_faces: int = 0
 	for child: Node in piece.get_children():
 		if child is SubViewport:
 			var renderer: RationCardView = child.get_child(0) as RationCardView
+			if renderer == null: continue # Liquid mask is not another printed face.
+			printed_faces += 1
 			assert_eq(renderer.card["serial"], original_serial, "the next customer's print must not replace a collected fragment")
+	assert_eq(printed_faces, 2, "both original printed faces must remain on the same fragment")
 
 
 func _card() -> RationCard3D:

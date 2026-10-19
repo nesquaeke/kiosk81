@@ -13,6 +13,7 @@ var customer_target: Interactable
 var workmat: Interactable
 var drawer: Interactable
 var coupon_bin: Interactable
+var ink_pad: StampInkPad
 var bell: Interactable
 var parcel: RationParcel3D
 var props: Dictionary[String, Interactable] = {}
@@ -23,6 +24,7 @@ var pages: Dictionary[String, RichTextLabel] = {}
 var page_viewports: Dictionary[String, SubViewport] = {}
 var left_hand: Node3D
 var right_hand: Node3D
+var _rub_hand: Node3D
 var held_tool: Interactable
 var card_held: bool = false
 var rules: RationDeskRules
@@ -88,6 +90,24 @@ var _stamp_update_time: float = 0.0
 var _stamp_yaw: float = 0.0
 var _stamp_cursor_before: Vector2 = Vector2.ZERO
 var _stamp_lift_played: bool = false
+var _stamp_surface: String = "paper"
+var _stamp_anchor: Vector3 = Vector3.ZERO
+var _stamp_align_start: Vector3 = Vector3.ZERO
+var _stamp_contact_load: float = 1.0
+var _stamp_contact_time: float = -1.0
+var _stamp_touching: bool = false
+var _stamp_aim_pixel: Vector2 = Vector2.ZERO
+var _stamp_ink_offset: Vector2 = Vector2.ZERO
+var _stamp_tilt: float = 0.0
+var _stamp_sliding: bool = false
+var _stamp_inks: Dictionary[String, StampInkState] = {}
+var _alt_pressed: bool = false
+var _ink_clock_pending: float = 0.0
+var _ink_rubbing: bool = false
+var _ink_rub_generation: int = 0
+var _ink_rub_previous: Vector2 = Vector2.ZERO
+var _ink_rub_last_time: float = 0.0
+var _ink_rub_sounded: bool = false
 var _tweens: Array[Tween] = []
 var _tokens: Array[Node3D] = []
 var _selftest: bool = false
@@ -198,8 +218,11 @@ func _build_room() -> void:
 	add_child(player)
 	left_hand = _hand()
 	right_hand = WorkbenchArt.build_hand(true)
+	_rub_hand = WorkbenchArt.build_hand(false, true)
 	player.camera.add_child(left_hand)
 	player.camera.add_child(right_hand)
+	player.camera.add_child(_rub_hand)
+	_rub_hand.visible = false
 	left_hand.visible = false
 	right_hand.visible = false
 	customer = CustomerPlaceholder.new()
@@ -241,7 +264,11 @@ func _build_station() -> void:
 		stamp_name.modulate = Color("d3c6a7")
 		stamp_name.outline_size = 0
 		props["stamp_" + kind] = stamp
+		_stamp_inks[kind] = StampInkState.new()
 		_remember(stamp)
+	ink_pad = StampInkPad.new()
+	add_child(ink_pad)
+	ink_pad.position = Vector3(-0.48, 0.961, -1.86)
 	var scissors: Interactable = _prop("scissors", Vector3(0.31, 0.968, -2.40), Vector3(0.24, 0.035, 0.10))
 	_adopt_visual(scissors, WorkbenchArt.build_scissors())
 	props["scissors"] = scissors
@@ -357,7 +384,7 @@ func _build_hud() -> void:
 	var rows: VBoxContainer = VBoxContainer.new()
 	pause.add_child(rows)
 	var controls: Label = Label.new()
-	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlan\nE: al / teslim et · G: yüzeye bırak\nMasada E: üstten bak · R: karneyi al\nElde F: yakından incele · F/Esc: geri\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut · Tekerlek: zoom\nİki belge eldeyken C: karşılaştır\nKitapçık incelemede Tab: rehber sayfası\nMasada F: çevir · Q/WASD: ayrıl\nSol tut + fare aşağı: damgayı indir\nSol tut + sürükle: kes · Shift: ince kesim\nKuponu E ile al → kaba bakıp E/G bırak\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
+	controls.text = "FPS / KARNE\nWASD: yürü · Shift: hızlan\nE: al / teslim et · G: yüzeye bırak\nMasada E: üstten bak · R: karneyi al\nElde F: yakından incele · F/Esc: geri\nİncelemede sol sürükle: döndür\nSağ tık: ters yüz · R: düzelt\nT: karneyi ışığa tut · Tekerlek: zoom\nİki belge eldeyken C: karşılaştır\nKitapçık incelemede Tab: rehber sayfası\nMasada F: çevir · Q/WASD: ayrıl\nDamga: sol tut + aşağı indir, bırak kaldır\nShift/Alt + tekerlek: yön/eğim\nPedde aynı hareket: mürekkep al\nBoş el Alt+sürükle: yaş mürekkebe dokun\nSol tut + sürükle: kes · Shift: ince kesim\nKuponu E ile al → kaba bakıp E/G bırak\n\nSes" if document_focus else "FPS / KARNE\nWASD: yürü · E: al / teslim et\nG: bırak · R: karneyi eline al\nSağ tut: elde incele · F: çevir\nQ / WASD: masadan ayrıl\n\nSes"
 	controls.add_theme_font_size_override("font_size", 20)
 	rows.add_child(controls)
 	var volume: HSlider = HSlider.new()
@@ -406,6 +433,13 @@ func _restart() -> void:
 	_paper_dragging = false
 	_table_yaw = 0.0
 	_stamp_yaw = 0.0
+	_stamp_tilt = 0.0
+	_alt_pressed = false
+	_ink_clock_pending = 0.0
+	_ink_rubbing = false
+	for ink: StampInkState in _stamp_inks.values(): ink.reset()
+	for kind: String in _stamp_inks: _sync_stamp_coating(kind)
+	ink_pad.release_press()
 	_held_distance = 0.48
 	_stamp_charging = false
 	_busy = false
@@ -541,7 +575,7 @@ func _offer_card(index: int, generation: int) -> void:
 
 
 func _open_object_inspection(target_override: Node3D = null, continuing_comparison: bool = false) -> void:
-	if _object_inspector.active or _busy or _card_busy or _paper_dragging or _stamp_charging or _cut_index >= 0: return
+	if _object_inspector.active or _busy or _card_busy or _paper_dragging or _ink_rubbing or _stamp_charging or _cut_index >= 0: return
 	var target: Node3D = target_override if target_override != null else (held_tool if held_tool is CouponFragment3D else (card if card_held else held_tool))
 	if target == null: return
 	if not continuing_comparison: _comparison_views.clear()
@@ -662,6 +696,8 @@ func _update_placement_preview() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.physical_keycode == KEY_SHIFT:
 		_fine_cut = event.pressed
+	if event is InputEventKey and event.physical_keycode == KEY_ALT:
+		_alt_pressed = event.pressed
 	if _object_inspector.active:
 		_inspection_input(event)
 		get_viewport().set_input_as_handled()
@@ -683,7 +719,7 @@ func _input(event: InputEvent) -> void:
 			KEY_G:
 				if not pause.visible: _drop_held()
 			KEY_F:
-				if not pause.visible and not _paper_dragging:
+				if not pause.visible and not _paper_dragging and not _ink_rubbing:
 					if document_focus and not _desk_inspecting and (card_held or held_tool != null):
 						if _card_busy or _busy: _inspect_pending = true
 						else: _open_object_inspection()
@@ -692,22 +728,26 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse: InputEventMouseButton = event
 		if mouse.button_index == MOUSE_BUTTON_RIGHT:
-			if _paper_dragging:
+			if _stamp_charging:
+				_stamp_sliding = mouse.pressed
+			elif _paper_dragging:
 				if mouse.pressed: _paper_rotation_anchor = card.global_position
 				else: _paper_drag_offset = card.global_position - _table_point()
 				_paper_rotating = mouse.pressed
 			elif _desk_inspecting:
-				_desk_pan = mouse.pressed and not _stamp_charging and _cut_index < 0
+				_desk_pan = mouse.pressed and not _stamp_charging and not _ink_rubbing and _cut_index < 0
 			else:
 				_inspecting = not document_focus and mouse.pressed and (card_held or _is_book(held_tool))
 				player.look_locked = _inspecting
 		elif mouse.pressed and mouse.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			var step: float = -1.0 if mouse.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
 			if _desk_inspecting and not _stamp_charging and _cut_index < 0:
-				if mouse.shift_pressed and held_tool != null and held_tool.action.begins_with("stamp_"):
+				if (mouse.alt_pressed or _alt_pressed) and held_tool != null and held_tool.action.begins_with("stamp_"):
+					_stamp_tilt = clampf(_stamp_tilt + step * 0.045, -0.27, 0.27)
+				elif mouse.shift_pressed and held_tool != null and held_tool.action.begins_with("stamp_"):
 					_stamp_yaw += step * 0.10
 				else:
-					_desk_distance = clampf(_desk_distance * (1.0 + step * 0.12), 0.42, 2.05)
+					_desk_distance = clampf(_desk_distance * pow(1.12, step), 0.42, 2.05)
 					_update_overhead_camera()
 			else:
 				_held_distance = clampf(_held_distance + step * 0.035, 0.30, 0.65)
@@ -716,11 +756,14 @@ func _input(event: InputEvent) -> void:
 		elif mouse.button_index == MOUSE_BUTTON_LEFT:
 			if mouse.pressed:
 				if held_tool == null and not _busy and not _card_busy:
-					if _desk_inspecting and _ray().get("collider") == card: _begin_paper_drag()
+					if _desk_inspecting and _ray().get("collider") == card:
+						if mouse.alt_pressed or _alt_pressed: _begin_ink_rub()
+						else: _begin_paper_drag()
 					else: _interact()
 				else: _begin_tool()
 			else:
-				if _paper_dragging: _end_paper_drag()
+				if _ink_rubbing: _end_ink_rub()
+				elif _paper_dragging: _end_paper_drag()
 				else: _end_tool()
 	elif event is InputEventMouseMotion:
 		var mouse: InputEventMouseMotion = event
@@ -731,8 +774,17 @@ func _input(event: InputEvent) -> void:
 			if not _selftest: _desk_cursor_override = Vector2(INF, INF)
 			get_viewport().set_input_as_handled()
 		elif _stamp_charging:
-			_stamp_target_height = clampf(_stamp_target_height - movement.y * 0.00065, -0.004, 0.14)
+			var previous_offset: Vector2 = _stamp_offset
+			if _stamp_sliding and _stamp_surface == "paper":
+				_stamp_offset.y = clampf(_stamp_offset.y + movement.y * 0.00012, -0.009, 0.009)
+			else:
+				_stamp_target_height = clampf(_stamp_target_height - movement.y * 0.00065, -0.004, 0.14)
 			_stamp_offset.x = clampf(_stamp_offset.x + movement.x * 0.00012, -0.009, 0.009)
+			if _stamp_touching and _stamp_surface == "paper":
+				_stamp_ink_offset += _stamp_offset - previous_offset
+			get_viewport().set_input_as_handled()
+		elif _ink_rubbing:
+			if not _selftest: _desk_cursor_override = Vector2(INF, INF)
 			get_viewport().set_input_as_handled()
 		elif _desk_inspecting:
 			if not _selftest: _desk_cursor_override = Vector2(INF, INF)
@@ -760,6 +812,7 @@ func _physics_process(delta: float) -> void:
 	player.can_move = not pause.visible and not _desk_inspecting and not _object_inspector.active and not _busy and _cut_index < 0 and not _stamp_charging
 	player.sensitivity = 0.002
 	if pause.visible: return
+	_update_wet_ink(delta)
 	crosshair.visible = not _desk_inspecting and not _object_inspector.active
 	subtitle.visible = not _desk_inspecting and not _object_inspector.active and _window_ready and Time.get_ticks_msec() < _subtitle_until and player.global_position.distance_to(customer_target.global_position) < 3.0 and -player.camera.global_basis.z.dot((customer_target.global_position - player.camera.global_position).normalized()) > 0.55
 	message.visible = Time.get_ticks_msec() < _feedback_until
@@ -773,7 +826,8 @@ func _physics_process(delta: float) -> void:
 		if card_held and held_tool == identity_document: hint.text += "\nC · Diğer belgeyi yakından karşılaştır"
 		if _object_inspector.object == props["book"]: hint.text += "\nTab · Kâğıt ve belge karşılaştırma rehberleri"
 		return
-	if _paper_dragging: _update_paper_drag(delta)
+	if _ink_rubbing: _update_ink_rub()
+	elif _paper_dragging: _update_paper_drag(delta)
 	elif _stamp_charging: _update_stamp(delta)
 	elif _cut_index >= 0: _update_cut(delta)
 	elif _desk_inspecting and not _busy and not _card_busy and held_tool != null:
@@ -836,15 +890,18 @@ func _table_point() -> Vector3:
 	return origin + direction * ((_desk_center.y - origin.y) / direction.y)
 
 func _cancel_gesture() -> void:
+	if _ink_rubbing: _end_ink_rub()
 	if _paper_dragging: _end_paper_drag(true)
 	if _cut_index >= 0: _commit_incision()
 	if _stamp_charging or _stamp_animating:
 		if _stamp_contacted: _save_stamp_impression()
 		if _stamp_tween != null and _stamp_tween.is_valid(): _stamp_tween.kill()
 		_tool_generation += 1
-		if _stamp_contacted and not _stamp_lift_played: foley.play_sound("stamp_lift")
+		if _stamp_contacted and not _stamp_lift_played: foley.play_sound("ink_pad_lift" if _stamp_surface == "pad" else "stamp_lift")
+		_end_ink_contact()
 		_stamp_animating = false
 		_stamp_contacted = false
+		_stamp_touching = false
 		_stamp_charging = false
 		_busy = false
 		_restore_tool_to_hand()
@@ -889,7 +946,7 @@ func _ray() -> Dictionary:
 	return get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin, origin + direction * REACH, 3))
 
 func _interact() -> void:
-	if _busy or _card_busy or _cut_index >= 0 or _stamp_charging: return
+	if _busy or _card_busy or _ink_rubbing or _cut_index >= 0 or _stamp_charging: return
 	var hit: Dictionary = _ray()
 	var target: Interactable = hit.get("collider") as Interactable
 	if target == null:
@@ -919,6 +976,8 @@ func _interact() -> void:
 	elif kind == "coupon_bin":
 		if held_tool is CouponFragment3D: _file_held_coupon()
 		else: _message("Kesilmiş kuponu eline alıp bu kaba bırak.")
+	elif kind == "ink_pad":
+		_message("Damgayı al. Pedin keçe yüzünde sol tuşu tutup fareyi aşağı sür; temas ederken mürekkep alır.")
 	elif kind == "coupon":
 		if held_tool != null: _message("Önce sağ elindeki aracı G ile bırak."); return
 		if target.get_meta("settling", false) or target.get_meta("filing", false): return
@@ -1079,7 +1138,7 @@ func _place_card(at: Vector3) -> void:
 
 
 func _drop_held() -> void:
-	if _busy or _card_busy or _cut_index >= 0 or _stamp_charging: return
+	if _busy or _card_busy or _ink_rubbing or _cut_index >= 0 or _stamp_charging: return
 	var hit: Dictionary = _ray()
 	if hit.is_empty(): _message("Nesneyi bırakmak için yakındaki bir yüzeye bak."); return
 	var target: Node = hit["collider"]
@@ -1215,6 +1274,7 @@ func _update_tool_hover() -> void:
 	held_tool.global_position = point + Vector3(0, 0.11, 0)
 	held_tool.global_rotation = Vector3(0, _stamp_yaw, 0)
 	if held_tool.action.begins_with("stamp_"):
+		held_tool.global_basis = Basis(Vector3.UP, _stamp_yaw) * Basis(Vector3.BACK, _stamp_tilt)
 		# Hold the handle beside the projected impression until lowering starts,
 		# so the physical tool/hand does not cover the player's alignment target.
 		held_tool.global_position += Vector3(0.10, 0, 0.035)
@@ -1352,14 +1412,23 @@ func _begin_tool() -> void:
 	if _busy or _card_busy or held_tool == null or card_held: return
 	if not _desk_inspecting:
 		_message("Kartla E üzerinden etkileşip üstten masa görünümüne geç."); return
-	if _ray().get("collider") != card or not card.front_showing: return
+	var target: Node = _ray().get("collider") as Node
+	var on_pad: bool = target == ink_pad and held_tool.action.begins_with("stamp_")
+	if not on_pad and (target != card or not card.front_showing): return
 	var pointer: Vector2 = _pointer_position()
 	var pixel: Vector2 = _paper_pixel()
-	if not card.has_paper_at(pixel): return
+	if not on_pad and not card.has_paper_at(pixel): return
 	if held_tool.action.begins_with("stamp_"):
+		_stamp_surface = "pad" if on_pad else "paper"
+		_stamp_anchor = _ink_pad_point() if on_pad else card.pixel_to_world(pixel)
+		if on_pad and not _pad_fits_stamp(_stamp_anchor):
+			_message("Lastik yüzün tamamını pedin keçe kısmına hizala."); return
+		_stamp_align_start = held_tool.global_position
 		_stamp_charging = true
 		_stamp_contacted = false
+		_stamp_touching = false
 		_stamp_lift_played = false
+		_stamp_sliding = false
 		_stamp_time = 0
 		_stamp_dwell = 0
 		_stamp_pressure = 0
@@ -1368,14 +1437,18 @@ func _begin_tool() -> void:
 		_stamp_impact_speed = 0
 		_stamp_approach_speed = 0
 		_stamp_offset = Vector2.ZERO
+		_stamp_ink_offset = Vector2.ZERO
 		_stamp_serial = -1
 		_stamp_update_time = 0
+		_stamp_contact_time = -1.0
+		_stamp_contact_load = 1.0
 		_stamp_pixel = pixel
+		_stamp_aim_pixel = pixel
 		_stamp_cursor_before = pointer
 		_stamp_kind = held_tool.action.trim_prefix("stamp_")
 		held_tool.reparent(self)
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		_message("Sol tuş basılıyken fareyi aşağı sür: indir/bastır. Yavaş/hızlı hareket ve bekleme izi değiştirir. Bırak: kaldır.")
+		_message("Sol tuşu tut, aşağı sür: pede indir. Keçeye temas ettikçe lastik mürekkep alır. Bırak: kaldır." if on_pad else "Aşağı sür: indir/bastır · Sol+sağ tuşla sürükle: yanal kaydır · Bırak: kaldır.")
 	elif held_tool.action == "scissors":
 		_cut_index = 0
 		_cut_tip = pixel
@@ -1399,9 +1472,10 @@ func _end_tool() -> void:
 		_tool_generation += 1
 		var gesture: int = _tool_generation
 		var generation: int = _epoch
-		if _stamp_contacted:
-			foley.play_sound("stamp_lift")
+		if _stamp_contacted and not _stamp_lift_played:
+			foley.play_sound("ink_pad_lift" if _stamp_surface == "pad" else "stamp_lift")
 			_stamp_lift_played = true
+		_end_ink_contact()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_viewport().warp_mouse(_stamp_cursor_before)
 		_stamp_tween = create_tween()
@@ -1415,12 +1489,28 @@ func _end_tool() -> void:
 				_restore_tool_to_hand())
 
 func _stamp_contact() -> void:
-	if _stamp_contacted: return
-	if not _execute(rules.stamp(Game.state, _stamp_kind, _stamp_pixel, true, _stamp_impression())): return
+	if _stamp_touching: return
 	_stamp_contacted = true
+	_stamp_touching = true
+	_stamp_lift_played = false
+	_stamp_dwell = 0.0
+	_stamp_update_time = 0.0
+	_stamp_ink_offset = Vector2.ZERO
+	_stamp_serial = -1
+	var ink: StampInkState = _stamp_inks[_stamp_kind]
+	if _stamp_surface == "pad":
+		ink.set_pad_contact(true)
+		return
+	var local_offset: Vector3 = card.global_basis.inverse() * Vector3(_stamp_offset.x, 0, _stamp_offset.y)
+	_stamp_pixel = _stamp_aim_pixel + Vector2(local_offset.x, -local_offset.y) * (640.0 / RationCard3D.WIDTH)
+	_flush_ink_time()
+	_stamp_contact_time = _ink_now()
+	_stamp_contact_load = ink.begin_paper_contact()
+	_sync_stamp_coating(_stamp_kind)
+	foley.play_sound("stamp_down")
+	if not _execute(rules.stamp(Game.state, _stamp_kind, _stamp_pixel, true, _stamp_impression())): return
 	var marks: Array = RationDeskRules.desk(Game.state).get("marks", [])
 	_stamp_serial = int(marks[-1]["serial"])
-	foley.play_sound("stamp_down")
 	if not RationCardView.DECISION_RECT.has_point(_stamp_pixel):
 		_message("Baskı kâğıtta kaldı. Kararı kaydetmek için SATICI ONAYI alanına bas.")
 	_consume_severed_coupon()
@@ -1428,12 +1518,14 @@ func _stamp_contact() -> void:
 
 func _stamp_impression() -> Dictionary:
 	var angle: float = _stamp_ink_angle()
-	var local_offset: Vector3 = card.global_basis.inverse() * Vector3(_stamp_offset.x, 0, _stamp_offset.y)
+	var local_offset: Vector3 = card.global_basis.inverse() * Vector3(_stamp_ink_offset.x, 0, _stamp_ink_offset.y)
 	# The renderer rotates the entire rubber face. Express smudge in its local
 	# axes so a world-space lateral slip keeps the same direction on the sheet.
 	var smear: Vector2 = Vector2(local_offset.x, -local_offset.y).rotated(-angle).normalized()
 	return {"speed": _stamp_impact_speed, "dwell": _stamp_dwell, "pressure": _stamp_pressure,
-		"angle": angle, "smudge": _stamp_offset.length(), "smudge_direction": [smear.x, smear.y]}
+		"angle": angle, "smudge": _stamp_ink_offset.length(), "smudge_direction": [smear.x, smear.y],
+		"ink_load": _stamp_contact_load, "contact_time": _stamp_contact_time,
+		"dry_duration": StampInkState.drying_duration(_stamp_contact_load), "tilt": _stamp_tilt}
 
 
 func _stamp_ink_angle() -> float:
@@ -1460,18 +1552,138 @@ func _update_stamp(delta: float) -> void:
 	var velocity_m_s: float = maxf(0, (before - _stamp_height) / maxf(delta, 0.00001))
 	_stamp_approach_speed = maxf(velocity_m_s, _stamp_approach_speed * exp(-delta / 0.06))
 	var pressure: float = clampf(-_stamp_target_height / 0.004, 0, 1)
-	_stamp_pressure = maxf(_stamp_pressure, pressure)
 	if _stamp_height <= 0.0001:
-		if not _stamp_contacted:
+		if not _stamp_touching:
+			_stamp_pressure = pressure
 			_stamp_impact_speed = _stamp_approach_speed
 			_stamp_contact()
+		_stamp_pressure = maxf(_stamp_pressure, pressure)
 		_stamp_dwell += delta
+		if _stamp_surface == "pad":
+			if ink_pad.pressure <= 0.0:
+				foley.play_sound("ink_pad_down")
+				_stamp_lift_played = false
+			_stamp_inks[_stamp_kind].set_pad_contact(true)
+			_stamp_inks[_stamp_kind].advance_pad(delta * (1.0 - absf(_stamp_tilt)))
+			_sync_stamp_coating(_stamp_kind)
+			ink_pad.press_at(_stamp_anchor, 0.35 + pressure * 0.65)
 		_stamp_update_time += delta
 		if _stamp_update_time >= 0.10:
 			_stamp_update_time = 0
 			_save_stamp_impression()
-	held_tool.global_position = card.pixel_to_world(_stamp_pixel) + Vector3(_stamp_offset.x, maxf(_stamp_height, 0), _stamp_offset.y)
-	held_tool.global_rotation = Vector3(0, _stamp_yaw, 0)
+	elif _stamp_touching:
+		# A captured-button gesture may lift before release. Felt and absorption
+		# follow actual height, never the historical first-contact latch.
+		if _stamp_surface == "paper": _save_stamp_impression()
+		_stamp_inks[_stamp_kind].end_contact()
+		_stamp_touching = false
+		foley.play_sound("ink_pad_lift" if _stamp_surface == "pad" else "stamp_lift")
+		_stamp_lift_played = true
+		ink_pad.release_press()
+	var edge_height: float = absf(sin(_stamp_tilt)) * 65.0 * RationCard3D.WIDTH / 640.0
+	var compression: float = ink_pad.compression_depth if _stamp_surface == "pad" and _stamp_contacted else 0.0
+	var destination: Vector3 = _stamp_anchor + Vector3(_stamp_offset.x if _stamp_surface == "paper" else 0.0, maxf(_stamp_height, 0) + edge_height - compression, _stamp_offset.y if _stamp_surface == "paper" else 0.0)
+	held_tool.global_position = _stamp_align_start.lerp(destination, clampf(_stamp_time / 0.09, 0, 1))
+	held_tool.global_basis = Basis(Vector3.UP, _stamp_yaw) * Basis(Vector3.BACK, _stamp_tilt)
+
+
+func _end_ink_contact() -> void:
+	ink_pad.release_press()
+	if _stamp_inks.has(_stamp_kind): _stamp_inks[_stamp_kind].end_contact()
+	_stamp_sliding = false
+	_stamp_touching = false
+
+
+func _sync_stamp_coating(kind: String) -> void:
+	var face: StampDieFace = props["stamp_" + kind].get_node_or_null("RubberPrintingFace") as StampDieFace
+	if face != null: face.set_ink_load(_stamp_inks[kind].load)
+
+
+func _ink_pad_point() -> Vector3:
+	var pixel: Vector2 = _pointer_position()
+	var origin: Vector3 = player.camera.project_ray_origin(pixel)
+	var direction: Vector3 = player.camera.project_ray_normal(pixel)
+	var surface_y: float = ink_pad.global_position.y + ink_pad.felt_surface_y
+	return origin + direction * ((surface_y - origin.y) / direction.y) if absf(direction.y) > 0.0001 else Vector3(INF, INF, INF)
+
+
+func _pad_fits_stamp(at: Vector3) -> bool:
+	if not at.is_finite(): return false
+	var facing: Basis = Basis(Vector3.UP, _stamp_yaw)
+	for x: float in [-65.0, 65.0]:
+		for z: float in [-22.0, 22.0]:
+			if not ink_pad.contains_felt(at + facing * Vector3(x, 0, z) * (RationCard3D.WIDTH / 640.0), 0.001): return false
+	return true
+
+
+func _ink_now() -> float:
+	return float(RationDeskRules.desk(Game.state).get("ink_clock", 0.0)) + _ink_clock_pending
+
+
+func _update_wet_ink(delta: float) -> void:
+	var wet: bool = false
+	for surface: StampWetnessView in get_tree().get_nodes_in_group("ration_wet_ink"):
+		if surface.has_wet_ink(): wet = true
+	if wet: _ink_clock_pending += delta
+	for surface: StampWetnessView in get_tree().get_nodes_in_group("ration_wet_ink"):
+		surface.set_game_time(_ink_now())
+
+
+func _flush_ink_time() -> void:
+	# Drying is visual between contacts. Checkpoint only at a physical command,
+	# so looking/turning a sheet never rewrites its campaign or ink records.
+	while _ink_clock_pending > 0.000001:
+		var elapsed: float = minf(_ink_clock_pending, 60.0)
+		_ink_clock_pending -= elapsed
+		_execute(rules.advance_ink_time(Game.state, elapsed))
+
+
+func _begin_ink_rub() -> void:
+	if not _desk_inspecting or held_tool != null or card_held or not card.front_showing: return
+	var pixel: Vector2 = _paper_pixel()
+	if not card.has_paper_at(pixel): return
+	_ink_rubbing = true
+	_ink_rub_generation += 1
+	_ink_rub_previous = pixel
+	_ink_rub_last_time = _ink_now()
+	_ink_rub_sounded = false
+	_rub_hand.reparent(self)
+	_rub_hand.visible = true
+	_update_ink_rub()
+
+
+func _update_ink_rub() -> void:
+	var pixel: Vector2 = _paper_pixel()
+	if not card.has_paper_at(pixel):
+		_ink_rub_previous = Vector2(INF, INF)
+		_rub_hand.visible = false
+		return
+	_rub_hand.visible = true
+	if not _ink_rub_previous.is_finite(): _ink_rub_previous = pixel
+	_rub_hand.global_rotation = Vector3(-0.55, 0.35, 0)
+	var fingertip: Vector3 = Vector3(-0.027, -0.0245, -0.091)
+	_rub_hand.global_position = card.pixel_to_world(pixel) - _rub_hand.global_basis * fingertip
+	if _ink_now() - _ink_rub_last_time >= 0.05: _commit_ink_rub_sample(pixel)
+
+
+func _commit_ink_rub_sample(pixel: Vector2) -> void:
+	if not _ink_rub_previous.is_finite() or not card.has_paper_at(pixel) or _ink_rub_previous.distance_to(pixel) < 0.1: return
+	_flush_ink_time()
+	var result: Dictionary = rules.smear_wet_ink(Game.state, _ink_rub_previous, pixel, _ink_rub_generation)
+	if result.get("ok", false) and _execute(result) and not _ink_rub_sounded:
+		foley.play_sound("ink_rub")
+		_ink_rub_sounded = true
+	_ink_rub_previous = pixel
+	_ink_rub_last_time = _ink_now()
+
+
+func _end_ink_rub() -> void:
+	if not _ink_rubbing: return
+	_update_ink_rub()
+	_commit_ink_rub_sample(_paper_pixel())
+	_ink_rubbing = false
+	_rub_hand.reparent(player.camera)
+	_rub_hand.visible = false
 
 func _start_tool_on_table(at: Vector3) -> void:
 	if held_tool == null: return
@@ -1682,18 +1894,20 @@ func _hint(target: Node) -> String:
 	if document_focus and held_tool != null and not _desk_inspecting:
 		return "F · Eldeki nesneyi incele    G · Yüzeye bırak    E · Etkileş"
 	if _desk_inspecting:
+		if _ink_rubbing: return "Parmak kâğıtta · Yaş mürekkep hareket yönünde bulaşır · Bırak: elini kaldır · Q: ayrıl"
 		if _paper_dragging: return "Sol tuşu bırak: masaya koy · Sağ tuş + sürükle: kâğıdı döndür · Q: bırak ve ayrıl"
 		if _cut_index >= 0:
 			return "Makas açık: yön değiştiriyor · Kesik uzamıyor · Bırak/Q: hasar kalır" if _cut_controller != null and _cut_controller.aligning else "%.1f cm kesildi · Shift: ince kesim · Bırak/Q: kesik kâğıtta kalır" % (_cut_length_m * 100.0)
-		if _stamp_charging: return "Fare aşağı: indir/bastır · Basılı tut: mürekkep işlemesi · Bırak: kaldır"
+		if _stamp_charging: return "Fare aşağı: pede indir · Temasta tut: mürekkep al · Bırak: kaldır" if _stamp_surface == "pad" else "Fare aşağı: indir/bastır · Sol + sağ tut/sürükle: kaydır · Bırak: kaldır"
 		if held_tool is InspectionLoupe: return "Büyüteci kâğıt üstünde gezdir · Tekerlek: yaklaş · G: bırak · Q: ayrıl"
 		if held_tool != null and held_tool.action == "scissors": return "Sol tuş + sürükle: gerçek kesim · Sağ tuş: masayı kaydır · Q: ayrıl"
-		if held_tool != null and held_tool.action.begins_with("stamp_"): return "Sol tuş basılı + fare aşağı: damga · Shift + tekerlek: açı · Q: ayrıl"
+		if held_tool != null and held_tool.action.begins_with("stamp_"):
+			return "Ped üzerinde sol tut + aşağı: mürekkep al · G: damgayı bırak · Q: ayrıl" if target == ink_pad else "Sol tut + aşağı: damga · Shift/Alt + tekerlek: yön/eğim · Pede dokun: mürekkep al · Q: ayrıl"
 	if target == null: return "WASD · Yürü    E · Al / ver    G · Yüzeye bırak    Esc · Menü"
 	if target == card:
 		if RationDeskRules.desk(Game.state).get("location") == "intake": return "E / Sol tık · Karneyi eline al" if document_focus else "E · Uzatılan karneyi masaya al"
 		var inspect: String = "Q / WASD · Ayrıl" if _desk_inspecting else "E · Üstten masa görünümü"
-		return inspect + "    Sol tut · Masada taşı    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "")
+		return inspect + "    Sol tut · Masada taşı    R · Eline al    F · Çevir" + ("    Sol tuş · Aracı kullan" if held_tool != null else "    Alt + sürükle · Yaş mürekkebe dokun")
 	var kind: String = str(target.get("action")) if target is Interactable else ""
 	match kind:
 		"workmat": return "E / G · Karneyi masaya bırak" if card_held else "E · Masadaki karneyi incelemek için eğil    Q · Ayrıl"
@@ -1710,12 +1924,14 @@ func _hint(target: Node) -> String:
 		"loupe": return "E · Büyüteci al; masada belge üzerine getir"
 		"coupon": return "E / Tık · Ayrılan kuponu eline al"
 		"coupon_bin": return "Kesilmiş kuponu E ile alıp bu kaba bırak"
+		"ink_pad": return "Damgayı al; keçenin üstünde sol tutup aşağı indirerek mürekkep al"
 	if kind.begins_with("stamp_"): return "E · %s damgasını al" % {"stamp_approve": "SATIŞ", "stamp_reject": "RET", "stamp_seize": "ALIKOY"}.get(kind, "")
 	return "G · Elindeki nesneyi bu yüzeye bırak"
 
 
 func _toggle_pause() -> void:
 	_fine_cut = false
+	_alt_pressed = false
 	_close_object_inspection()
 	_inspect_pending = false
 	_exit_desk_inspection(true)
@@ -1909,7 +2125,11 @@ func _run_document_selftest() -> void:
 func _run_selftest() -> void:
 	var failures: PackedStringArray = []
 	if document_focus:
-		failures = await preload("res://tests/coupon_cutting_regressions.gd").new().run(self)
+		failures = await preload("res://tests/ink_desk_regressions.gd").new().run(self)
+		if "--ink-only" in OS.get_cmdline_user_args():
+			get_tree().quit(0 if failures.is_empty() else 1)
+			return
+		failures.append_array(await preload("res://tests/coupon_cutting_regressions.gd").new().run(self))
 		if "--coupon-only" in OS.get_cmdline_user_args():
 			get_tree().quit(0 if failures.is_empty() else 1)
 			return

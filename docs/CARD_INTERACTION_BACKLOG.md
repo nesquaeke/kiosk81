@@ -13,7 +13,7 @@ Bu liste tamamlanmış özellik iddiası değildir; gerçek sonuçlar kabul rapo
 | 3 | Kâğıt aileleri, kalınlık, baskı/eskime çeşitleri, filigran ve lif ayrıntıları | Uygulandı; 237 birim testi, headless ve pencereli kontroller geçti |
 | 4 | Kademeli sahtecilik ipuçları ve karşılaştırma; otomatik suçluluk cevabı yok | Sekiz yeni kanıt vakası, ayrı fiziksel kimlik, yüz/zoom hatırlayan C karşılaştırması ve Tab rehberi eklendi. 251 birim testi, headless/pencereli 16 müşteri ve normal pencerede yeni sekiz vaka geçti; NPC görünüşü/soruları 8. dilimde kalıyor |
 | 5 | Kontrollü kesim hissi, bıçak ve el animasyonu, kupon toplama | Uygulandı: kontrollü açılma/dönüş, Shift ince kesim, geçici rehber, fiziksel kupon/E-F inceleme ve temasla dosyalama. 286 birim testi, headless/pencereli 16 müşteri ve normal imleç akışı geçti; prosedürel el/alet sanatı prototip |
-| 6 | Damga basıncı/açısı, yaş mürekkep ve ped kullanımı | Basınç/hız/bekleme temeli mevcut; yeni ayrıntılar bekliyor |
+| 6 | Damga basıncı/açısı, yaş mürekkep ve ped kullanımı | Uygulandı: ayrı yük, gerçek ped teması, eğimli lastik, Q/F alt yüz, yerel kuruma ve canlı parmak bulaşması. 333 birim testi, headless/pencereli 16 müşteri ve normal imleçle müşteri geçti; el/ses sanatı prototip |
 | 7 | Masa düzeni, yuvalar, otomatik yerleştirme ve alet geri koyma | Bekliyor |
 | 8 | Müşteri teslim animasyonu, sorular, tepkiler ve anlaşılır işlem sonuçları | Bekliyor |
 | 9 | Malzemeye bağlı ses ve son temas/ışık cilası | Bekliyor; gerçek cihazla dinleme gerekir |
@@ -52,8 +52,8 @@ aynı ayı yeniden yazılmış ve soluk mühürlü geçerli örnek de vardır.
 Yeni kanıtların pencereli okunabilirlik ve C/Tab akış kontrolleri geçti.
 [5. dilimdeki kontrollü makas ve elle kupon toplama](COUPON_CUTTING_UPDATE.md)
 da uygulandı: parça otomatik kutuya gitmez; E ile alınır, F ile incelenir,
-kaba E/G ile konur. Yalnız temas dosyalama sayılır. Sonraki iş 6. dilimde
-damga/mürekkep pedi; masa düzeni, müşteri tepkileri ve ses dilimleri bekliyor.
+kaba E/G ile konur. Yalnız temas dosyalama sayılır. [6. dilimdeki mürekkep pedi ve yaş baskı](STAMP_INK_UPDATE.md) da uygulandı.
+Sonraki iş 7. dilimde masa düzeni; müşteri tepkileri ve ses dilimleri bekliyor.
 
 ## Onaylanan ayrıntılı plan
 

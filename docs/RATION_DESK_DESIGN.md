@@ -109,6 +109,13 @@ karşılamaz ve işlem sonrası denetim kaydında hata gerekçesiyle görünür.
 
 ## Damga: temas ve mürekkep
 
+6. dilimin ayrıntılı kullanım ve sınırları: [mürekkep pedi ve yaş baskı](STAMP_INK_UPDATE.md).
+Gerçek ped temasında ayrı damga yükü dolar. Alt+tekerlek yana eğim seçer;
+sol+sağ tutup sürükleme iki eksende temas lekesi bırakır. Boş el Alt+sürükle
+yaş mürekkebe parmak temasını kâğıdı kaldırmadan işler. İzler temas sırasında
+kaydedilir; kuruma önceki lekeyi silmez, kuru iz yeniden bulaşmaz.
+
+
 Araç masadan fiziksel olarak alınır; imleç altında kâğıda hizalanır.
 Sol tuş basılıyken aşağı fare hareketi damgayı indirir. Yaklaşma hızı, basılı
 kalma süresi, basınç ve açı mürekkebin dağılımını değiştirir; yanal hareket

@@ -71,9 +71,12 @@ func test_coupon_keeps_stock_original_ink_and_an_independent_canonical_damage_sn
 	assert_eq(piece.get_meta("paper_stock"), "thick")
 	assert_true(absf(float(piece.get_meta("paper_thickness")) - .00048) < .0000001)
 	var faces: int = 0
+	var printed_faces: int = 0
 	for child: Node in piece.get_children():
 		if child is SubViewport:
 			var renderer: RationCardView = child.get_child(0) as RationCardView
+			if renderer == null: continue # The wet coating has no document data.
+			printed_faces += 1
 			assert_eq(renderer.work["marks"], work["marks"], "a stamp crossing the coupon remains on the detached paper")
 			assert_eq(renderer.card["serial"], "W-14281")
 		elif child is MeshInstance3D:
@@ -85,6 +88,7 @@ func test_coupon_keeps_stock_original_ink_and_an_independent_canonical_damage_sn
 			assert_true(material.get_shader_parameter("has_incisions"))
 			assert_true(material.get_shader_parameter("incision_texture") != card._incision_texture, "new customer damage cannot change detached paper")
 	assert_eq(faces, 2)
+	assert_eq(printed_faces, 2)
 
 
 func test_reference_reverse_page_is_upright_and_physical_under_existing_inspector_flip() -> void:

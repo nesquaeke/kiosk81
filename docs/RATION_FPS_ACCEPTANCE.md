@@ -1,5 +1,44 @@
 # Karne inceleme masası — doğrulama kaydı
 
+## 19 Ekim 2026 — mürekkep pedi, lastik temasları ve yaş baskı
+
+[Kontroller, normal oyun kaydı ve sınırlar](STAMP_INK_UPDATE.md).
+
+- **333 birim testi geçti, 0 başarısız.** Yeni 47 test; ayrı damga yükü,
+  keçeye temas/dolum, tek tüketim, kalıcı temas zamanı/eğim/yük, kural sınırları,
+  yönlü parmak yolları, devam eden düz yolun birleştirilmesi ve gerçek kuruma
+  maskesini kapsar.
+- **Headless birleşik odak koşusunda 16 müşteri geçti.** Mürekkep ve önceki
+  kupon, kimlik, ışık, yakın inceleme, masa, kesim/damga kontrolleri birlikte;
+  para ve stok değişmedi. Eski tam satış sahnesinin kesintileri ve **8 müşterisi** de geçti.
+- Yeni fiziksel kontroller; temas öncesi çıkış, temas sırasında Q/Esc/restart,
+  tuş tutulurken keçeden kalkıp yeniden değme, ayrı lastiklerin yükü ve basılı
+  beklemenin tekrar tüketim üretmemesini sınadı. Kâğıt öncesi yanal hareket
+  gerçek baskı konumuna gitti; havadaki hareket eski izde bulaşma oluşturmadı.
+  Aynı basılı hareket içinde tekrar değme, ayrı iz ve tek yeni tüketim oluşturdu.
+- Parmak izi **bırakmadan önce** kalıcılaştı. Parmağı yaklaşık 11 oyun saniyesi
+  basılı tutup doğal kurumadan sonra bırakmak aynı lekeyi korudu. Duraklatma
+  kuruma saatini dondurdu; kuru baskıya aynı hareket yeni iz eklemedi.
+- **Normal pencerede ilk geçerli müşteri tamamlandı.** Ped 0,750’den örneklenen
+  0,884 yüke çıktı; Q/F lastik alt yüzü, hafif/eğik ve güçlü baskı, yaş/kuru
+  parmak teması, dört kenarlı kesim, elle dosyalama ve doğru iade geçti.
+  Hazır kampanya, imleç override’ı veya yapay saat kullanılmadı. 486 kareden
+  32,4 saniyelik hareketli WebP üretildi. Tekerlekte üç ters adım aynı mesafeye döndü.
+- Gerçek 640×400 yaş maskede 2.527 pigment pikseli, kuru maskede **0** vardı.
+  Aynı kadrajın karar baskısında %28,39 piksel değişirken komşu kâğıt ve masa
+  kontrol bölgelerinde hiçbir piksel değişmedi; parlaklık bütün sayfaya uygulanmadı.
+- Normal kayıt GL Compatibility/llvmpipe, 1600×1000 ve Dummy sesle yapıldı.
+  Motor/GDScript hatası yok; V-Sync uyarısı var. Prosedürel el/ses sanatı,
+  gerçek aygıtta ASMR dinlemesi ve hedef GPU performansı bu sonucun kapsamı değil.
+- **Pencereli birleşik 16 müşteri koşusu geçti.** 1280×800 GL Compatibility/llvmpipe
+  ve Dummy sesle yeni temaslar ile önceki kupon/kimlik/ışık/masa akışı birlikte
+  tamamlandı; para/stok değişmedi. Son birim ve işlevsel günlükler ayrıca tarandı:
+  motor/GDScript hatası yok. Üç eski birim testinin baskı yüzü seçicisi, bağımsız
+  ıslaklık maskesini ayrı tutacak şekilde düzeltildi; snapshot/kırpma denetimleri çalıştı.
+
+6. dilimin mekanikleri uygulandı; sonraki kapsam 7. dilimde masa düzeni.
+7–9. dilimler henüz tamamlanmadı.
+
 ## 19 Ekim 2026 — kontrollü makas ve fiziksel kupon toplama
 
 [Güncel kontroller, oynanış kaydı ve sınırlar](COUPON_CUTTING_UPDATE.md).
